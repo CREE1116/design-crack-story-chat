@@ -169,6 +169,28 @@ python batch.py --only ju-habin --situations normal --no-scenes --no-monsters --
 
 생성한 이미지를 전용 깃헙 저장소에 올리고 jsDelivr CDN 주소를 만들어 준다. 통합 프롬프트의 `{IMG}`에 넣을 기준 주소를 마지막에 출력한다.
 
+### 먼저 폴더를 깐다
+
+축 목록대로 빈 폴더와 배치표를 만든다. 그림을 그리기 전에 실행한다.
+
+```bash
+python deploy.py --scaffold
+```
+
+```
+out/
+  _배치표.md          전체 목록 + 채움 상태
+  ju-habin/
+    README.md         이 폴더에 들어갈 정확한 파일 이름
+  scene/  bg/  mob/
+```
+
+폴더 이름을 손으로 타이핑하면 반드시 오타가 나고, 오타는 오류 없이 조용히 깨진 링크가 된다. 축이 닫히는 순간 어떤 파일이 어디 들어갈지는 이미 확정돼 있으므로 손으로 만들 이유가 없다.
+
+`--scaffold`는 여러 번 실행해도 안전하다. 기존 파일을 건드리지 않고 배치표의 채움 상태만 갱신하므로 진행 현황판으로 쓸 수 있다.
+
+### 배포
+
 ```bash
 python deploy.py --check                              검사만
 python deploy.py --dry-run --repo 계정/이미지저장소     계획만 출력

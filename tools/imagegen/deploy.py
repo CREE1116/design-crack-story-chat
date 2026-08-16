@@ -131,6 +131,87 @@ def audit(cfg: dict, root: Path) -> tuple[bool, set[str]]:
     return ok, found & all_want
 
 
+def label(entry: dict | None, slug: str) -> str:
+    return (entry or {}).get("ko") or slug
+
+
+def size_of(entry: dict | None) -> str:
+    size = (entry or {}).get("size")
+    return f"{size[0]}×{size[1]}" if isinstance(size, list) and len(size) == 2 else "—"
+
+
+def scaffold(cfg: dict, root: Path) -> int:
+    """축 목록대로 빈 폴더와 배치표를 만든다.
+
+    축은 컴파일 시점에 이미 닫혀 있으므로, 어떤 파일이 어디에 들어가야 하는지는
+    그림을 그리기 전에 전부 정해져 있다. 사람이 폴더 이름을 손으로 만들면
+    반드시 오타가 나고, 오타는 조용한 깨진 링크가 된다.
+    """
+    people = cfg.get("characters", {})
+    situations = cfg.get("situations", {})
+    found = scan(root) if root.is_dir() else set()
+    lines = [
+        "# 이미지 배치표",
+        "",
+        "`deploy.py --scaffold`가 생성한다. 아래 경로에 그림을 넣으면 된다.",
+        "**파일 이름은 통합 프롬프트의 축 목록과 정확히 같아야 한다.** 한 글자만 달라도",
+        "모델이 부를 수 없는 주소가 되고, 플레이 중에는 이미지가 그냥 안 뜨는 것으로만 보인다.",
+        "",
+        "전부 채울 필요는 없다. 없는 조합은 그 자리만 생략되도록 프롬프트가 규정한다.",
+        "",
+    ]
+    made = 0
+
+    def table(rows: list[tuple[str, str, str]]) -> None:
+        lines.append("| 파일 | 내용 | 크기 | 상태 |")
+        lines.append("|---|---|---|---|")
+        for path, what, size in rows:
+            mark = "있음" if path in found else "비어 있음"
+            lines.append(f"| `{path}` | {what} | {size} | {mark} |")
+        lines.append("")
+
+    lines.append(f"## 인물 × 상황 — {len(people) * len(situations)}장")
+    lines.append("")
+    for slug, entry in people.items():
+        folder = root / slug
+        folder.mkdir(parents=True, exist_ok=True)
+        made += 1
+        lines.append(f"### `{slug}` — {label(entry, slug)}")
+        lines.append("")
+        rows = [(f"{slug}/{s}{EXT}", label(sv, s), size_of(sv)) for s, sv in situations.items()]
+        table(rows)
+        (folder / "README.md").write_text(
+            f"# `{slug}` — {label(entry, slug)}\n\n"
+            + "\n".join(f"- `{s}{EXT}` — {label(sv, s)} ({size_of(sv)})"
+                        for s, sv in situations.items())
+            + "\n\n파일 이름을 바꾸지 마세요. 통합 프롬프트의 상황 축과 같아야 합니다.\n",
+            encoding="utf-8")
+
+    for key, folder_name in FIXED_AXES.items():
+        entries = cfg.get(key, {})
+        if not entries:
+            continue
+        folder = root / folder_name
+        folder.mkdir(parents=True, exist_ok=True)
+        made += 1
+        lines.append(f"## `{folder_name}` — {len(entries)}장")
+        lines.append("")
+        table([(f"{folder_name}/{n}{EXT}", label(v, n), size_of(v)) for n, v in entries.items()])
+        (folder / "README.md").write_text(
+            f"# `{folder_name}`\n\n"
+            + "\n".join(f"- `{n}{EXT}` — {label(v, n)} ({size_of(v)})" for n, v in entries.items())
+            + "\n\n파일 이름을 바꾸지 마세요. 통합 프롬프트의 축 목록과 같아야 합니다.\n",
+            encoding="utf-8")
+
+    (root / "_배치표.md").write_text("\n".join(lines), encoding="utf-8")
+    total = len(people) * len(situations) + sum(len(cfg.get(k, {})) for k in FIXED_AXES)
+    print(f"폴더 {made}개, 자리 {total}개를 준비했습니다: {root}")
+    print(f"  목록: {root / '_배치표.md'}")
+    print(f"  이미 채워진 자리: {len(found)}개")
+    print("\n  그림을 넣은 뒤 `python deploy.py --check` 로 이름을 확인하세요.")
+    return 0
+
+
 def base_url(repo: str, ref: str) -> str:
     return f"https://cdn.jsdelivr.net/gh/{repo}@{ref}"
 
@@ -227,6 +308,8 @@ def main() -> int:
     ap.add_argument("--repo", help="대상 저장소 owner/name")
     ap.add_argument("--create", action="store_true", help="저장소가 없으면 공개로 생성")
     ap.add_argument("--tag", help="이 태그를 찍고 주소에 사용 (캐시 지연 없음)")
+    ap.add_argument("--scaffold", action="store_true",
+                    help="축 목록대로 빈 폴더와 배치표를 만든다 (그림 넣기 전에 실행)")
     ap.add_argument("--check", action="store_true", help="검사만 하고 종료")
     ap.add_argument("--dry-run", action="store_true", help="업로드 없이 계획만 출력")
     ap.add_argument("--verify", action="store_true", help="배포 후 주소가 열리는지 확인")
@@ -234,8 +317,13 @@ def main() -> int:
 
     cfg = load_config()
     root = Path(args.root or HERE / cfg.get("config", {}).get("output_dir", "out"))
+
+    if args.scaffold:
+        root.mkdir(parents=True, exist_ok=True)
+        return scaffold(cfg, root)
+
     if not root.is_dir():
-        sys.exit(f"이미지 폴더가 없습니다: {root}")
+        sys.exit(f"이미지 폴더가 없습니다: {root}\n  먼저 `python deploy.py --scaffold` 를 실행하세요.")
 
     ok, files = audit(cfg, root)
     if not ok:
