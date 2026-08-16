@@ -82,7 +82,9 @@ def validate(build: Path) -> bool:
         print(f"FAIL {build}: build directory not found")
         return False
 
-    entries = list(build.iterdir())
+    # 점으로 시작하는 항목은 무시한다. macOS의 .DS_Store 처럼 OS가 만드는 파일이
+    # 산출물 개수를 깨뜨리면 안 된다. check_project_layout.py 와 같은 규칙이다.
+    entries = [e for e in build.iterdir() if not e.name.startswith(".")]
     names = {entry.name for entry in entries if entry.is_file()}
     extra = sorted(names - EXPECTED)
     missing = sorted(EXPECTED - names)
@@ -143,7 +145,8 @@ def validate(build: Path) -> bool:
     if derived.is_dir():
         known = {"image-prompts.md", "prompts.json", "summary-comment.md", "build-stamp.json"}
         stray = sorted(p.name for p in derived.iterdir()
-                       if p.is_file() and p.name not in known)
+                       if p.is_file() and not p.name.startswith(".")
+                       and p.name not in known)
         if stray:
             print(f"FAIL {derived}: 알 수 없는 파생물: {', '.join(stray)}")
             print("     파생물은 요약 코멘트와 이미지 프롬프트만 둡니다. "
