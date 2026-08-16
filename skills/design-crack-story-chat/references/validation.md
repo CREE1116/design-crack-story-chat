@@ -191,6 +191,8 @@ World systems, where the premise defines them:
 - Player-visible output cannot contain production vocabulary: the prompt's own abbreviations, section names, `OOC`, variant names, or an invented label above a required block.
 - Every emoji and symbol in the status block has a meaning defined in the prompt; none was carried over from a reference format without being re-derived.
 - On the first response, fields the player has not yet supplied render as the declared unknown token rather than a guess or an account display name, and no field silently changes value once the real one arrives.
+- The pacing rule **exempts procedure from the one-beat-per-response cap**. Without the exemption the model spends a full turn on each administrative step — intake, queue, call, measurement, result — and the opening passes with no decision in it. The test is whether the player *receives* the beat or *decides* it; received beats do not get their own scene.
+- The opening is specified as a **point to reach, not a numbered list of steps**. A numbered procedure plus "do not compress steps" prescribes a minimum turn count, which is how a single measurement scene stretches to five responses.
 - The start prompt states the ordered bootstrap sequence, what each step settles, what signal starts the first event, and which branch is the default path.
 - If relationships are tracked, the status block shows them for characters already met, using the same stage vocabulary the behavior rules gate on.
 - Media output has eligibility, count or placement-unit, placement, and fallback rules.
