@@ -1,19 +1,32 @@
 #!/usr/bin/env python3
 """Simulate Crack's three-entry keyword-book load against realistic scenes.
 
-Crack loads at most three keyword-book entries at once. Reviewing entries one
-at a time never finds a collision; only enumerating scenes does.
+Crack loads at most three entries at once, and ties are broken by registration
+order — earlier entries win. Reviewing entries one at a time never finds a
+collision; only enumerating scenes does.
 
 Usage:
     check_kb_slots.py build/keyword-book.md scenes.txt
     check_kb_slots.py build/keyword-book.md --scene "길드 선택" --text "발할라와 아발론 부스"
 
 Scene file format — one scene per non-empty line, comments start with '#':
-    길드 선택: 발할라 아발론 에덴 바벨 부스를 둘러본다
-    범람 초기: 게이트가 열리고 범람체가 쏟아진다
+    길드 선택: 발할라 아발론 에덴 바벨 부스를 둘러본다.
+    범람 초기: 게이트가 열리고 범람체가 쏟아진다.
 
-Entries are matched in registration order (file order). When more than three
-match, the later ones are dropped: that is the failure the simulation reports.
+Write scene text the way it would really appear, punctuation included, or
+entries keyed on common characters will not be exercised.
+
+Reports three things:
+  1. per-scene load — which entries win the three slots, which are dropped;
+  2. per-entry load rate — how often an entry actually occupies a slot, not
+     merely matches. An entry that matches often and never loads is dead;
+  3. effectively-always-on entries — those matching most scenes. Used
+     deliberately (a low-priority filler that soaks up leftover slots) this is
+     a real technique; used by accident it starves every conditional entry.
+
+Only (3) can fail the run. Slot overflow and load rate are reported for human
+judgement: whether a dropped entry matters depends on whether the integrated
+prompt still carries what that scene needs, which no script can know.
 """
 
 from __future__ import annotations
@@ -22,7 +35,16 @@ import re
 import sys
 from pathlib import Path
 
+# 출력이 head 등으로 잘려도 트레이스백 없이 종료한다.
+try:
+    from signal import SIGPIPE, SIG_DFL, signal as _signal
+    _signal(SIGPIPE, SIG_DFL)
+except (ImportError, ValueError, OSError):  # Windows 등
+    pass
+
 MAX_SLOTS = 3
+ALWAYS_ON_RATE = 0.7   # match rate at or above which an entry is "effectively always-on"
+BOTTOM_FRACTION = 0.25  # such entries belong in the last quarter of the order
 
 
 def normalize(text: str) -> str:
@@ -65,21 +87,8 @@ def load_scenes(args: list[str]) -> list[tuple[str, str]]:
     return scenes
 
 
-def simulate(entries: list[tuple[str, list[str]]], label: str, text: str) -> bool:
-    haystack = normalize(text)
-    hits = [
-        entry_id
-        for entry_id, keywords in entries
-        if any(normalize(k) and normalize(k) in haystack for k in keywords)
-    ]
-    if len(hits) <= MAX_SLOTS:
-        detail = ", ".join(hits) if hits else "(none)"
-        print(f"PASS {label}: {len(hits)}/{MAX_SLOTS} — {detail}")
-        return True
-    loaded = ", ".join(hits[:MAX_SLOTS])
-    dropped = ", ".join(hits[MAX_SLOTS:])
-    print(f"FAIL {label}: {len(hits)}/{MAX_SLOTS} — loaded [{loaded}] DROPPED [{dropped}]")
-    return False
+def matches(keywords: list[str], haystack: str) -> bool:
+    return any(normalize(k) and normalize(k) in haystack for k in keywords)
 
 
 def main() -> int:
@@ -94,10 +103,59 @@ def main() -> int:
     if not scenes:
         print("FAIL: no scenes supplied")
         return 1
-    print(f"# {len(entries)} entries, registration order: {', '.join(i for i, _ in entries)}\n")
+
+    order = {entry_id: rank for rank, (entry_id, _) in enumerate(entries)}
+    matched = {entry_id: 0 for entry_id, _ in entries}
+    loaded = {entry_id: 0 for entry_id, _ in entries}
     ok = True
+
+    print(f"# {len(entries)} entries, {len(scenes)} scenes, {MAX_SLOTS} slots\n")
+    print("## 장면별 로드")
     for label, text in scenes:
-        ok = simulate(entries, label, text) and ok
+        haystack = normalize(text)
+        hits = [e for e, kws in entries if matches(kws, haystack)]
+        for entry_id in hits:
+            matched[entry_id] += 1
+        for entry_id in hits[:MAX_SLOTS]:
+            loaded[entry_id] += 1
+        if len(hits) <= MAX_SLOTS:
+            print(f"PASS {label}: {len(hits)}/{MAX_SLOTS} — {', '.join(hits) or '(none)'}")
+        else:
+            print(f"WARN {label}: {len(hits)}/{MAX_SLOTS} — "
+                  f"loaded [{', '.join(hits[:MAX_SLOTS])}] "
+                  f"DROPPED [{', '.join(hits[MAX_SLOTS:])}]")
+
+    total = len(scenes)
+    print("\n## 항목별 실제 로드율")
+    for entry_id, _ in entries:
+        m, l = matched[entry_id], loaded[entry_id]
+        note = ""
+        if not m:
+            note = "  ← 이 장면 목록이 시험하지 않음. 목록을 늘리거나 항목이 불필요한지 볼 것"
+        elif not l:
+            note = f"  ← 걸린 {m}회 모두 밀림. 단독으로 걸리는 장면이 목록에 없거나 순서가 낮다"
+        elif l < m:
+            note = f"  ← {m - l}회 밀림"
+        print(f"  {entry_id:<22} 매칭 {m}/{total}  로드 {l}/{total}{note}")
+
+    hot = [e for e, _ in entries if matched[e] / total >= ALWAYS_ON_RATE]
+    if hot:
+        print("\n## 사실상 상시 항목")
+        cutoff = len(entries) * (1 - BOTTOM_FRACTION)
+        for entry_id in hot:
+            rate = matched[entry_id] / total
+            if order[entry_id] < cutoff:
+                ok = False
+                print(f"FAIL {entry_id}: {rate:.0%} 매칭인데 등록 순서 {order[entry_id] + 1}번. "
+                      f"위쪽에 있으면 조건부 항목을 모두 굶긴다. 맨 아래로 내릴 것")
+            else:
+                print(f"INFO {entry_id}: {rate:.0%} 매칭, 순서 {order[entry_id] + 1}번(하단). "
+                      f"채움형으로 동작한다 — 본문이 없어도 응답이 성립해야 한다")
+        if len(hot) >= MAX_SLOTS:
+            ok = False
+            print(f"FAIL 사실상 상시 항목이 {len(hot)}개다. {MAX_SLOTS}슬롯을 전부 점유해 "
+                  f"키워드북의 조건부 기능이 죽는다. 1~2개로 줄일 것")
+
     return 0 if ok else 1
 
 

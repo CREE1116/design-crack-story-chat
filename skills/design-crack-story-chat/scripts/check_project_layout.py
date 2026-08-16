@@ -8,6 +8,13 @@ from pathlib import Path
 
 from check_build import validate as validate_build
 
+# 출력이 head 등으로 잘려도 트레이스백 없이 종료한다.
+try:
+    from signal import SIGPIPE, SIG_DFL, signal as _signal
+    _signal(SIGPIPE, SIG_DFL)
+except (ImportError, ValueError, OSError):  # Windows 등
+    pass
+
 SOURCES = {"story.md", "characters.md"}
 BUILD = "build"
 

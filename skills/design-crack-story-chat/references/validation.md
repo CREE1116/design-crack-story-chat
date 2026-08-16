@@ -152,6 +152,8 @@ World systems, where the premise defines them:
 - The three-slot cap was checked by **simulation, not by inspection**: a list of realistic scenes, each with the words it would plausibly contain, run against every entry's keywords with `scripts/check_kb_slots.py`. Reviewing entries one at a time does not find collisions; only enumerating scenes does.
 - Where a simulated scene exceeds three entries, the fix is recorded: entries reordered so the losses fall across different factions or topics, or a keyword narrowed, or an entry merged. Registration order is part of the artifact, not an accident of authoring order.
 - When entry order or keywords changed after a prior registration, the handoff lists exactly which entries must be re-registered and states that the order changed. Crack registration is manual; a silent reorder desynchronizes the live product from the build.
+- Entries are classified by type and registered in that order — scene-deepening, then roster, then lookup, then filler. Any effectively-always-on entry sits at the bottom, there are at most two of them, and each one's body is expendable: a turn without it still works. `check_kb_slots.py` reports match rate per entry and fails when a high-match entry is registered high.
+- Where a set of characters or factions can be named all at once and outnumbers the three slots, a thin roster entry carrying names and affiliations sits above the individual detail entries — or the names live in the integrated prompt. Otherwise the member that loses the slot race has no name loaded at all and gets invented.
 - **Reachability:** every proper noun the model is expected to *say* — an alias, an epithet, a place name, a term of art — appears inside loaded text, not only in the canon source. Entry titles, headings, IDs, and field names are registration metadata and are not injected; a name that exists only in a title is unreachable and the model will invent a substitute.
 
 ## Prompt behavior
@@ -240,6 +242,13 @@ Anything generated *from* the build — a summary for a listing, a comment blurb
 - Platform behavior nobody has observed in the real Crack UI is listed as unconfirmed: whitespace and indent rendering in the status block, emoji rendering, external image loading, and the true set of activation-setting values.
 
 If a world system was queued for promotion into the integrated prompt at a later arc, that queue is recorded with what must be cut to make room.
+
+After any compression pass:
+
+- Every rule in the pre-compression version was written out as a fingerprint — a set of words unique to that rule — and checked mechanically against the compressed text. Reading the result over is not a check; a deleted rule leaves no trace that draws the eye.
+- Partial fingerprint misses were resolved by hand as either rephrasing or loss, not auto-passed.
+- Agency, consent, and prohibition boundaries were compressed **less** than descriptive material. These are where the model falls back when a situation is ambiguous, so a few saved characters are never worth added interpretive room.
+- Freed budget was not fully spent. Compression exists to create margin, and refilling it returns the project to where it started.
 
 ## Handoff evidence
 

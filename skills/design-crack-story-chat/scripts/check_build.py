@@ -7,6 +7,13 @@ import re
 import sys
 from pathlib import Path
 
+# 출력이 head 등으로 잘려도 트레이스백 없이 종료한다.
+try:
+    from signal import SIGPIPE, SIG_DFL, signal as _signal
+    _signal(SIGPIPE, SIG_DFL)
+except (ImportError, ValueError, OSError):  # Windows 등
+    pass
+
 MAX_PROMPT = 7000
 MAX_OPENING = 1000
 TARGET_PROMPT = 6500
