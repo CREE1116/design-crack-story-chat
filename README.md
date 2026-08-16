@@ -43,22 +43,19 @@ Claude Code, Cowork, Codex 등 스킬을 읽는 에이전트에서 동작합니�
 
 [Releases](../../releases)에서 `design-crack-story-chat.skill`을 받아 에이전트에 추가합니다.
 
-### 방법 2 — 수동 설치
+### 방법 2 — 저장소에서 설치
 
-저장소를 클론해 스킬 디렉터리에 복사합니다.
+스킬을 직접 고쳐가며 쓸 거라면 이쪽입니다.
 
 ```bash
 git clone https://github.com/<사용자명>/crack-story-chat-skill.git
 cd crack-story-chat-skill
-
-# Claude Code / Cowork
-mkdir -p ~/.claude/skills
-cp -r skills/design-crack-story-chat ~/.claude/skills/
-
-# 프로젝트 단위로 쓸 경우
-mkdir -p <내_프로젝트>/.agents/skills
-cp -r skills/design-crack-story-chat <내_프로젝트>/.agents/skills/
+./scripts/install-skill.sh          # ~/.claude/skills 에 심볼릭 링크
 ```
+
+링크 방식이라 저장소를 고치면 에이전트에 **즉시 반영**됩니다. 사본을 원하면 `--copy`를 주세요.
+
+저장소에서 작업할 때의 규칙은 [CLAUDE.md](CLAUDE.md)에 있습니다.
 
 설치 확인은 에이전트에게 이렇게 물어보면 됩니다. "크랙 스토리챗 스킬 로딩해봐."
 
