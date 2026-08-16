@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -41,7 +42,25 @@ except (ImportError, ValueError, OSError):
     pass
 
 HERE = Path(__file__).resolve().parent
-CONFIG = HERE / "prompts.json"
+
+
+def resolve_config(explicit: str | None) -> Path:
+    """설정 파일을 찾는다: --config → $CRACK_PROMPTS → ./prompts.json.
+
+    이미지 프롬프트는 작품의 파생 산출물이므로 `<작품>/build/assets/prompts.json`
+    에 있다. 도구는 특정 작품에 묶이지 않고 그 경로를 받아 쓴다.
+    """
+    for candidate in (explicit, os.environ.get("CRACK_PROMPTS"), "prompts.json"):
+        if candidate and Path(candidate).is_file():
+            return Path(candidate).resolve()
+    sys.exit(
+        "설정 파일을 찾을 수 없습니다.\n"
+        "  --config <작품>/build/assets/prompts.json 를 주거나\n"
+        "  환경변수 CRACK_PROMPTS 를 설정하거나\n"
+        "  현재 폴더에 prompts.json 을 두세요."
+    )
+
+
 EXT = ".png"
 # 축 이름 → 저장소 안의 디렉터리. 인물은 슬러그 자체가 디렉터리라 별도 처리.
 FIXED_AXES = {"scenes": "scene", "backgrounds": "bg", "monsters": "mob"}
@@ -56,10 +75,8 @@ def run(cmd: list[str], cwd: Path | None = None, check: bool = True) -> str:
     return result.stdout.strip()
 
 
-def load_config() -> dict:
-    if not CONFIG.exists():
-        sys.exit(f"설정 파일이 없습니다: {CONFIG}")
-    return json.loads(CONFIG.read_text(encoding="utf-8"))
+def load_config(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def expected(cfg: dict) -> dict[str, set[str]]:
@@ -223,7 +240,7 @@ def publish(cfg: dict, root: Path, files: set[str], args) -> str:
     if not shutil.which("gh"):
         sys.exit("gh가 필요합니다: brew install gh")
 
-    work = HERE / ".deploy-work"
+    work = Path.cwd() / ".deploy-work"
     if work.exists():
         shutil.rmtree(work)
 
@@ -304,7 +321,8 @@ def verify(url_base: str, files: set[str]) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="이미지 자산을 깃헙+jsDelivr로 배포한다")
-    ap.add_argument("--root", help="이미지 루트 (기본: prompts.json의 output_dir)")
+    ap.add_argument("--config", help="prompts.json 경로 (기본: $CRACK_PROMPTS 또는 ./prompts.json)")
+    ap.add_argument("--root", help="이미지 루트 (기본: 현재 폴더의 output_dir)")
     ap.add_argument("--repo", help="대상 저장소 owner/name")
     ap.add_argument("--create", action="store_true", help="저장소가 없으면 공개로 생성")
     ap.add_argument("--tag", help="이 태그를 찍고 주소에 사용 (캐시 지연 없음)")
@@ -315,8 +333,9 @@ def main() -> int:
     ap.add_argument("--verify", action="store_true", help="배포 후 주소가 열리는지 확인")
     args = ap.parse_args()
 
-    cfg = load_config()
-    root = Path(args.root or HERE / cfg.get("config", {}).get("output_dir", "out"))
+    config_path = resolve_config(args.config)
+    cfg = load_config(config_path)
+    root = Path(args.root or Path.cwd() / cfg.get("config", {}).get("output_dir", "out"))
 
     if args.scaffold:
         root.mkdir(parents=True, exist_ok=True)

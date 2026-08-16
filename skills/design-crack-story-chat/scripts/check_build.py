@@ -24,6 +24,8 @@ EXPECTED = {
     "start-prompt.md",
     "keyword-book.md",
 }
+# 크랙에 붙이지 않는 파생 제작 입력이 들어가는 유일한 하위 디렉터리.
+DERIVED_DIR = "assets"
 UNSAFE_BANNED = (
     "정책 무시",
     "정책 우회",
@@ -84,7 +86,10 @@ def validate(build: Path) -> bool:
     names = {entry.name for entry in entries if entry.is_file()}
     extra = sorted(names - EXPECTED)
     missing = sorted(EXPECTED - names)
-    non_files = sorted(entry.name for entry in entries if not entry.is_file())
+    # build/assets/ 는 크랙에 붙이지 않는 파생 제작 입력(이미지 프롬프트 등)의 자리다.
+    # 다섯 개의 크랙 산출물과 달리 모델에게 실리지 않으므로 개수를 세지 않는다.
+    non_files = sorted(entry.name for entry in entries
+                       if not entry.is_file() and entry.name != DERIVED_DIR)
     ok = True
     if missing:
         print(f"FAIL {build}: missing artifacts: {', '.join(missing)}")
@@ -133,6 +138,22 @@ def validate(build: Path) -> bool:
     validator = load_keyword_validator()
     if validator is not None:
         ok = validator(str(build / "keyword-book.md")) and ok
+
+    derived = build / DERIVED_DIR
+    if derived.is_dir():
+        known = {"image-prompts.md", "prompts.json", "summary-comment.md", "build-stamp.json"}
+        stray = sorted(p.name for p in derived.iterdir()
+                       if p.is_file() and p.name not in known)
+        if stray:
+            print(f"FAIL {derived}: 알 수 없는 파생물: {', '.join(stray)}")
+            print("     파생물은 요약 코멘트와 이미지 프롬프트만 둡니다. "
+                  "모델에 실릴 규칙은 다섯 산출물에만 넣습니다.")
+            ok = False
+        try:
+            from check_image_assets import validate as validate_images  # type: ignore
+            ok = validate_images(build.parent) and ok
+        except ImportError as exc:
+            print(f"WARN image asset validator import: {exc}")
     return ok
 
 

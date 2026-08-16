@@ -21,6 +21,7 @@ import argparse
 import base64
 import difflib
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -30,6 +31,24 @@ import uuid
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+
+
+def resolve_config(explicit: str | None) -> Path:
+    """설정 파일을 찾는다: --config → $CRACK_PROMPTS → ./prompts.json.
+
+    도구는 특정 작품에 묶이지 않는다. 이미지 프롬프트는 작품의 파생 산출물이므로
+    `<작품>/build/assets/prompts.json` 에 있고, 도구는 그 경로를 받아 쓴다.
+    """
+    for candidate in (explicit, os.environ.get("CRACK_PROMPTS"), "prompts.json"):
+        if candidate and Path(candidate).is_file():
+            return Path(candidate).resolve()
+    sys.exit(
+        "설정 파일을 찾을 수 없습니다.\n"
+        "  --config <작품>/build/assets/prompts.json 를 주거나\n"
+        "  환경변수 CRACK_PROMPTS 를 설정하거나\n"
+        "  현재 폴더에 prompts.json 을 두세요."
+    )
+
 
 
 # ── 설정 ────────────────────────────────────────────────────────────────────
@@ -400,7 +419,7 @@ def show_models(api: Comfy) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="헌터 스토리챗 이미지 일괄 생성")
-    ap.add_argument("--config", default=str(HERE / "prompts.json"))
+    ap.add_argument("--config", help="prompts.json 경로 (기본: $CRACK_PROMPTS 또는 ./prompts.json)")
     ap.add_argument("--list-models", action="store_true", help="서버에 설치된 자산 목록만 출력")
     ap.add_argument("--check", action="store_true", help="설정이 서버 자산과 맞는지만 검사")
     ap.add_argument("--dry-run", action="store_true", help="서버 없이 조합만 확인")
@@ -430,7 +449,7 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=600, help="장당 대기 상한(초)")
     a = ap.parse_args()
 
-    d = load(Path(a.config))
+    d = load(resolve_config(a.config))
     cfg = d["config"]
     for key, val in (("checkpoint", a.checkpoint), ("quality_preset", a.preset),
                      ("steps", a.steps), ("cfg", a.cfg),

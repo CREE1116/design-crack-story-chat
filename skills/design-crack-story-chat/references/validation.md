@@ -233,7 +233,13 @@ For each test, record expected invariants rather than one exact prose answer. Re
 
 ## Derived documents and tooling
 
-Anything generated *from* the build — a summary for a listing, a comment blurb, an image-prompt sheet, a batch script — is a second copy of the facts and drifts from the build the moment either side changes.
+Derived material — the summary/comment blurb and the image prompts — is compiled into `build/assets/` from the same two sources as the five artifacts, and is regenerated on every build rather than maintained.
+
+- No derived file was hand-edited. The moment someone edits one directly it becomes a second source of truth for whatever it holds, and nothing downstream will notice.
+- `build/` contains exactly the five Crack files plus, at most, the `assets/` directory. A sixth model-facing prompt file is a routing mistake, never a missing artifact.
+- `check_image_assets.py` passes: every character in `characters.md` has image prompts and vice versa, slugs are URL-safe, seeds are unique, and no two characters share their leading tags.
+- Axis slugs in the image prompts appear in the published closed lists, so the model can actually compose them.
+- `check_freshness.py` reports no stale sections; the stamp was refreshed as the last step of the compile. Sources edited after a build leave no visible trace — the build still passes every other check while the published prompt plays an outdated character.
 
 - Every claim in a summary or promotional document was checked against the artifact that actually ships. A setting that exists only in the canon source is not "in the build," and a summary that lists it is wrong.
 - Counts stated anywhere — cast size, composition ratios, entry totals, character lengths — were produced by a script, not by hand. Hand counts in this workflow have been wrong.

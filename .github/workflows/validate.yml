@@ -32,6 +32,7 @@ jobs:
       - name: 이미지 도구 — 목 서버로 왕복 확인
         run: |
           cd tools/imagegen
+          export CRACK_PROMPTS=$PWD/../../examples/hunter/build/assets/prompts.json
           python mock_a1111.py & sleep 2
           python batch.py --check
           python batch.py --dry-run --only ju-habin --situations normal \
@@ -40,9 +41,10 @@ jobs:
       - name: 이미지 배포 검사기 — 오타 슬러그를 잡는지
         run: |
           cd tools/imagegen
+          export CRACK_PROMPTS=$PWD/../../examples/hunter/build/assets/prompts.json
           python - <<'EOF'
-          import json, pathlib, struct, zlib
-          cfg = json.load(open("prompts.json", encoding="utf-8"))
+          import json, os, pathlib, struct, zlib
+          cfg = json.load(open(os.environ["CRACK_PROMPTS"], encoding="utf-8"))
           def png():
               raw = b"".join(b"\x00" + bytes((120,120,120))*8 for _ in range(8))
               ch = lambda t,d: struct.pack(">I",len(d))+t+d+struct.pack(">I",zlib.crc32(t+d)&0xFFFFFFFF)
@@ -57,6 +59,16 @@ jobs:
           cp out/scene/*.png out/scene/definitely-not-a-slug.png
           if python deploy.py --check; then echo "검사기가 오타 슬러그를 놓쳤다"; exit 1; fi
           echo "배포 검사기 음성 대조 통과"
+
+      - name: 신선도 검사 — 원본을 고치면 잡는지
+        run: |
+          S=skills/design-crack-story-chat/scripts
+          printf '\n<!-- ci probe -->\n' >> examples/hunter/characters.md
+          if python3 $S/check_freshness.py examples/hunter; then
+            echo "원본 변경을 놓쳤다"; exit 1
+          fi
+          git checkout examples/hunter/characters.md
+          echo "신선도 음성 대조 통과"
 
       - name: .skill 패키지 빌드
         run: ./scripts/build-skill.sh

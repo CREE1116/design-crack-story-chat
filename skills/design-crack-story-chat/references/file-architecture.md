@@ -13,16 +13,27 @@ story-chat/
     ├── integrated-prompt-safe.md  # ≤7,000 chars
     ├── integrated-prompt-unsafe.md # ≤7,000 chars
     ├── start-prompt.md            # ≤1,000 chars
-    └── keyword-book.md            # one registration sheet; entry text ≤400 chars
+    ├── keyword-book.md            # one registration sheet; entry text ≤400 chars
+    └── assets/                    # derived production inputs; never pasted into Crack
+        ├── summary-comment.md     # listing/comment blurb
+        ├── image-prompts.md       # human-readable prompt sheet
+        ├── prompts.json           # machine form of the same content
+        └── build-stamp.json       # source digests recorded at compile time
 ```
 
 Do **not** create intermediate `manifest`, `world`, `player`, `prologue`, `story-design`, `generation-rules`, `content-profiles`, `output-contract`, `media-rules`, `runtime`, or `keyword-book` files/directories. Those splits can clarify a large software system, but they are needless authoring debris for this Crack workflow.
 
-`build/` is generated output, not a third source. It may be absent before the first compilation. After compilation it contains exactly the five regular files above and nothing else.
+`build/` is generated output, not a third source. It may be absent before the first compilation. After compilation its **files** are exactly the five above and nothing else.
+
+`build/assets/` is the one permitted subdirectory. It holds **derived production inputs** — material compiled from the two sources that is never pasted into a Crack field and never reaches the model as instructions. Only two kinds belong there: the summary/comment blurb, and the image prompts. Anything model-facing goes in the five artifacts; if something feels like it needs a sixth prompt file, it is a routing mistake, not a missing artifact.
+
+Derived does not mean optional. These files are regenerated on every compile exactly like the five, and hand-editing one makes it a second source of truth for whatever it contains. An image prompt sheet takes its appearance text from `characters.md`; a summary blurb takes its claims from the compiled artifacts, not from memory.
 
 `scripts/check_project_layout.py` ignores dot-prefixed entries at the project root, so a hidden tooling directory such as `.agents/` (including a synced copy of this skill) or `.git/` does not fail the layout check. Everything visible at the root other than `story.md`, `characters.md`, and `build/` does fail it.
 
-Production assets that ship alongside the story chat but are not story-chat sources — image-generation prompts, an asset roster, hosting notes — are neither canon nor build output, so they do not belong at the project root and would fail the layout check there. Keep them in a dot-prefixed directory such as `.assets/`. Facts they depend on still live in the two sources: an image prompt sheet derives its appearance text from `characters.md` rather than becoming a second place where a character's look is defined.
+Authored material that is neither canon nor generated — test fixtures such as a scene list for the three-slot simulation, hosting notes, scratch work — goes in a dot-prefixed directory such as `.assets/`, which the layout check ignores. The distinction is authorship, not subject: a scene fixture someone writes by hand lives in `.assets/`, while an image prompt sheet the compiler produces lives in `build/assets/`.
+
+Generated image assets themselves (the PNG files) belong in neither place. They are large binaries with their own hosting lifecycle — keep them outside the project or in an ignored directory, and let the deploy tooling move them.
 
 ## Ownership
 
