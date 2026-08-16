@@ -127,132 +127,168 @@ deep shadows, desaturated cool tones
 
 ### `shim-gaeul` — 심가을 (44, 여, 협회 부협회장)
 
+**식별 포인트** — 목에 건 계측 단말. 늘 켜져 있어 걸을 때마다 흔들리며 미약하게 빛난다.
+
 ```
-1girl, mature female, 40s, short black hair with grey streaks, dark brown eyes,
-tired eyes with dark circles, sharp alert gaze, old scars on hands and wrists,
-dark grey field jacket, association badge, measuring terminal hanging from neck,
-practical utilitarian clothing, no makeup, weathered competent look
+1girl, mature female, 40s, glowing measurement device on neck strap, short
+black hair with grey streaks, dark brown eyes, tired eyes with dark circles,
+sharp alert gaze, old scars on hands and wrists, dark grey field jacket,
+association badge, measuring terminal hanging from neck, practical utilitarian
+clothing, no makeup, weathered competent look
 ```
 
 ### `ju-habin` — 주하빈 (24, 여, 협회 필드 의무관)
 
+**식별 포인트** — 손끝과 손목이 늘 물기에 젖은 듯 반들거린다. 표면장력 조작의 흔적이다.
+
 ```
-1girl, young woman, early 20s, dark brown hair in high ponytail, loose strands at nape,
-brown eyes, small slender build, white and light blue medical field vest,
-multiple equipment pouches, short trimmed nails, faint wet sheen on fingertips,
-kind eyes, medic
+1girl, young woman, early 20s, wet glistening fingertips and wrists, dark
+brown hair in high ponytail, loose strands at nape, brown eyes, small slender
+build, white and light blue medical field vest, multiple equipment pouches,
+short trimmed nails, faint wet sheen on fingertips, kind eyes, medic
 ```
 
 ### `no-younghoon` — 노영훈 (52, 남, 협회장)
 
+**식별 포인트** — 단말기 대신 늘 손에 든 종이 문서 뭉치. 말은 흩어져도 기록은 남는다는 신념.
+
 ```
-1boy, mature male, 50s, short greying hair, dark eyes, upright posture,
-navy formal suit, tie fastened to the collar, association pin on left lapel,
-holding paper documents, minimal facial expression, composed bureaucrat
+1boy, mature male, 50s, holding thick stack of paper documents, short greying
+hair, dark eyes, upright posture, navy formal suit, tie fastened to the
+collar, association pin on left lapel, minimal facial expression, composed
+bureaucrat
 ```
 
 ### `ban-hosik` — 반호식 (39, 남, 발할라 길드장 S급)
 
+**식별 포인트** — 드러난 팔뚝과 목덜미를 덮은 겹친 흉터. 받아 저장한 타격이 몸에 남긴 이력이다.
+
 ```
-1boy, tall muscular man, late 30s, very broad shoulders, buzz cut black hair,
-dark brown eyes, deep set eyes, crooked nose bridge from old fracture,
-layered old scars on forearms and neck, rolled up sleeves,
-plain training gi top or plain t-shirt, martial artist, imposing quiet presence
+1boy, huge muscular male, 30s, dense overlapping old scars on bare forearms
+and neck, very broad shoulders, buzz cut black hair, dark brown eyes, deep set
+eyes, crooked nose bridge from old fracture, layered old scars on forearms and
+neck, rolled up sleeves, plain training gi top, martial artist, imposing quiet
+presence
 ```
 
 ### `kang-yeojin` — 강여진 (33, 여, 발할라 부길장 A급)
 
+**식별 포인트** — 손목과 발목에 늘 감긴 테이핑. 가속 반동에 관절이 먼저 나간다.
+
 ```
-1girl, athletic muscular woman, early 30s, very short black hair above nape,
-sharp dark eyes, thin scar across left eyebrow, flat unreadable expression,
-black functional combat suit, no decoration, weight slightly forward stance,
-lean toned build
+1girl, athletic female, 30s, athletic tape wrapped around wrists and ankles,
+very short black hair above nape, sharp dark eyes, thin scar across left
+eyebrow, flat unreadable expression, black functional combat suit, no
+decoration, lean toned build
 ```
 
 ### `do-jaehyeon` — 도재현 (27, 남, 발할라 길드원 B급)
 
+**식별 포인트** — 안경과 늘 짊어진 긴 봉. 명부에서 안경을 쓴 유일한 인물이다.
+
 ```
-1boy, tall slender man, late 20s, messy dark brown hair, brown eyes,
-thin framed glasses, long fingers, awkward calluses on hands,
-athletic tracksuit, holding a long metal staff, thoughtful reserved expression,
-scholar turned fighter
+1boy, tall slender male, 20s, thin round glasses, carrying long staff on back,
+messy dark brown hair, brown eyes, thin framed glasses, long fingers, awkward
+calluses on hands, athletic tracksuit, holding a long metal staff, thoughtful
+reserved expression
 ```
 
 ### `yun-seola` — 윤설아 (38, 여, 아발론 길드장 S급)
 
+**식별 포인트** — 오른쪽 눈만 홍채가 옅다. 간파를 오래 써서 색소가 빠졌다.
+
 ```
-1girl, elegant woman, late 30s, long black hair in low ponytail, dark eyes,
-impeccably neat, tailored monochrome suit or fine knit sweater, muted colors,
-thin glasses held in hand, calm measured expression, low key refined lighting,
-observant gaze directed slightly downward
+1girl, elegant female, 30s, heterochromia with pale washed-out right iris,
+long black hair in low ponytail, dark eyes, impeccably neat, tailored
+monochrome suit, muted colors, thin glasses held in hand, calm measured
+expression, observant gaze
 ```
 
 ### `cha-gyeongyun` — 차경윤 (33, 여, 아발론 부길장 A급)
 
+**식별 포인트** — 왼 손목에 겹쳐 찬 단말기 두 개. 논문과 필드를 동시에 굴리는 사람의 장비다.
+
 ```
-1girl, woman in early 30s, dark brown hair pulled back messily, grey eyes,
-sharp narrow eyes, visible fatigue, dress shirt with sleeves rolled up, no tie,
-two wrist terminals stacked on one arm, restless impatient bearing, workaholic
+1girl, sharp-eyed female, 30s, two stacked smart terminals on left wrist, grey
+eyes, sharp narrow eyes, visible fatigue, dress shirt with sleeves rolled up,
+no tie, two wrist terminals stacked on one arm, restless impatient bearing,
+workaholic
 ```
 
 ### `seo-dain` — 서다인 (23, 여, 아발론 길드원 B급)
 
+**식별 포인트** — 손등을 덮는 소매와 늘 품에 안은 두꺼운 노트. 여백까지 빼곡하다.
+
 ```
-1girl, petite young woman, early 20s, light brown hair, blunt bangs covering eyebrows,
+1girl, petite young woman, early 20s, oversized sleeves covering hands,
+clutching thick notebook, light brown hair, blunt bangs covering eyebrows,
 brown eyes, hunched posture, oversized sweater with sleeves covering hands,
-holding a densely filled notebook, ink stains on fingers, timid nervous expression
+holding a densely filled notebook, ink stains on fingers, timid nervous
+expression
 ```
 
 ### `ha-mujin` — 하무진 (37, 남, 에덴 길드장 S급)
 
+**식별 포인트** — 감정이 올라오면 세로로 좁아지는 동공, 목덜미를 따라 난 짧은 줄무늬 털.
+
 ```
-1boy, very tall broad man, late 30s, long dark hair tied loosely,
-pale amber eyes, slit pupils, thick short nails, dark fine hair on hands,
-loose simple clothing, animal ears faintly visible, tiger beastman,
-silent predatory stillness, back against a wall
+1boy, tall broad male, 30s, vertical slit pupils, short striped fur along
+nape, long dark hair tied loosely, pale amber eyes, thick short nails, loose
+simple clothing, animal ears, tiger beastman, silent predatory stillness
 ```
 
 ### `jin-seori` — 진서리 (28, 여, 에덴 부길장 A급)
 
+**식별 포인트** — 살짝 뾰족한 귀와 웃을 때 보이는 송곳니. 늑대형 수인화의 상시 흔적.
+
 ```
-1girl, lithe woman, late 20s, silver grey hair tucked behind ears,
-yellow eyes, slightly pointed wolf ears, visible canine teeth when smiling,
-neat fitted jacket over practical clothes, alert tilted head,
-socially fluent expression, wolf beastman
+1girl, lithe female, late 20s, slightly pointed ears, visible canine fangs,
+silver grey hair tucked behind ears, yellow eyes, slightly pointed wolf ears,
+visible canine teeth, neat fitted jacket over practical clothes, alert tilted
+head, wolf beastman
 ```
 
 ### `cha-noeul` — 차노을 (20, 여, 에덴 길드원 B급)
 
+**식별 포인트** — 감정에 따라 색이 번졌다 가라앉는 머리카락. 불안정 수인화가 겉으로 새는 자리다.
+
 ```
-1girl, young woman, age 20, small slight build, light brown hair with uneven fading streaks,
-amber eyes, small frame, oversized hoodie covering arms,
-short fur patches appearing at fingertips and nape, unstable transformation,
-anxious darting eyes, tense guarded posture, beastman
+1girl, petite teenager-looking woman, 20s, hair colour bleeding between
+shades, small slight build, light brown hair with uneven fading streaks, amber
+eyes, oversized hoodie covering arms, short fur patches at fingertips and
+nape, unstable transformation, anxious darting eyes, beastman
 ```
 
 ### `baek-haram` — 백하람 (34, 여, 바벨 길드장 S급)
 
+**식별 포인트** — 움직임 끝에 한 겹 늦게 따라붙는 잔상. 주변 시간이 미세하게 어긋나 있다.
+
 ```
-1girl, thin woman in mid 30s, slouched posture, messy long black hair grown out,
-dark grey half-lidded eyes, drowsy detached expression,
-thin long coat unsuited to the season, bare wrists, no watch,
-faint temporal distortion around him, understated ominous presence
+1girl, thin languid female, 30s, doubled afterimage outline, motion echo,
+messy long black hair grown out, dark grey half-lidded eyes, drowsy detached
+expression, thin long coat unsuited to the season, bare wrists, no watch,
+understated ominous presence
 ```
 
 ### `no-ganghyeon` — 노강현 (31, 남, 바벨 부길장 A급)
 
+**식별 포인트** — 목에 겹쳐 건 대여섯 개의 출입증·명찰. 창구를 혼자 다 맡은 사람의 표식.
+
 ```
-1boy, ordinary looking man, early 30s, neat black hair, dark eyes,
-plain unremarkable clothing, shoulder bag, mild pleasant expression,
-quick observant eyes, calm mediator bearing, blends into a crowd
+1boy, ordinary-looking male, 30s, six overlapping ID badges on neck lanyards,
+neat black hair, dark eyes, plain unremarkable clothing, shoulder bag, mild
+pleasant expression, quick observant eyes, calm mediator bearing
 ```
 
 ### `myeong-seogyeong` — 명서경 (26, 여, 바벨 길드원 B급)
 
+**식별 포인트** — 열 손가락 마디마다 낀 얇은 금속 밴드. 등가교환의 접촉 매개다.
+
 ```
-1girl, woman in mid 20s, black hair, dark eyes, layered monochrome clothing,
-rough worn hands, short cut nails, fiddling with a coin between fingers,
-flat expression, eyes that do not smile, appraising sidelong glance
+1girl, guarded female, 20s, thin metal bands on every finger joint, dark eyes,
+layered monochrome clothing, rough worn hands, short cut nails, fiddling with
+a coin between fingers, flat expression, eyes that do not smile, appraising
+sidelong glance
 ```
 
 ## 배경판 6종

@@ -104,91 +104,91 @@
     "shim-gaeul": {
       "ko": "심가을",
       "seed": 110001,
-      "tags": "1girl, mature female, 40s, short black hair with grey streaks, dark brown eyes, tired eyes with dark circles, sharp alert gaze, old scars on hands and wrists, dark grey field jacket, association badge, measuring terminal hanging from neck, practical utilitarian clothing, no makeup, weathered competent look",
+      "tags": "1girl, mature female, 40s, glowing measurement device on neck strap, short black hair with grey streaks, dark brown eyes, tired eyes with dark circles, sharp alert gaze, old scars on hands and wrists, dark grey field jacket, association badge, measuring terminal hanging from neck, practical utilitarian clothing, no makeup, weathered competent look",
       "loras": []
     },
     "ju-habin": {
       "ko": "주하빈",
       "seed": 110002,
-      "tags": "1girl, young woman, early 20s, dark brown hair in high ponytail, loose strands at nape, brown eyes, small slender build, white and light blue medical field vest, multiple equipment pouches, short trimmed nails, faint wet sheen on fingertips, kind eyes, medic",
+      "tags": "1girl, young woman, early 20s, wet glistening fingertips and wrists, dark brown hair in high ponytail, loose strands at nape, brown eyes, small slender build, white and light blue medical field vest, multiple equipment pouches, short trimmed nails, faint wet sheen on fingertips, kind eyes, medic",
       "loras": []
     },
     "no-younghoon": {
       "ko": "노영훈",
       "seed": 110003,
-      "tags": "1boy, mature male, 50s, short greying hair, dark eyes, upright posture, navy formal suit, tie fastened to the collar, association pin on left lapel, holding paper documents, minimal facial expression, composed bureaucrat",
+      "tags": "1boy, mature male, 50s, holding thick stack of paper documents, short greying hair, dark eyes, upright posture, navy formal suit, tie fastened to the collar, association pin on left lapel, minimal facial expression, composed bureaucrat",
       "loras": []
     },
     "ban-hosik": {
       "ko": "반호식",
       "seed": 110004,
-      "tags": "1boy, tall muscular man, late 30s, very broad shoulders, buzz cut black hair, dark brown eyes, deep set eyes, crooked nose bridge from old fracture, layered old scars on forearms and neck, rolled up sleeves, plain training gi top, martial artist, imposing quiet presence",
+      "tags": "1boy, huge muscular male, 30s, dense overlapping old scars on bare forearms and neck, very broad shoulders, buzz cut black hair, dark brown eyes, deep set eyes, crooked nose bridge from old fracture, layered old scars on forearms and neck, rolled up sleeves, plain training gi top, martial artist, imposing quiet presence",
       "loras": []
     },
     "kang-yeojin": {
       "ko": "강여진",
       "seed": 110005,
-      "tags": "1girl, athletic muscular woman, early 30s, very short black hair above nape, sharp dark eyes, thin scar across left eyebrow, flat unreadable expression, black functional combat suit, no decoration, lean toned build",
+      "tags": "1girl, athletic female, 30s, athletic tape wrapped around wrists and ankles, very short black hair above nape, sharp dark eyes, thin scar across left eyebrow, flat unreadable expression, black functional combat suit, no decoration, lean toned build",
       "loras": []
     },
     "do-jaehyeon": {
       "ko": "도재현",
       "seed": 110006,
-      "tags": "1boy, tall slender man, late 20s, messy dark brown hair, brown eyes, thin framed glasses, long fingers, awkward calluses on hands, athletic tracksuit, holding a long metal staff, thoughtful reserved expression",
+      "tags": "1boy, tall slender male, 20s, thin round glasses, carrying long staff on back, messy dark brown hair, brown eyes, thin framed glasses, long fingers, awkward calluses on hands, athletic tracksuit, holding a long metal staff, thoughtful reserved expression",
       "loras": []
     },
     "yun-seola": {
       "ko": "윤설아",
       "seed": 110007,
-      "tags": "1girl, elegant woman, late 30s, long black hair in low ponytail, dark eyes, impeccably neat, tailored monochrome suit, muted colors, thin glasses held in hand, calm measured expression, observant gaze",
+      "tags": "1girl, elegant female, 30s, heterochromia with pale washed-out right iris, long black hair in low ponytail, dark eyes, impeccably neat, tailored monochrome suit, muted colors, thin glasses held in hand, calm measured expression, observant gaze",
       "loras": []
     },
     "cha-gyeongyun": {
       "ko": "차경윤",
       "seed": 110008,
-      "tags": "1girl, woman in early 30s, dark brown hair pulled back messily, grey eyes, sharp narrow eyes, visible fatigue, dress shirt with sleeves rolled up, no tie, two wrist terminals stacked on one arm, restless impatient bearing, workaholic",
+      "tags": "1girl, sharp-eyed female, 30s, two stacked smart terminals on left wrist, grey eyes, sharp narrow eyes, visible fatigue, dress shirt with sleeves rolled up, no tie, two wrist terminals stacked on one arm, restless impatient bearing, workaholic",
       "loras": []
     },
     "seo-dain": {
       "ko": "서다인",
       "seed": 110009,
-      "tags": "1girl, petite young woman, early 20s, light brown hair, blunt bangs covering eyebrows, brown eyes, hunched posture, oversized sweater with sleeves covering hands, holding a densely filled notebook, ink stains on fingers, timid nervous expression",
+      "tags": "1girl, petite young woman, early 20s, oversized sleeves covering hands, clutching thick notebook, light brown hair, blunt bangs covering eyebrows, brown eyes, hunched posture, oversized sweater with sleeves covering hands, holding a densely filled notebook, ink stains on fingers, timid nervous expression",
       "loras": []
     },
     "ha-mujin": {
       "ko": "하무진",
       "seed": 110010,
-      "tags": "1boy, very tall broad man, late 30s, long dark hair tied loosely, pale amber eyes, slit pupils, thick short nails, loose simple clothing, animal ears, tiger beastman, silent predatory stillness",
+      "tags": "1boy, tall broad male, 30s, vertical slit pupils, short striped fur along nape, long dark hair tied loosely, pale amber eyes, thick short nails, loose simple clothing, animal ears, tiger beastman, silent predatory stillness",
       "loras": []
     },
     "jin-seori": {
       "ko": "진서리",
       "seed": 110011,
-      "tags": "1girl, lithe woman, late 20s, silver grey hair tucked behind ears, yellow eyes, slightly pointed wolf ears, visible canine teeth, neat fitted jacket over practical clothes, alert tilted head, wolf beastman",
+      "tags": "1girl, lithe female, late 20s, slightly pointed ears, visible canine fangs, silver grey hair tucked behind ears, yellow eyes, slightly pointed wolf ears, visible canine teeth, neat fitted jacket over practical clothes, alert tilted head, wolf beastman",
       "loras": []
     },
     "cha-noeul": {
       "ko": "차노을",
       "seed": 110012,
-      "tags": "1girl, young woman, age 20, small slight build, light brown hair with uneven fading streaks, amber eyes, oversized hoodie covering arms, short fur patches at fingertips and nape, unstable transformation, anxious darting eyes, beastman",
+      "tags": "1girl, petite young woman, 20s, hair colour bleeding between shades, small slight build, light brown hair with uneven fading streaks, amber eyes, oversized hoodie covering arms, short fur patches at fingertips and nape, unstable transformation, anxious darting eyes, beastman",
       "loras": []
     },
     "baek-haram": {
       "ko": "백하람",
       "seed": 110013,
-      "tags": "1girl, thin woman in mid 30s, slouched posture, messy long black hair grown out, dark grey half-lidded eyes, drowsy detached expression, thin long coat unsuited to the season, bare wrists, no watch, understated ominous presence",
+      "tags": "1girl, thin languid female, 30s, doubled afterimage outline, motion echo, messy long black hair grown out, dark grey half-lidded eyes, drowsy detached expression, thin long coat unsuited to the season, bare wrists, no watch, understated ominous presence",
       "loras": []
     },
     "no-ganghyeon": {
       "ko": "노강현",
       "seed": 110014,
-      "tags": "1boy, ordinary looking man, early 30s, neat black hair, dark eyes, plain unremarkable clothing, shoulder bag, mild pleasant expression, quick observant eyes, calm mediator bearing",
+      "tags": "1boy, ordinary-looking male, 30s, six overlapping ID badges on neck lanyards, neat black hair, dark eyes, plain unremarkable clothing, shoulder bag, mild pleasant expression, quick observant eyes, calm mediator bearing",
       "loras": []
     },
     "myeong-seogyeong": {
       "ko": "명서경",
       "seed": 110015,
-      "tags": "1girl, woman in mid 20s, black hair, dark eyes, layered monochrome clothing, rough worn hands, short cut nails, fiddling with a coin between fingers, flat expression, eyes that do not smile, appraising sidelong glance",
+      "tags": "1girl, guarded female, 20s, thin metal bands on every finger joint, dark eyes, layered monochrome clothing, rough worn hands, short cut nails, fiddling with a coin between fingers, flat expression, eyes that do not smile, appraising sidelong glance",
       "loras": []
     }
   },
