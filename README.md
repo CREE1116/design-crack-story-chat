@@ -98,6 +98,7 @@ examples/hunter/                  실제 작동하는 예제 (한국 헌터물, 
 
 tools/imagegen/                   이미지 배치 생성 도구
   batch.py                        A1111 WebUI · ComfyUI 양쪽 지원
+  deploy.py                       깃헙+jsDelivr 배포, 축 계약 검사
   mock_a1111.py · mock_server.py  GPU 없이 검증하는 목 서버
 
 docs/                             문서
@@ -158,6 +159,15 @@ python batch.py --only ju-habin        # 인물 하나만
 ```
 
 A1111 WebUI와 ComfyUI를 모두 지원하며 `--backend`로 전환합니다. GPU가 없어도 목 서버로 전체 경로를 검증할 수 있습니다.
+
+완성한 이미지는 `deploy.py`가 전용 깃헙 저장소로 올리고 jsDelivr CDN 주소를 만들어 줍니다. 직접 그린 그림도 폴더 구조만 맞추면 됩니다.
+
+```bash
+python deploy.py --check                          # 축 목록 대비 검사
+python deploy.py --repo 계정/이미지저장소 --create  # 배포하고 {IMG} 주소 출력
+```
+
+올리기 전에 **축의 닫힌 목록과 실제 파일 이름이 일치하는지 검사**합니다. 한 글자만 달라도 영원히 깨진 링크가 되는데, 플레이 중에는 그냥 이미지가 안 뜨는 것으로만 보여서 원인을 찾기 어렵기 때문입니다.
 
 자세한 내용은 [docs/image-assets.md](docs/image-assets.md)에 있습니다.
 

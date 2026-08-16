@@ -164,3 +164,51 @@ python batch.py --only ju-habin --situations normal --no-scenes --no-monsters --
 두 모의 서버로 확인한 것: 자산 목록 읽기, 오타 시 유사 이름 제안, LoRA 전달(A1111은 `<lora:>` 프롬프트 문법, ComfyUI는 노드 체인), 생성→저장, 경로·해상도, 학습셋·배경판·범람체 모드, 재실행 시 건너뛰기, dry-run이 파일을 만들지 않는 것, 서버 꺼졌을 때 오류 메시지, `--backend` 전환.
 
 **진짜 WebUI로는 테스트하지 못했다.** 모의 서버는 응답 형태를 재현한 것이지 실물이 아니다. 처음에는 `--only ju-habin --situations normal` 로 한 장만 돌려 보길 권한다. 실패하면 `--list-models` 로 이름 체계부터 확인하는 게 빠르다.
+
+## 배포 — `deploy.py`
+
+생성한 이미지를 전용 깃헙 저장소에 올리고 jsDelivr CDN 주소를 만들어 준다. 통합 프롬프트의 `{IMG}`에 넣을 기준 주소를 마지막에 출력한다.
+
+```bash
+python deploy.py --check                              검사만
+python deploy.py --dry-run --repo 계정/이미지저장소     계획만 출력
+python deploy.py --repo 계정/이미지저장소 --create      저장소 만들고 배포
+python deploy.py --tag v2                             태그를 찍어 캐시 지연 없이 배포
+python deploy.py --verify                             배포 후 주소가 열리는지 확인
+```
+
+저장소를 매번 적기 싫으면 `prompts.json`의 `deploy.repo`에 넣어두면 된다.
+
+### 올리기 전에 검사한다
+
+프롬프트는 축의 **닫힌 목록**을 싣고 모델은 그 안에서만 슬러그를 조합한다. 파일 이름이 한 글자라도 다르면 그 조합은 영원히 깨진 링크이고, 플레이 중에는 그냥 이미지가 안 뜨는 것으로만 보여서 원인을 찾기 어렵다. 그래서 업로드 전에 막는다.
+
+- **목록에 없는 슬러그의 파일 → 중단.** 오타이거나 축 목록이 낡았다.
+- **목록에 있는데 없는 파일 → 통과.** 부분 커버리지는 정상 상태다. 프롬프트가 "조합이 없으면 그 자리만 생략"을 이미 규정한다.
+- 과도하게 큰 파일 → 경고 또는 중단.
+
+```
+## 커버리지  (out)
+  인물        12/90  ← 78장 없음
+  scene      6/6
+
+## 목록에 없는 파일 1개 — 슬러그 오타이거나 축 목록이 낡았다
+  X scene/hq-loby.png
+```
+
+### 폴더 구조
+
+`batch.py`의 출력 구조를 그대로 쓴다. 직접 그린 이미지를 올릴 때도 이 구조를 지키면 된다.
+
+```
+out/<인물>/<상황>.png      out/ju-habin/combat.png
+out/scene/<장면>.png       out/scene/hq-lobby.png
+out/bg/<배경>.png          out/bg/city-night.png
+out/mob/<위협>.png         out/mob/swarm.png
+```
+
+### 캐시
+
+jsDelivr는 브랜치 주소를 최대 12시간 캐시한다. 이미지를 갈아끼운 뒤 즉시 반영하려면 `--tag v2`처럼 새 태그를 쓴다. 태그 주소는 불변이라 영구 캐시되고 지연이 없다.
+
+jsDelivr는 **공개 저장소만** 서빙한다. 비공개로 두려면 다른 호스팅이 필요하다.

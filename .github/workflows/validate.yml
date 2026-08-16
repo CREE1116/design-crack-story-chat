@@ -37,5 +37,26 @@ jobs:
           python batch.py --dry-run --only ju-habin --situations normal \
             --no-scenes --no-monsters --no-backgrounds
 
+      - name: 이미지 배포 검사기 — 오타 슬러그를 잡는지
+        run: |
+          cd tools/imagegen
+          python - <<'EOF'
+          import json, pathlib, struct, zlib
+          cfg = json.load(open("prompts.json", encoding="utf-8"))
+          def png():
+              raw = b"".join(b"\x00" + bytes((120,120,120))*8 for _ in range(8))
+              ch = lambda t,d: struct.pack(">I",len(d))+t+d+struct.pack(">I",zlib.crc32(t+d)&0xFFFFFFFF)
+              return (b"\x89PNG\r\n\x1a\n"+ch(b"IHDR",struct.pack(">IIBBBBB",8,8,8,2,0,0,0))
+                      +ch(b"IDAT",zlib.compress(raw,6))+ch(b"IEND",b""))
+          root = pathlib.Path("out")
+          for name in cfg["scenes"]:
+              f = root/"scene"/f"{name}.png"; f.parent.mkdir(parents=True, exist_ok=True)
+              f.write_bytes(png())
+          EOF
+          python deploy.py --check
+          cp out/scene/*.png out/scene/definitely-not-a-slug.png
+          if python deploy.py --check; then echo "검사기가 오타 슬러그를 놓쳤다"; exit 1; fi
+          echo "배포 검사기 음성 대조 통과"
+
       - name: .skill 패키지 빌드
         run: ./scripts/build-skill.sh

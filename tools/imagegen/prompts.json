@@ -384,5 +384,10 @@
     "upper body, arms crossed, confident expression, cool lighting",
     "portrait, eyes closed, calm, warm light",
     "upper body, mid gesture, talking, natural lighting"
-  ]
+  ],
+  "deploy": {
+    "_note": "이미지 배포 설정. deploy.py가 읽는다. jsDelivr는 공개 저장소만 서빙한다.",
+    "repo": "",
+    "ref": "main"
+  }
 }
