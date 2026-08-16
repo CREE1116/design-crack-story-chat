@@ -185,6 +185,7 @@ World systems, where the premise defines them:
 - The status block's job is decided explicitly: a decorative recap may be omitted when empty, while a continuity carrier is emitted every response with unchanged fields inherited verbatim.
 - No mandatory output block exists only inside an `출력 예` / example region; every required block has its own section stating the requirement and holding the fill-in template.
 - Any always-on output requirement that must hold from the first response is also restated in one line in the start prompt, so a detailed opening procedure cannot outrank it.
+- The output contract **bans enumerated choice menus explicitly** and names what replaces them. Merely permitting decision points "when needed" reads as permission, and within a few turns every response ends in a numbered list. Where a work deliberately uses menus, options state the action only — a parenthetical gloss on each option assigns the player's motive and is an agency violation regardless of format.
 - Response length has a stated target and ceiling, measured on the body excluding the status block.
 - Player-visible output cannot contain production vocabulary: the prompt's own abbreviations, section names, `OOC`, variant names, or an invented label above a required block.
 - Every emoji and symbol in the status block has a meaning defined in the prompt; none was carried over from a reference format without being re-derived.
