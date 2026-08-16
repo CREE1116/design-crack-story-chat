@@ -1,0 +1,4 @@
+interface:
+  display_name: "크랙 스토리챗 설계"
+  short_description: "2개 원본→5개 최종 산출물 크랙 스토리챗 설계"
+  default_prompt: "Use $design-crack-story-chat to author only story.md and characters.md, then compile exactly five final artifacts: prologue, safe integrated prompt, unsafe integrated prompt, start prompt, and keyword-book sheet. Put system prompts only in the final build."

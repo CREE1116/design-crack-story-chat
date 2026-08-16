@@ -1,0 +1,41 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 검증 스크립트 문법 확인
+        run: python -m compileall -q skills/design-crack-story-chat/scripts tools/imagegen
+
+      - name: 예제 프로젝트 검증
+        run: ./scripts/validate.sh examples/hunter
+
+      - name: 음성 대조 — 미정의 기호가 실제로 잡히는지
+        run: |
+          S=skills/design-crack-story-chat/scripts
+          sed 's/^# 세션 목표/# 세션 목표\nⓝ ⇒ 🦊/' \
+            examples/hunter/build/integrated-prompt-safe.md > /tmp/negative.md
+          if python3 $S/check_symbols.py /tmp/negative.md; then
+            echo "검사기가 미정의 기호를 놓쳤다"; exit 1
+          fi
+          echo "음성 대조 통과"
+
+      - name: 이미지 도구 — 목 서버로 왕복 확인
+        run: |
+          cd tools/imagegen
+          python mock_a1111.py & sleep 2
+          python batch.py --check
+          python batch.py --dry-run --only ju-habin --situations normal \
+            --no-scenes --no-monsters --no-backgrounds
+
+      - name: .skill 패키지 빌드
+        run: ./scripts/build-skill.sh

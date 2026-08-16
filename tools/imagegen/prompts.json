@@ -1,0 +1,388 @@
+{
+  "_readme": "값을 고쳐서 쓰는 설정 파일. backend는 a1111 또는 comfy. checkpoint/loras는 해당 백엔드에 실제로 설치된 파일명과 정확히 일치해야 한다. quality_preset은 체크포인트 이름이 아니라 계열(illustrious/pony/plain)로 고른다.",
+  "config": {
+    "server": "127.0.0.1:7860",
+    "checkpoint": "illustriousXL_v01.safetensors",
+    "quality_preset": "illustrious",
+    "steps": 28,
+    "cfg": 5.0,
+    "sampler": "Euler a",
+    "scheduler": "Automatic",
+    "loras": [],
+    "output_dir": "out",
+    "style_preset": "webtoon",
+    "dataset_count": 24,
+    "backend": "a1111",
+    "backend_defaults": {
+      "a1111": {
+        "server": "127.0.0.1:7860",
+        "sampler": "Euler a",
+        "scheduler": "Automatic"
+      },
+      "comfy": {
+        "server": "127.0.0.1:8188",
+        "sampler": "euler_ancestral",
+        "scheduler": "normal"
+      }
+    }
+  },
+  "quality_presets": {
+    "illustrious": {
+      "prefix": "masterpiece, best quality, amazing quality, very aesthetic, absurdres, highly detailed",
+      "negative_extra": ""
+    },
+    "pony": {
+      "prefix": "score_9, score_8_up, score_7_up, masterpiece, best quality, absurdres, highly detailed",
+      "negative_extra": "score_4, score_5, score_6"
+    },
+    "plain": {
+      "prefix": "masterpiece, best quality, highly detailed",
+      "negative_extra": ""
+    }
+  },
+  "common": {
+    "character_suffix": "solo, looking at viewer, simple background, dark grey background, subtle vignette",
+    "scene_suffix": "no humans, empty scene, environmental concept art",
+    "negative": "worst quality, low quality, normal quality, lowres, jpeg artifacts, blurry, bad anatomy, bad hands, missing fingers, extra digits, fewer digits, extra limbs, watermark, signature, artist name, text, speech bubble, logo, multiple views, 2girls, 2boys, child, loli, shota, western comic style, 3d, photorealistic",
+    "scene_negative_extra": "1girl, 1boy, person, human, face, portrait",
+    "monster_suffix": "no humans, creature concept art, dark urban background, dramatic rim lighting",
+    "monster_negative_extra": "1girl, 1boy, person, human face, cute, chibi",
+    "background_suffix": "no humans, empty establishing shot, wide angle, background plate, low contrast, muted desaturated tones, uncluttered composition, negative space in the center, soft depth of field, no focal subject",
+    "background_negative_extra": "1girl, 1boy, person, human, face, portrait, text, busy composition, high contrast, harsh highlights"
+  },
+  "situations": {
+    "normal": {
+      "ko": "평상",
+      "size": [
+        832,
+        1216
+      ],
+      "tags": "upper body, relaxed posture, calm expression, neutral gaze, soft even lighting, standing naturally, arms relaxed"
+    },
+    "serious": {
+      "ko": "경계",
+      "size": [
+        832,
+        1216
+      ],
+      "tags": "upper body, slight low angle, narrowed eyes, tense jaw, serious expression, alert posture, hard directional lighting, cool color grading"
+    },
+    "combat": {
+      "ko": "전투",
+      "size": [
+        832,
+        1216
+      ],
+      "tags": "full body, dynamic action pose, mid-motion, foreshortening, intense expression, hair and clothes in motion, dramatic rim lighting, high contrast, debris in air"
+    },
+    "hurt": {
+      "ko": "부상",
+      "size": [
+        896,
+        1152
+      ],
+      "tags": "medium close-up, low angle, leaning against wall or kneeling, labored breathing, sweat, dirt smudges, torn clothing, pained expression, half-lidded eyes, dim desaturated lighting"
+    },
+    "soft": {
+      "ko": "이완",
+      "size": [
+        1024,
+        1024
+      ],
+      "tags": "bust shot, close framing, gentle expression, slight smile, softened eyes, relaxed shoulders, warm soft lighting, shallow depth of field, warm color grading"
+    },
+    "guard": {
+      "ko": "적대",
+      "size": [
+        832,
+        1216
+      ],
+      "tags": "upper body, slightly turned away, cold stare, closed-off body language, arms crossed, chin lowered, harsh side lighting, deep shadows, desaturated cool tones"
+    }
+  },
+  "characters": {
+    "shim-gaeul": {
+      "ko": "심가을",
+      "seed": 110001,
+      "tags": "1girl, mature female, 40s, short black hair with grey streaks, dark brown eyes, tired eyes with dark circles, sharp alert gaze, old scars on hands and wrists, dark grey field jacket, association badge, measuring terminal hanging from neck, practical utilitarian clothing, no makeup, weathered competent look",
+      "loras": []
+    },
+    "ju-habin": {
+      "ko": "주하빈",
+      "seed": 110002,
+      "tags": "1girl, young woman, early 20s, dark brown hair in high ponytail, loose strands at nape, brown eyes, small slender build, white and light blue medical field vest, multiple equipment pouches, short trimmed nails, faint wet sheen on fingertips, kind eyes, medic",
+      "loras": []
+    },
+    "no-younghoon": {
+      "ko": "노영훈",
+      "seed": 110003,
+      "tags": "1boy, mature male, 50s, short greying hair, dark eyes, upright posture, navy formal suit, tie fastened to the collar, association pin on left lapel, holding paper documents, minimal facial expression, composed bureaucrat",
+      "loras": []
+    },
+    "ban-hosik": {
+      "ko": "반호식",
+      "seed": 110004,
+      "tags": "1boy, tall muscular man, late 30s, very broad shoulders, buzz cut black hair, dark brown eyes, deep set eyes, crooked nose bridge from old fracture, layered old scars on forearms and neck, rolled up sleeves, plain training gi top, martial artist, imposing quiet presence",
+      "loras": []
+    },
+    "kang-yeojin": {
+      "ko": "강여진",
+      "seed": 110005,
+      "tags": "1girl, athletic muscular woman, early 30s, very short black hair above nape, sharp dark eyes, thin scar across left eyebrow, flat unreadable expression, black functional combat suit, no decoration, lean toned build",
+      "loras": []
+    },
+    "do-jaehyeon": {
+      "ko": "도재현",
+      "seed": 110006,
+      "tags": "1boy, tall slender man, late 20s, messy dark brown hair, brown eyes, thin framed glasses, long fingers, awkward calluses on hands, athletic tracksuit, holding a long metal staff, thoughtful reserved expression",
+      "loras": []
+    },
+    "yun-seola": {
+      "ko": "윤설아",
+      "seed": 110007,
+      "tags": "1girl, elegant woman, late 30s, long black hair in low ponytail, dark eyes, impeccably neat, tailored monochrome suit, muted colors, thin glasses held in hand, calm measured expression, observant gaze",
+      "loras": []
+    },
+    "cha-gyeongyun": {
+      "ko": "차경윤",
+      "seed": 110008,
+      "tags": "1girl, woman in early 30s, dark brown hair pulled back messily, grey eyes, sharp narrow eyes, visible fatigue, dress shirt with sleeves rolled up, no tie, two wrist terminals stacked on one arm, restless impatient bearing, workaholic",
+      "loras": []
+    },
+    "seo-dain": {
+      "ko": "서다인",
+      "seed": 110009,
+      "tags": "1girl, petite young woman, early 20s, light brown hair, blunt bangs covering eyebrows, brown eyes, hunched posture, oversized sweater with sleeves covering hands, holding a densely filled notebook, ink stains on fingers, timid nervous expression",
+      "loras": []
+    },
+    "ha-mujin": {
+      "ko": "하무진",
+      "seed": 110010,
+      "tags": "1boy, very tall broad man, late 30s, long dark hair tied loosely, pale amber eyes, slit pupils, thick short nails, loose simple clothing, animal ears, tiger beastman, silent predatory stillness",
+      "loras": []
+    },
+    "jin-seori": {
+      "ko": "진서리",
+      "seed": 110011,
+      "tags": "1girl, lithe woman, late 20s, silver grey hair tucked behind ears, yellow eyes, slightly pointed wolf ears, visible canine teeth, neat fitted jacket over practical clothes, alert tilted head, wolf beastman",
+      "loras": []
+    },
+    "cha-noeul": {
+      "ko": "차노을",
+      "seed": 110012,
+      "tags": "1girl, young woman, age 20, small slight build, light brown hair with uneven fading streaks, amber eyes, oversized hoodie covering arms, short fur patches at fingertips and nape, unstable transformation, anxious darting eyes, beastman",
+      "loras": []
+    },
+    "baek-haram": {
+      "ko": "백하람",
+      "seed": 110013,
+      "tags": "1girl, thin woman in mid 30s, slouched posture, messy long black hair grown out, dark grey half-lidded eyes, drowsy detached expression, thin long coat unsuited to the season, bare wrists, no watch, understated ominous presence",
+      "loras": []
+    },
+    "no-ganghyeon": {
+      "ko": "노강현",
+      "seed": 110014,
+      "tags": "1boy, ordinary looking man, early 30s, neat black hair, dark eyes, plain unremarkable clothing, shoulder bag, mild pleasant expression, quick observant eyes, calm mediator bearing",
+      "loras": []
+    },
+    "myeong-seogyeong": {
+      "ko": "명서경",
+      "seed": 110015,
+      "tags": "1girl, woman in mid 20s, black hair, dark eyes, layered monochrome clothing, rough worn hands, short cut nails, fiddling with a coin between fingers, flat expression, eyes that do not smile, appraising sidelong glance",
+      "loras": []
+    }
+  },
+  "scenes": {
+    "hq-lobby": {
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "modern government building interior, wide registration floor, numbered ticket display board, queue barriers, reception counters, fluorescent lighting, pale institutional palette, glass partition wall, near future korea",
+      "seed": 220000
+    },
+    "hq-exterior": {
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "modern korean city street, large government building facade, seoul gangnam district, morning light, spring, subway exit in foreground, wide establishing shot",
+      "seed": 220001
+    },
+    "measure-room": {
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "small clinical measurement room, large cylindrical scanning apparatus, cables and monitors, calibration markings on floor, cold blue instrument glow, sterile white walls",
+      "seed": 220002
+    },
+    "guild-booths": {
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "four consultation booths in a row behind glass, dark red booth, navy blue booth, deep green booth, one unpainted plain booth, banner stands, indirect lighting",
+      "seed": 220003
+    },
+    "gate-site": {
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "dimensional rift hovering above ground, cordon tape and barriers, measuring equipment on tripods, warning lights, urban street sealed off, faint distortion, overcast",
+      "seed": 220004
+    },
+    "overflow": {
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "dimensional rift violently unstable, cracks spreading in air, overturned barriers, emergency lights, smoke and dust, debris, red warning glow, damaged street, high contrast",
+      "seed": 220005
+    }
+  },
+  "monsters": {
+    "swarm": {
+      "ko": "군체",
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "swarm of small dark creatures, dozens of them, low crouching bodies, glowing pale eyes, spilling through a narrow gap, chitinous limbs, faint mana glow, motion blur, overwhelming numbers",
+      "seed": 330000
+    },
+    "beast": {
+      "ko": "수형",
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "large quadruped monster, beast form, lean muscular body, elongated skull, no visible eyes, charging forward, foreshortening, dark hide with faint glowing seams",
+      "seed": 330001
+    },
+    "shell": {
+      "ko": "갑각",
+      "size": [
+        832,
+        1216
+      ],
+      "tags": "heavily armored monster, thick segmented carapace, slow hulking posture, plated shoulders, narrow joint gaps glowing faintly, imposing bulk",
+      "seed": 330002
+    },
+    "drift": {
+      "ko": "부유",
+      "size": [
+        1216,
+        832
+      ],
+      "tags": "floating airborne creature, hovering above the ground, trailing membranes, no legs, faint gravitational distortion beneath it, drifting silently, backlit",
+      "seed": 330003
+    },
+    "mimic": {
+      "ko": "의태",
+      "size": [
+        832,
+        1216
+      ],
+      "tags": "humanoid silhouette that is subtly wrong, proportions slightly off, blank featureless face partially formed, standing still among ordinary objects, unsettling stillness, uncanny",
+      "seed": 330004
+    },
+    "core": {
+      "ko": "핵",
+      "size": [
+        832,
+        1216
+      ],
+      "tags": "massive core entity, dense concentration of mana given form, multiple asymmetric limbs, glowing central mass, reality distorting around it, overwhelming scale, apex threat",
+      "seed": 330005
+    }
+  },
+  "style_presets": {
+    "webtoon": {
+      "ko": "한국 웹툰체 (기본)",
+      "tags": "korean webtoon style, clean lineart, cel shading with soft gradients, muted desaturated palette with one accent color, modern urban fantasy, cinematic lighting, detailed face, detailed eyes, sharp focus",
+      "negative_extra": "sketch, unfinished, rough lines"
+    },
+    "anime": {
+      "ko": "애니메이션풍",
+      "tags": "anime screencap style, crisp cel shading, vivid but controlled colors, modern urban fantasy, dramatic key lighting, detailed face, detailed eyes",
+      "negative_extra": "realistic, 3d render"
+    },
+    "semireal": {
+      "ko": "반실사",
+      "tags": "semi realistic illustration, painterly rendering, subtle skin texture, muted cinematic color grading, modern urban fantasy, volumetric lighting, detailed face, detailed eyes",
+      "negative_extra": "flat colors, cel shading, cartoon"
+    }
+  },
+  "backgrounds": {
+    "city-day": {
+      "ko": "서울 주간",
+      "size": [
+        1536,
+        640
+      ],
+      "tags": "seoul cityscape by day, mid rise buildings, overcast sky, a faint dimensional rift visible far in the distance, hazy atmospheric depth",
+      "seed": 440000
+    },
+    "city-night": {
+      "ko": "서울 야경",
+      "size": [
+        1536,
+        640
+      ],
+      "tags": "seoul cityscape at night, scattered window lights, wet asphalt reflections, distant rift glow on the horizon, deep blue tones",
+      "seed": 440001
+    },
+    "hq-wide": {
+      "ko": "협회 본부",
+      "size": [
+        1536,
+        640
+      ],
+      "tags": "wide interior of a modern government building atrium, high ceiling, glass partitions, empty corridor, cold institutional lighting",
+      "seed": 440002
+    },
+    "gate-far": {
+      "ko": "게이트 원경",
+      "size": [
+        1536,
+        640
+      ],
+      "tags": "dimensional rift seen from far outside a cordon, floodlights and barriers in the mid ground, empty sealed street, overcast dusk",
+      "seed": 440003
+    },
+    "dungeon": {
+      "ko": "던전 내부",
+      "size": [
+        1536,
+        640
+      ],
+      "tags": "interior of an otherworldly dungeon, irregular stone and crystalline growth, faint ambient mana glow from the walls, long empty corridor receding into darkness",
+      "seed": 440004
+    },
+    "aftermath": {
+      "ko": "범람 후",
+      "size": [
+        1536,
+        640
+      ],
+      "tags": "damaged city street after an incident, overturned barriers, scattered debris, thin smoke, emergency lights in the distance, grey overcast",
+      "seed": 440005
+    }
+  },
+  "dataset_variations": [
+    "upper body, front view, neutral expression, even lighting",
+    "upper body, three quarter view, slight smile, soft side lighting",
+    "bust shot, looking away, calm expression, window light",
+    "upper body, profile view, serious expression, rim lighting",
+    "portrait, close up, direct gaze, flat studio lighting",
+    "upper body, slight low angle, chin raised, dramatic lighting",
+    "upper body, slight high angle, looking down, soft overhead light",
+    "bust shot, three quarter back view, head turned toward viewer",
+    "full body, standing, relaxed pose, plain background",
+    "upper body, arms crossed, confident expression, cool lighting",
+    "portrait, eyes closed, calm, warm light",
+    "upper body, mid gesture, talking, natural lighting"
+  ]
+}
