@@ -14,7 +14,7 @@ jobs:
           python-version: "3.11"
 
       - name: 검증 스크립트 문법 확인
-        run: python -m compileall -q skills/design-crack-story-chat/scripts tools/imagegen
+        run: python -m compileall -q skills/design-crack-story-chat/scripts tools/images
 
       - name: 예제 프로젝트 검증
         run: ./scripts/validate.sh examples/hunter
@@ -29,18 +29,9 @@ jobs:
           fi
           echo "음성 대조 통과"
 
-      - name: 이미지 도구 — 목 서버로 왕복 확인
-        run: |
-          cd tools/imagegen
-          export CRACK_PROMPTS=$PWD/../../examples/hunter/build/assets/prompts.json
-          python mock_a1111.py & sleep 2
-          python batch.py --check
-          python batch.py --dry-run --only ju-habin --situations normal \
-            --no-scenes --no-monsters --no-backgrounds
-
       - name: 이미지 배포 검사기 — 오타 슬러그를 잡는지
         run: |
-          cd tools/imagegen
+          cd tools/images
           export CRACK_PROMPTS=$PWD/../../examples/hunter/build/assets/prompts.json
           python - <<'EOF'
           import json, os, pathlib, struct, zlib
@@ -55,9 +46,9 @@ jobs:
               f = root/"scene"/f"{name}.png"; f.parent.mkdir(parents=True, exist_ok=True)
               f.write_bytes(png())
           EOF
-          python deploy.py --check
+          python deploy.py --check --root out
           cp out/scene/*.png out/scene/definitely-not-a-slug.png
-          if python deploy.py --check; then echo "검사기가 오타 슬러그를 놓쳤다"; exit 1; fi
+          if python deploy.py --check --root out; then echo "검사기가 오타 슬러그를 놓쳤다"; exit 1; fi
           echo "배포 검사기 음성 대조 통과"
 
       - name: 신선도 검사 — 원본을 고치면 잡는지

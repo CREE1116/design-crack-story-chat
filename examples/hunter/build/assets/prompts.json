@@ -1,30 +1,8 @@
 {
-  "_readme": "값을 고쳐서 쓰는 설정 파일. backend는 a1111 또는 comfy. checkpoint/loras는 해당 백엔드에 실제로 설치된 파일명과 정확히 일치해야 한다. quality_preset은 체크포인트 이름이 아니라 계열(illustrious/pony/plain)로 고른다.",
+  "_readme": "이미지 프롬프트. 컴파일이 생성하므로 직접 고치지 않는다 — 외형은 characters.md 에서 파생된다. quality_presets 는 모델 계열별 관용 프리픽스이며 쓰는 도구의 계열에 맞는 것을 앞에 붙인다. 축 목록(characters·situations·scenes·backgrounds·monsters)은 통합 프롬프트의 닫힌 목록과 같아야 한다.",
   "config": {
-    "server": "127.0.0.1:7860",
-    "checkpoint": "illustriousXL_v01.safetensors",
-    "quality_preset": "illustrious",
-    "steps": 28,
-    "cfg": 5.0,
-    "sampler": "Euler a",
-    "scheduler": "Automatic",
-    "loras": [],
     "output_dir": "out",
-    "style_preset": "webtoon",
-    "dataset_count": 24,
-    "backend": "a1111",
-    "backend_defaults": {
-      "a1111": {
-        "server": "127.0.0.1:7860",
-        "sampler": "Euler a",
-        "scheduler": "Automatic"
-      },
-      "comfy": {
-        "server": "127.0.0.1:8188",
-        "sampler": "euler_ancestral",
-        "scheduler": "normal"
-      }
-    }
+    "_note": "생성기 설정은 두지 않는다. 어떤 도구로 그릴지는 제작자가 정한다."
   },
   "quality_presets": {
     "illustrious": {
@@ -371,20 +349,6 @@
       "seed": 440005
     }
   },
-  "dataset_variations": [
-    "upper body, front view, neutral expression, even lighting",
-    "upper body, three quarter view, slight smile, soft side lighting",
-    "bust shot, looking away, calm expression, window light",
-    "upper body, profile view, serious expression, rim lighting",
-    "portrait, close up, direct gaze, flat studio lighting",
-    "upper body, slight low angle, chin raised, dramatic lighting",
-    "upper body, slight high angle, looking down, soft overhead light",
-    "bust shot, three quarter back view, head turned toward viewer",
-    "full body, standing, relaxed pose, plain background",
-    "upper body, arms crossed, confident expression, cool lighting",
-    "portrait, eyes closed, calm, warm light",
-    "upper body, mid gesture, talking, natural lighting"
-  ],
   "deploy": {
     "_note": "이미지 배포 설정. deploy.py가 읽는다. jsDelivr는 공개 저장소만 서빙한다.",
     "repo": "",

@@ -97,10 +97,8 @@ examples/hunter/                  실제 작동하는 예제 (한국 헌터물, 
     assets/                       파생 산출물 — 요약 코멘트, 이미지 프롬프트
   .assets/                        손으로 쓴 픽스처 (슬롯 시뮬레이션 장면)
 
-tools/imagegen/                   이미지 배치 생성 도구
-  batch.py                        A1111 WebUI · ComfyUI 양쪽 지원
-  deploy.py                       깃헙+jsDelivr 배포, 축 계약 검사
-  mock_a1111.py · mock_server.py  GPU 없이 검증하는 목 서버
+tools/images/                     이미지 자산 정리·배포
+  deploy.py                       폴더 골격 생성, 축 계약 검사, 깃헙+jsDelivr 배포
 
 docs/                             문서
 scripts/                          릴리스 빌드, 전체 검증
@@ -151,29 +149,20 @@ scripts/                          릴리스 빌드, 전체 검증
 
 ## 이미지 자산
 
-스토리챗은 외부 호스팅 이미지를 `{BASE}/인물/상황.png` 형태로 조합해 부를 수 있습니다. `tools/imagegen/`은 그 이미지를 배치로 뽑는 도구입니다.
+스토리챗은 외부 호스팅 이미지를 `{IMG}/인물/상황.png` 형태로 조합해 부를 수 있습니다.
+
+**이미지를 생성하는 기능은 없습니다.** 어떤 도구로 그릴지는 제작자가 정할 일이고, 생성기는 몇 달 단위로 바뀝니다. 대신 생성기와 무관하게 필요한 두 가지를 제공합니다 — 프롬프트 시트와, 넣은 파일이 프롬프트의 요구와 맞는지 검사해 올리는 것.
 
 ```bash
-cd tools/imagegen
-python batch.py --list-models          # 설치된 체크포인트 확인
-python batch.py --check                # 자산 존재 확인
-python batch.py --dry-run              # 프롬프트만 출력
-python batch.py --only ju-habin        # 인물 하나만
+export CRACK_PROMPTS=examples/hunter/build/assets/prompts.json
+cd tools/images
+
+python3 deploy.py --scaffold --root ~/내이미지폴더   # 축 목록대로 폴더·배치표 생성
+python3 deploy.py --check    --root ~/내이미지폴더   # 이름이 축 목록과 맞는지
+python3 deploy.py --root ~/내이미지폴더 --repo 계정/저장소 --create
 ```
 
-A1111 WebUI와 ComfyUI를 모두 지원하며 `--backend`로 전환합니다. GPU가 없어도 목 서버로 전체 경로를 검증할 수 있습니다.
-
-완성한 이미지는 `deploy.py`가 전용 깃헙 저장소로 올리고 jsDelivr CDN 주소를 만들어 줍니다. 직접 그린 그림도 폴더 구조만 맞추면 됩니다.
-
-```bash
-python deploy.py --scaffold                       # 축 목록대로 폴더·배치표 생성
-python deploy.py --check                          # 이름이 축 목록과 맞는지 검사
-python deploy.py --repo 계정/이미지저장소 --create  # 배포하고 {IMG} 주소 출력
-```
-
-`--scaffold`가 인물·상황·장면별 폴더를 미리 깔고, 폴더마다 들어갈 정확한 파일 이름을 적어둡니다. 그림은 넣기만 하면 됩니다.
-
-올리기 전에 **축의 닫힌 목록과 실제 파일 이름이 일치하는지 검사**합니다. 한 글자만 달라도 영원히 깨진 링크가 되는데, 플레이 중에는 그냥 이미지가 안 뜨는 것으로만 보여서 원인을 찾기 어렵기 때문입니다.
+`--scaffold`가 인물·장면별 폴더를 미리 깔고 폴더마다 들어갈 정확한 파일 이름을 적어둡니다. 그림은 넣기만 하면 됩니다. 올리기 전에 **축의 닫힌 목록과 실제 파일 이름이 일치하는지 검사**합니다 — 한 글자만 달라도 영원히 깨진 링크가 되는데, 플레이 중에는 그냥 이미지가 안 뜨는 것으로만 보여서 원인을 찾기 어렵기 때문입니다.
 
 자세한 내용은 [docs/image-assets.md](docs/image-assets.md)에 있습니다.
 

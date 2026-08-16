@@ -10,7 +10,7 @@
 | 스킬 워크플로를 바꾼다 | `skills/design-crack-story-chat/SKILL.md` |
 | 검사 규칙을 바꾼다 | `skills/design-crack-story-chat/scripts/*.py` |
 | 예제 작품의 설정을 바꾼다 | `examples/hunter/story.md` · `characters.md` |
-| 이미지 도구를 바꾼다 | `tools/imagegen/*.py` |
+| 이미지 정리·배포 도구를 바꾼다 | `tools/images/deploy.py` |
 
 ## 절대 직접 고치지 않는 것
 
