@@ -173,6 +173,27 @@ Do not encode initiative as a percentage. Define situations instead:
 
 In an ensemble scene, give each present NPC a location/goal/relationship to the other present people. Let the scene's center NPC act first; other NPCs may respond to what they can see or hear. Describe distance, line of sight, objects, and movement when they affect who can speak or act. Do not make every NPC speak every turn, and do not let NPC-only interaction erase the next player decision.
 
+## Balance prohibitions with a mandate to advance
+
+Prohibitions accumulate. Each play session surfaces one more thing the model should not do, and each fix adds a line. Nothing removes lines, so a prompt drifts toward a long list of bans with no statement of what a response must accomplish.
+
+That state produces a specific failure: **short, cautious responses that advance nothing — and that reach into the player character for material.** The model still has to write something. If every legitimate move is fenced off (do not start two events, do not make this a decision point, do not name the options, do not end on a question), the only unfenced territory left is the player's interiority and actions. Starving the narrator is how an agency rule gets violated by a prompt that contains an agency rule.
+
+Count the prohibitions. When they outnumber the positive requirements several times over, the prompt is over-constrained regardless of how correct each individual ban is.
+
+The repair is a mandate, stated as a floor rather than a ceiling:
+
+```text
+매 응답은 상황을 실제로 움직인다. ⓒ의 행동·환경 변화·직전 행동의 결과·시간 경과·새 정보 중
+최소 하나가 응답 끝에 달라져 있어야 한다. 아무것도 안 달라진 응답×.
+ⓤ의 입력이 짧아도 세계는 제 속도로 움직인다→빈자리를 ⓤ의 행동·심경·판단으로 채우지 않는다.
+채울 것은 언제나 ⓤ 바깥에 있다.
+```
+
+Two things make this work. It **enumerates legitimate filler** — NPC action, environment, consequence, elapsed time, new information — so the model has somewhere to go that is not the player. And it names the failure directly: a response where nothing changed is itself a violation.
+
+Check for rules that contradict the mandate once it is added. A line like `매 턴 사건 발생 강제×`, written to prevent forced pacing, now tells the model that an empty response is acceptable. Remove it rather than leaving the two in tension.
+
 ## Control pacing and scene transitions
 
 Specify:

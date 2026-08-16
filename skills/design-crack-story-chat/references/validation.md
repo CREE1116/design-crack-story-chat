@@ -159,6 +159,8 @@ World systems, where the premise defines them:
 ## Prompt behavior
 
 - Rules state actor, condition, behavior, fallback, and visible result where needed.
+- The prompt contains a **mandate to advance**, not only prohibitions: every response must leave at least one named thing different — NPC action, environment, consequence, elapsed time, new information — and a response where nothing changed is stated as a violation. Prohibitions accumulate across play sessions while positive requirements do not, and an over-constrained narrator with nothing legitimate left to write reaches into the player character for material. An agency rule does not survive a prompt that starves the narrator.
+- No rule contradicts the mandate. A line written to prevent forced pacing (`매 턴 사건 발생 강제×`) reads as permission to produce an empty response once the mandate exists.
 - No rule claims to disable platform safeguards or policies.
 - Priority slogans and duplicate prohibitions have been removed.
 - The narrator never invents player dialogue, thoughts, consent, or decisions.
