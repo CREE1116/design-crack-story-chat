@@ -163,7 +163,7 @@ World systems, where the premise defines them:
 - Characters are not collapsed into their role or tier: work, rest, peer relationships, and private life carry the same weight as the job the premise gives them.
 - Neutrality is fenced on **both** sides. A rule banning player-favouring bias without also saying that coldness is not the goal produces overcorrection.
 - The forbidden-elements line names **this genre's actual failure modes** by name, not generic prohibitions, and was rewritten for this work rather than copied from another.
-- If the work declares player commands (`!…`), they are a closed list, distinct from OOC, and their effects land in the fiction.
+- Player-invoked progression — switching phase, era, or location by declaration — is registered as a Crack shortcut rather than an ad-hoc command syntax defined inside the prompt. A progression shortcut also states what carries over across the switch and forbids the model from advancing the phase on its own.
 
 - Rules state actor, condition, behavior, fallback, and visible result where needed.
 - The prompt contains a **mandate to advance**, not only prohibitions: every response must leave at least one named thing different — NPC action, environment, consequence, elapsed time, new information — and a response where nothing changed is stated as a violation. Prohibitions accumulate across play sessions while positive requirements do not, and an over-constrained narrator with nothing legitimate left to write reaches into the player character for material. An agency rule does not survive a prompt that starves the narrator.
