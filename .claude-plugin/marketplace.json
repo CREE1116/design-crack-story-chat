@@ -1,0 +1,13 @@
+{
+  "name": "design-crack-story-chat",
+  "owner": {
+    "name": "CREE1116"
+  },
+  "plugins": [
+    {
+      "name": "design-crack-story-chat",
+      "source": "./",
+      "description": "Design, compile, and audit Crack story-chat projects from two authored Markdown sources into five build artifacts."
+    }
+  ]
+}

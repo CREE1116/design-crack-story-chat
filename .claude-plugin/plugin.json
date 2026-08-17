@@ -1,0 +1,17 @@
+{
+  "name": "design-crack-story-chat",
+  "description": "Design, compile, and audit Crack story-chat projects from two authored Markdown sources into five build artifacts.",
+  "version": "0.8.1",
+  "author": {
+    "name": "CREE1116"
+  },
+  "homepage": "https://github.com/CREE1116/design-crack-story-chat",
+  "repository": "https://github.com/CREE1116/design-crack-story-chat",
+  "license": "MIT",
+  "keywords": [
+    "crack",
+    "story-chat",
+    "prompt-engineering",
+    "korean"
+  ]
+}
