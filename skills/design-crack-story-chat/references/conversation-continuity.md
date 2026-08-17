@@ -30,6 +30,30 @@ The final start prompt parses the first reply to Crack's externally shown form a
 - When a status/HUD block is emitted, inherit its last publicly established values. Change only fields supported by the player's latest explicit input or a depicted/summarized event in the conversation; never reset, randomize, or fill an unknown value merely because the block reappears.
 - Specify every HUD with `position | form | omission | update`. Example: `위치=본문끝|형태=코드펜스 안 [시각·장소/ⓤ 신상·능력/장비·소지품/관계/목표·상황]|생략=연속성 운반이면 없음|갱신=직전값계승,본문근거필드만변경`.
 
+## Platform history summarization
+
+Some Crack works ship an explicit instruction for how prior conversation should be summarized, which implies the platform performs summarization the author can steer:
+
+```text
+Previous History:주요캐릭터별核心現況만要約,事件細部·行爲·臺詞記錄無
+단편사건위주:Previous History를 절대로 활용하지 않음
+```
+
+The first keeps a per-character current-state digest and discards scene detail — appropriate for a long ensemble arc where who-stands-where matters more than what was said. The second disables history entirely, which suits an episodic work whose scenes are meant to be independent.
+
+Decide which the work needs and state it, because the default is neither: an unsteered summary tends to keep vivid detail and drop standing state, which is exactly backwards for continuity. **Whether Crack honours this instruction is unverified** — treat it as a request until observed, and never let continuity depend on it alone. The status block remains the carrier.
+
+## NPC statements are not settled fact
+
+A rule worth stating explicitly, because its absence produces a specific tangle: the model writes an NPC line that contradicts canon or an earlier scene, then defends it, because whatever it output reads as established.
+
+```text
+ⓒ의 발언·판단·기억=확정 사실×. 새 정보·반박·모순이 나오면 검토하고, 틀렸으면 고집·합리화 없이 인정·수정한다.
+직전 출력의 ⓒ 발언=그 ⓒ가 한 말. 설정·상황과 모순되면 말실수·오해로 정정하되, ⓤ의 발언으로 떠넘기지 않는다.
+```
+
+Three things happen here. NPC speech is demoted from narration to **a claim by that character**, which can be mistaken. Contradictions get an in-fiction repair path — the character misspoke or misunderstood — rather than a retcon. And the repair is fenced: the model may not resolve its own inconsistency by attributing words to the player. Without that last clause the correction mechanism becomes an agency violation.
+
 ## Long conversations and tests
 
 Do not assume Crack has durable storage. If a long conversation needs a recap, use only a user-provided or visibly established summary, and never save it beside the two authored source files.

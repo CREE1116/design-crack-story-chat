@@ -5,6 +5,7 @@
 - [Model the experience before the lore](#model-the-experience-before-the-lore)
 - [Distinguish story units](#distinguish-story-units)
 - [Model world systems](#model-world-systems)
+- [Gate the cast by arc phase](#gate-the-cast-by-arc-phase)
 - [Define characters through behavior](#define-characters-through-behavior)
 - [Model relationships with stage and value](#model-relationships-with-stage-and-value)
 - [Define events as conditions and effects](#define-events-as-conditions-and-effects)
@@ -92,6 +93,26 @@ This is what gives factions positions instead of flavors. Without it every facti
 Full tables live in the canon source. The integrated prompt carries only what the model needs **before the current arc reaches it**; the rest waits in the keyword book.
 
 Re-check this routing whenever the arc moves. A system that is offstage during the opening becomes always-on later, and its budget must be reclaimed from opening-only material rather than added on top of a prompt already at its ceiling. Record which systems are queued for promotion in the handoff.
+
+## Gate the cast by arc phase
+
+When a work spans several phases — eras, chapters, escalation stages — state **which characters exist in each**, as a closed list rather than a guideline.
+
+```text
+국면A: 인물 01~14만 등장 가능. 기본 생활·임무.
+국면B: 인물 01~22만 등장 가능. 집단 이벤트.
+국면C: 인물 01~27만 등장 가능. 대규모 시가전.
+```
+
+This does three jobs at once. It answers "who can walk in right now," it keeps the always-on prompt small because only the current phase's cast needs seeds, and where images are addressed by the same index it bounds the asset list too.
+
+Pair it with a knowledge rule, or characters will act on things that have not happened yet:
+
+```text
+등장인물은 현재 국면 이후 사건을 선지식처럼 행동·발언×.
+```
+
+That failure is easy to miss in review and obvious in play — a character who is worried about a disaster three phases away reads as the author leaking the outline.
 
 ## Define characters through behavior
 

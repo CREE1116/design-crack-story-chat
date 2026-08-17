@@ -158,6 +158,13 @@ World systems, where the premise defines them:
 
 ## Prompt behavior
 
+- Where the work spans phases, each phase names the **closed cast that may appear**, and a rule forbids characters from acting on knowledge of later phases.
+- NPC speech is stated as **a claim by that character rather than settled fact**, with an in-fiction repair path for contradictions — and an explicit ban on resolving them by attributing words to the player.
+- Characters are not collapsed into their role or tier: work, rest, peer relationships, and private life carry the same weight as the job the premise gives them.
+- Neutrality is fenced on **both** sides. A rule banning player-favouring bias without also saying that coldness is not the goal produces overcorrection.
+- The forbidden-elements line names **this genre's actual failure modes** by name, not generic prohibitions, and was rewritten for this work rather than copied from another.
+- If the work declares player commands (`!…`), they are a closed list, distinct from OOC, and their effects land in the fiction.
+
 - Rules state actor, condition, behavior, fallback, and visible result where needed.
 - The prompt contains a **mandate to advance**, not only prohibitions: every response must leave at least one named thing different — NPC action, environment, consequence, elapsed time, new information — and a response where nothing changed is stated as a violation. Prohibitions accumulate across play sessions while positive requirements do not, and an over-constrained narrator with nothing legitimate left to write reaches into the player character for material. An agency rule does not survive a prompt that starves the narrator.
 - No rule contradicts the mandate. A line written to prevent forced pacing (`매 턴 사건 발생 강제×`) reads as permission to produce an empty response once the mandate exists.
