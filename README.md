@@ -39,46 +39,89 @@ Claude Code, Cowork, Codex 등 스킬을 읽는 에이전트에서 동작합니�
 
 ## 설치
 
-### 방법 1 — `.skill` 파일 (권장)
+세 가지 방법이 있습니다. Claude Code 사용자는 방법 1, Claude Code 외 에이전트(Cowork, Codex 등)는 방법 2, 스킬 자체를 고쳐 쓸 사람은 방법 3을 고르세요.
 
-[Releases](../../releases)에서 `design-crack-story-chat.skill`을 받아 에이전트에 추가합니다.
+### 방법 1 — Claude Code 플러그인 마켓플레이스 (Claude Code 사용자 권장)
 
-### 방법 2 — 저장소에서 설치
+이 저장소가 곧 마켓플레이스입니다(`.claude-plugin/marketplace.json`). Claude Code 안에서,
 
-스킬을 직접 고쳐가며 쓸 거라면 이쪽입니다.
+```
+/plugin marketplace add CREE1116/design-crack-story-chat
+/plugin install design-crack-story-chat@design-crack-story-chat
+```
+
+버전을 올릴 때는 `/plugin marketplace update design-crack-story-chat` 로 마켓플레이스 메타데이터를 새로고침한 뒤 다시 install하면 최신본으로 교체됩니다.
+
+### 방법 2 — `.skill` 파일 (Claude Code 외 에이전트)
+
+[Releases](../../releases)에서 최신 `design-crack-story-chat.skill`을 내려받아, 사용 중인 에이전트의 스킬 추가 기능(파일 업로드 또는 스킬 폴더에 압축 해제)에 넣습니다. 파일 자체는 `skills/design-crack-story-chat/` 내용을 그대로 압축한 zip이라, 아카이브를 열어 원하는 스킬 디렉터리에 풀어 넣어도 동일하게 동작합니다.
+
+release가 아직 없으면 직접 만들 수도 있습니다.
 
 ```bash
-git clone https://github.com/<사용자명>/crack-story-chat-skill.git
-cd crack-story-chat-skill
-./scripts/install-skill.sh          # ~/.claude/skills 에 심볼릭 링크
+git clone https://github.com/CREE1116/design-crack-story-chat.git
+cd design-crack-story-chat
+./scripts/build-skill.sh            # dist/design-crack-story-chat.skill 생성
+```
+
+### 방법 3 — 저장소에서 설치 (스킬을 직접 고칠 사람)
+
+```bash
+git clone https://github.com/CREE1116/design-crack-story-chat.git
+cd design-crack-story-chat
+./scripts/install-skill.sh          # ~/.claude/skills, ~/.agents/skills 에 심볼릭 링크
 ```
 
 링크 방식이라 저장소를 고치면 에이전트에 **즉시 반영**됩니다. 사본을 원하면 `--copy`를 주세요.
 
+```bash
+./scripts/install-skill.sh --copy
+```
+
 저장소에서 작업할 때의 규칙은 [CLAUDE.md](CLAUDE.md)에 있습니다.
 
-설치 확인은 에이전트에게 이렇게 물어보면 됩니다. "크랙 스토리챗 스킬 로딩해봐."
+### 설치 확인
+
+방법에 상관없이, 에이전트에게 이렇게 물어보면 됩니다.
+
+```
+design-crack-story-chat 스킬 로딩해줘.
+```
+
+`SKILL.md`를 읽었다고 답하면 설치된 것입니다. 안 읽었다면 스킬 폴더 경로(`~/.claude/skills/design-crack-story-chat` 등)가 에이전트가 스킬을 찾는 위치와 일치하는지 확인하세요.
 
 ---
 
 ## 빠른 시작
+
+스킬을 설치한 에이전트(Claude Code 등)를 프로젝트 폴더에서 열고 이렇게 시작합니다.
 
 ```
 새 크랙 스토리챗을 만들거야. design-crack-story-chat 스킬 써서
 story.md와 characters.md 틀부터 잡아줘.
 ```
 
-이후 진행은 대략 이렇습니다.
+에이전트가 `assets/story-chat-template/`의 틀을 복사해 두 파일을 만들어 줍니다. 이후 진행은 이렇습니다.
 
-1. **세계관을 씁니다.** `story.md` 하나에 전부. 등급 체계, 위협 분류, 성장 체계, 세력 경제까지.
-2. **인물을 씁니다.** `characters.md` 하나에 전부. 외형·말투·능력·관계를 인물마다.
-3. **컴파일합니다.** 에이전트가 두 원본에서 5개 산출물을 뽑습니다.
-4. **검증합니다.** 스크립트 8개가 글자수·기호·슬롯 충돌·원본 표류를 잡습니다.
-5. **크랙에 붙여넣습니다.** 키워드북만 UI에서 항목별로 등록합니다.
+1. **경험 계약을 먼저 정합니다.** 로어부터 쓰면 반드시 다시 씁니다 — 전제, 플레이어 판타지, 핵심 루프, 약속, 자유 경계 다섯 개를 결정하지 않은 채 설정에 들어가지 마세요.
+   ```
+   전제는 "게이트가 열린 2047년 서울, 갓 각성한 무소속 헌터"야.
+   경험 계약부터 잡고 갈등 엔진을 만들어줘. 로어는 아직 쓰지 마.
+   ```
+2. **세계관을 씁니다.** `story.md` 하나에 전부 — 등급 체계, 위협 분류, 성장 체계, 세력 경제까지. 능력물·생존물·직업물·경쟁물이라면 인물보다 세계 시스템을 먼저 잡습니다.
+3. **인물을 씁니다.** `characters.md` 하나에 전부 — 외형·말투·능력·관계를 인물마다. 여기 없는 이름은 컴파일 시 모델이 지어냅니다.
+4. **컴파일합니다.** 에이전트가 두 원본에서 5개 산출물(SAFE/UNSAFE 통합 프롬프트, 프롤로그, 시작 프롬프트, 키워드북)과 파생 산출물(요약 코멘트, 이미지 프롬프트)을 `build/`에 뽑습니다.
+5. **검증합니다.**
+   ```bash
+   ./scripts/validate.sh <프로젝트 경로>
+   ```
+   글자수 상한, 정의 없는 기호, 3슬롯 충돌, 원본 대비 신선도를 스크립트 8개가 잡습니다. 실패하면 그대로 크랙에 올리지 않습니다.
+6. **크랙에 붙여넣습니다.** 통합 프롬프트(SAFE/UNSAFE)·프롤로그·시작 프롬프트는 해당 입력란에 그대로 복사합니다. 키워드북만 UI에서 항목별로 등록합니다(한 번에 최대 3개까지 동시 로딩되므로 등록 후 장면을 나열해 충돌을 확인하세요).
+7. **플레이하며 고칩니다.** 원본(`story.md`/`characters.md`)을 고쳤다면 4~5단계를 반드시 다시 돕니다. `check_freshness.py`가 재컴파일을 잊은 상태를 잡아줍니다.
 
 원본은 딱 두 개입니다. 매니페스트, 상태 파일, 출력 계약 파일, 키워드북 소스 같은 중간 계층을 만들지 않습니다. 사실 하나에 주인 하나입니다.
 
-자세한 사용법은 **[docs/usage.md](docs/usage.md)** 를 보세요.
+전체 흐름을 처음부터 끝까지 따라가는 문서는 **[docs/usage.md](docs/usage.md)** 입니다. 막히면 **[docs/troubleshooting.md](docs/troubleshooting.md)** 를 먼저 보세요.
 
 ---
 
