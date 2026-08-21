@@ -42,7 +42,7 @@ OOC 요청은 `설정 질의/진행 제어/메타 질문/프롬프트·비밀 �
 
 상태창에는 플레이어가 이미 본 사실만 보인다. 숨은 수치 장부나 세이브·로드 명령으로 취급하지 않고, 확인되지 않은 크랙 기능에 기대는 보존·복원 포맷도 만들지 않는다.
 
-다만 **무엇을 담느냐와 얼마나 자주 내보내느냐는 다른 결정**이다. 관계 단계, 장비·소지품, 등급, 날짜·시각처럼 대화가 길어질수록 누적되는 값을 상태창에 적기로 했다면 그 상태창은 매 응답 출력한다. 크랙에는 저장소가 없어 상태창을 다시 적는 행위 자체가 다음 턴 컨텍스트로 상태를 넘기는 수단이기 때문이다. 한 턴을 생략하면 그다음 턴은 이어받을 직전 값이 없어 값을 잃거나 지어낸다. `새 정보 없으면 생략`은 단순 요약용 상태창에만 적용한다.
+다만 **무엇을 담느냐와 얼마나 자주 내보내느냐는 다른 결정**이다. 관계 단계, 장비·소지품, 등급, 날짜·시각을 항상 보여주는 고정 HUD를 약속한 작품이면 매 응답 같은 위치·필드 순서로 출력하고 직전 공개값을 계승한다. 그렇지 않은 단순 요약은 새 공개 정보가 없을 때 생략한다. 어느 쪽도 별도 대화기록·저장 API나 영속성 보장으로 취급하지 않는다.
 
 ### 9. 후반 테스트는 상태를 직접 주입한다
 
@@ -93,4 +93,4 @@ OOC 요청은 `설정 질의/진행 제어/메타 질문/프롬프트·비밀 �
 
 ## 출처와 검증 태도
 
-주요 원리의 출발점은 [제작정보 모음](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=164770), [올인원 가이드](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=122877), [시뮬레이션 기본 프롬프트](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=65522), [압축 절차](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=54137), [다인 프롬프트 압축](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=152141), [키워드북 공략](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=30440), [상태·관계 수치의 한계](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=15200), [다인 공간 상호작용](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=105881), [후반 상태 테스트](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=30270), 그리고 [장면의 6단 인과 구조](https://www.helpingwritersbecomeauthors.com/sequel-scenes/)다. 각 글의 플랫폼 특화 주장보다 반복 재현되는 원리와 실패 사례를 우선한다.
+현행 입력 한도는 2026-08-21 제작 환경의 커스텀 프롬프트 7,000자를 기준으로 하며, [2026-06 플랫폼 비교](https://gall.dcinside.com/mgallery/board/view/?id=aiotomechatting&no=8324)에서도 같은 값을 확인할 수 있다. 작성 원리는 [프롬프트 구조와 순서](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=872734), [과도한 제약보다 자율성](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=872758), [문법보다 내부 일관성](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=872807), [경험 중심 작법](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=872853)을 최근 기준점으로 삼는다. 이전 자료인 [제작정보 모음](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=164770), [올인원 가이드](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=122877), [키워드북 공략](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=30440), [상태·관계 수치의 한계](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=15200), [다인 공간 상호작용](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=105881), [후반 상태 테스트](https://gall.dcinside.com/mgallery/board/view/?id=wrtnai&no=30270)는 플랫폼 필드·한도·모델명을 버리고 반복 재현되는 원리와 실패 사례만 취한다.

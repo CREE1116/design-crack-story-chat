@@ -32,7 +32,7 @@ Run this checklist before handing off a story-chat design or prompt revision.
 - The premise, player fantasy, core loop, and story promise agree.
 - Fixed player attributes are necessary and clearly disclosed.
 - Player customization cannot silently contradict the premise.
-- The invariant player role remains in the integrated prompts; the six personalized intake values apply only to the current chat profile.
+- The invariant player role remains in the integrated prompts; the project-defined personalized intake values apply only to the current chat profile.
 - Tone and point of view are concrete enough to guide output.
 
 ## Story craft
@@ -95,15 +95,15 @@ World systems, where the premise defines them:
 - Personalized player profile, prologue, and starting situation do not appear in the core artifact; invariant player role and premise constraints do.
 - Prologue and start prompt are 1,000 characters or fewer each.
 - The product presents the profile form externally; the starting situation does not display or repeat it.
-- The starting situation parses the first response into name, age, gender, ability name, ability description, and desired dialogue or situation.
+- The starting situation parses the first response into the exact profile fields this project's canon requires; it does not assume a fixed schema or an ability axis absent from the world.
 - The first input is parsed into the current chat profile; missing values are not invented.
 - The start prompt has a clear path for partial and complete profile intake without creating a separate state channel.
-- All six values must be explicit before normal play begins; `none` is a valid explicit opening request.
+- Every project-defined required value must be explicit before normal play begins; `none` is valid only for a field the project declares optional or nullable.
 - Desired dialogue or situation is treated as an opening request, not as an action or line already performed by the player.
 - The intake form is never emitted by the model; missing values trigger only a short request for those values.
 - Prologue provides lead-in without deciding player action; starting situation stops at the first player-controlled decision.
 - Prologue and starting situation connect without duplicating the same incident description.
-- The keyword-book registration sheet is the fifth artifact. Current conversation context is not a sixth artifact.
+- The keyword-book registration sheet is the fifth artifact. Current conversation context is not a sixth artifact, and no dialogue-history/`Previous History` field or file is emitted.
 - `scripts/check_project_layout.py STORY_CHAT_DIR` passes and confirms exactly two authored Markdown sources plus the five required regular build files; no obsolete split prompt, system source, or extra build directory remains.
 - The working draft targets 6,200–6,500 characters unless the task requires otherwise.
 - Character count was measured on the actual final string, including whitespace and Markdown syntax.
@@ -191,7 +191,7 @@ World systems, where the premise defines them:
 - Machine-readable output is used only when a confirmed platform parser consumes it.
 - Narrative cannot be mistaken for an optional public status block.
 - Every symbol or abbreviation that carries assigned meaning is defined in the compiled prompt before its first use, and the definition list matches the symbols actually present in the final string.
-- The status block's job is decided explicitly: a decorative recap may be omitted when empty, while a continuity carrier is emitted every response with unchanged fields inherited verbatim.
+- The status block's job is decided explicitly: a decorative recap may be omitted when empty, while a deliberately fixed HUD is emitted every response with unchanged public fields inherited verbatim. Neither is treated as dialogue history, storage, or a persistence guarantee.
 - No mandatory output block exists only inside an `출력 예` / example region; every required block has its own section stating the requirement and holding the fill-in template.
 - Any always-on output requirement that must hold from the first response is also restated in one line in the start prompt, so a detailed opening procedure cannot outrank it.
 - The prose/dialogue split states what happens to **unnamed speakers**. A rule that formats dialogue only as `name: "line"` leaves crowd, extra, and announcement lines with nowhere to go, and they get absorbed into the narration block. This is a gap in the rule rather than a violation of it, and the model fills gaps with the nearest available form. Using the speaker's **role** in the name slot keeps the format intact without polluting the character roster.

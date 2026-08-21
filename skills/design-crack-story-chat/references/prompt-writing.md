@@ -63,6 +63,14 @@ one-line commands
 
 Do not use `###` or deeper headings in integrated or start prompts. Keep one subject per subsection and put the governing rule before its exceptions. This is a conservative compilation rule for attention-limited, instruction-dense prompts, not a universal claim that every model fails at a particular Markdown depth.
 
+## Order by interpretation, then execution
+
+Put the session goal, genre, and tone near the start because they define how later character and world facts should be interpreted. Put the concrete output contract near the end because those rules are checked together at generation time. Keep world facts, character behavior, and story mechanics between them.
+
+This is an information architecture rule, not proof of a universal first-token or last-token weight. Do not duplicate every important rule at both ends. Repeat only a short invariant when a demonstrated conflict requires it — for example, an always-on output block that the more specific start prompt otherwise suppresses during the opening.
+
+Markdown, YAML, XML, and JSON are separators, not authority levels. Choose one shallow, internally consistent form that makes boundaries visible. Use JSON only when a verified parser consumes it; never expect syntax alone to improve obedience, secrecy, or safety.
+
 ## Write operational rules
 
 Each important instruction should answer:
@@ -323,12 +331,13 @@ Do not expose hidden chain-of-thought. A displayed `속마음` field should be s
 
 ## Keep prompts compact
 
-Always load:
+Always load into the custom prompt:
 
 - experience contract;
 - core generation and agency rules;
-- current relevant conversation context;
 - output contract.
+
+Current conversation context is supplied by the live chat, not copied into an authored `Previous History` section or a sixth build artifact.
 
 Retrieve conditionally:
 
