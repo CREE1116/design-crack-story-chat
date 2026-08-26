@@ -15,6 +15,8 @@ Run this checklist before handing off a story-chat design or prompt revision.
 - [Conversation continuity](#conversation-continuity)
 - [Output contract](#output-contract)
 - [Boundary tests](#boundary-tests)
+- [After changing a system](#after-changing-a-system)
+- [Introduced nouns must exist in canon](#introduced-nouns-must-exist-in-canon)
 - [Derived documents and tooling](#derived-documents-and-tooling)
 - [Handoff evidence](#handoff-evidence)
 
@@ -244,6 +246,27 @@ Test at least these scenarios against the resulting prompts:
 30. Four keyword-book entries could match one scene; the design remains coherent after reducing the dependency to at most three.
 
 For each test, record expected invariants rather than one exact prose answer. Revise the narrowest owning file when a test fails.
+
+## After changing a system
+
+Replacing a mechanic is not done when the new one is written. It is done when the old one is gone. A half-replaced mechanic is worse than either version, because the model finds both and oscillates between them turn to turn.
+
+Observed: a four-part evaluation was replaced by a single measurement. The new rule went into both integrated prompts and the keyword-book entry, and the old vocabulary survived in five places — the prologue's spoken line, the source's progression axes, two event definitions, and the sentence that listed the four parts in order to say they were *not* measured. Sessions kept alternating between the two designs until every trace was removed.
+
+- Grep the retired vocabulary across **every** file, sources and build alike. The prologue is the one most often missed and the one that costs most, because it is the first thing the model reads.
+- Check negative statements too. "We do not measure A, B, C, D" teaches A, B, C, D. Rewrite as a positive scope statement.
+- Give the removed capability a destination. If the old system measured something the new one does not, say where that now surfaces — otherwise the model reintroduces the old mechanism to have somewhere to put it.
+- Search for the retired **event IDs** as well as the prose. A renamed event leaves references in the calendar, the arc summary, and outcome definitions.
+
+The same sweep applies to any noun the design retires. An inherited item removed from canon still steers the story while it sits in a status-block example.
+
+## Introduced nouns must exist in canon
+
+Every concrete noun in player-visible text — prologue, start prompt, output examples — must trace to `story.md` or `characters.md`. A noun that appears only in prose becomes a world object the moment the model reads it, and it will be handed to characters as standard equipment.
+
+Observed: a prologue described the magic faculty holding `술식판`, a word invented for that sentence and defined nowhere. Two turns into play, an instructor was asking the player whether they had brought theirs. `check_symbols.py` does not catch this — it checks operators and legend glyphs, not nouns.
+
+Before publishing the prologue and start prompt, list their concrete nouns and confirm each one against the two sources. Use the canon term when one exists (`마도구`), and add the noun to canon when it genuinely belongs there.
 
 ## Derived documents and tooling
 

@@ -10,6 +10,8 @@
 - [Define precedence once](#define-precedence-once)
 - [Prefer behavior over trait lists](#prefer-behavior-over-trait-lists)
 - [Define role boundaries](#define-role-boundaries)
+- [Bound each NPC's authority](#bound-each-npcs-authority)
+- [Balance the valence of NPC reactions](#balance-the-valence-of-npc-reactions)
 - [Control initiative without forcing interaction](#control-initiative-without-forcing-interaction)
 - [Control pacing and scene transitions](#control-pacing-and-scene-transitions)
 - [Control escalation without rushing](#control-escalation-without-rushing)
@@ -168,6 +170,54 @@ Include one clear role contract:
 
 If the experience supports delegated player control, require an explicit opt-in and define its scope and duration.
 
+## Bound each NPC's authority
+
+An NPC who can judge the player needs a stated **scope**. Without one the model lets whoever is loudest in the scene rule on anything, and the player takes real penalties from someone who had no standing to impose them.
+
+Observed within ten turns of one playtest: the knight-faculty head declared the player's self-made spellwork "broken at the fundamentals" and withheld their grade — while the player was enrolled in the magic faculty, and while the measured value the grade came from had nothing to do with technique. The magic-faculty head, standing right there, only asked whether the hold would stand.
+
+Three separate gaps produced that, and all three are cheap to close.
+
+**1. Scope.** Say what each authority figure may rule on, and what happens outside it.
+
+```text
+소관: 교수는 자기 학부 범위에서만 판정·처분한다. 범위 밖은 소견까지만 내고
+등급·보류·징계로 옮기지×. ⓤ 소속 학부 교수는 타 학부의 부당한 재단에 선을 긋고 학생을 변호한다.
+```
+
+The last clause matters as much as the first. A boundary nobody enforces is decoration; name who pushes back, or the player experiences the institution as uniformly hostile.
+
+**2. Enumerate the outcomes.** An evaluation that lists no possible verdicts invites invented ones. `보류` (withheld) appeared in that playtest because nothing said what a measurement could produce.
+
+```text
+나올 수 있는 결과는 등급 S~D 또는 재측정뿐 — `보류`·`미분류` 같은 처분을 새로 만들지×.
+```
+
+**3. Bind the verdict to what was actually measured.** If the instrument reads one thing, forbid ruling on another.
+
+```text
+수정구는 마나만 재므로 방법론·자세·술식 구조를 이유로 등급을 미루지×.
+```
+
+Route scope to the always-on prompt — it must hold every turn — and put the procedure detail in the keyword-book entry for that scene.
+
+## Balance the valence of NPC reactions
+
+Advisor and rival roles get written as what they push back on, because that is what makes them useful: the mentor who finds the flaw, the rival who demands proof. Written that way for every character, the world becomes uniformly hostile without any single line saying so.
+
+Observed: three faculty members were each compiled as `반례 제공자` — counter-example provider. Nothing in the prompt described when any of them approves, becomes curious, or opens a door. The model followed the specification exactly, and the player concluded the academy existed to suppress them.
+
+Prohibitions have a known repair (a mandate to advance, below). Valence needs the same treatment — state the positive case as a floor:
+
+```text
+ⓒ 반응이 반례로만 기울지×→인정·흥미·기회 제공도 같은 빈도로 나온다.
+한 장면에서 전원이 부정적으로 반응하지×. 낯선 방식을 본 ⓒ 중 최소 하나는 흥미를 보인다.
+```
+
+Then check the character specifications themselves. If a character's compiled line names a condition for doubting and none for approving, add the approving one — `증명되면 그 자리에서 인정한다` costs a dozen characters and changes how the whole institution reads.
+
+Count them the way you count prohibitions. When every named authority is specified only as an obstacle, the setting is over-tuned regardless of how well-motivated each character is.
+
 ## Control initiative without forcing interaction
 
 Do not encode initiative as a percentage. Define situations instead:
@@ -299,6 +349,8 @@ A fenced block is the right surface for a Crack status window — it renders as 
 State exact ordering, required blocks, maximum counts, and omission behavior. If no image matches, omit the image block. Whether the status block may be omitted depends on the job it does: a decorative recap disappears when it adds nothing, but a block that carries accumulated state across turns is emitted every response, unchanged fields and all. See `conversation-continuity.md`.
 
 Give each section a fixed label in brackets and a fixed order, and separate groups with a constant divider. A section with nothing to report collapses to a short placeholder or disappears entirely — declare which, per section, so the block does not silently change shape between turns.
+
+**Filled-in example values get copied.** The reverse hazard of the same coin: a template whose slots contain plausible content teaches that content, not just the shape. A status block demonstrated with a sample name, a specific coin count, and a particular faculty produced responses carrying that name and that coin count for players who had supplied neither. Fill demonstration slots with the unknown token the rules already define (`미상`, `없음`) wherever the real value comes from the player, and reserve concrete values for fields that are genuinely fixed by canon.
 
 **Do not let a mandatory template live only inside an example.** A template printed under a heading such as `출력 예` / "Example output" is read as illustrative, and the requirement pointing at it ("emit the form below") resolves to sample text the model feels free to skip. Give a required block its own top-level section, state the requirement there, and place the fill-in template inside that section — then show the illustrative prose example separately and let it stop before the required block rather than restating it. If a compiled prompt emits everything except one block, check this first: the missing block is usually the one that only ever appeared as part of a sample.
 

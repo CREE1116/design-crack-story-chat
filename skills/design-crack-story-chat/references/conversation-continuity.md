@@ -30,6 +30,59 @@ Derive the player-profile fields from what the current project's `story.md` and 
 - When a status/HUD block is emitted, inherit its last publicly established values. Change only fields supported by the player's latest explicit input or a depicted/summarized event in the conversation; never reset, randomize, or fill an unknown value merely because the block reappears.
 - Specify every HUD with `position | form | omission | update`. Example: `위치=본문끝|형태=코드펜스 안 [시각·장소/ⓤ 신상·능력/장비·소지품/관계/목표·상황]|생략=고정HUD면 없음|갱신=직전공개값계승,본문근거필드만변경`.
 
+## Design the HUD as an interface, not a readout
+
+A fixed HUD that only mirrors prose earns little. The same block can carry the story's mechanics if each field is designed for a job. Five patterns, all cheap.
+
+### Give the core loop a field
+
+Whatever the story is *about* should be legible in the block. A project whose premise was inventing a lost combat style carried `[체계]` — the method the player has established so far, named by the player, `없음` until something works. The field starts empty and fills as the player earns it, so the block shows progress toward the story promise rather than restating the scene.
+
+Pick the one field whose value a reader could not guess from the last paragraph. That is the field worth having.
+
+### Separate single-select slots from cumulative markers
+
+Two different jobs get confused when both are "an emoji in the relationship line."
+
+- **Single-select** — one value from an enumerated set, replaced when it changes. Current feeling toward the player: `😐중립 🙂호의 😄친밀 🥰애착 🫂신뢰 😳동요 🤨의심 😠적대`.
+- **Cumulative** — a fact that, once true, stays true and is appended. A history marker sits *after* the feeling and persists even when the feeling turns cold.
+
+Say which kind each marker is. Without it a history marker gets overwritten the first time the mood changes, and the block quietly loses the thing it existed to remember.
+
+### A state field can gate a rule
+
+The strongest use: let a field be the visible precondition for something the model may otherwise attempt too early.
+
+```text
+🔞=성적 장면 진입 가능, [상황] 신호등 뒤에. 조건=관계 친밀 이상+사적 공간+둘만+상호 의사가 본문에 드러남.
+하나라도 깨지면(이동·제3자·거절) 즉시 뗀다.
+🔞 없으면 성적 접촉·유혹·암시 진입×, ⓒ는 시도조차×. 🔞 있어도 표시≠동의: 진입은 ⓤ의 명시적 행동으로만.
+```
+
+Three properties make this work. The gate is **visible**, so the player reads the world's state instead of guessing it. It is **conditional on depicted facts**, so it cannot be argued into existence. And the marker is explicitly **not** consent — availability and permission stay separate, which is the distinction a plain "slow burn" instruction never manages to hold.
+
+The same shape suits any precondition the fiction gates: a duel that needs a safety declaration, a restricted archive that needs faculty approval, a contract that needs a witness.
+
+### Declare a starting value per field
+
+The first response has to emit the block before the player has supplied anything. Every field needs a stated turn-one value, or the model guesses one and contradicts it two turns later.
+
+```text
+기숙사·학년·학부: 학부=ⓤ 선택값, 기숙사 시작=상록관 · [측정]: 미측정 · [체계]: 없음 · [관계]: 없음
+```
+
+Distinguish *not yet known* (`미상` — the player has not said) from *established as empty* (`없음` — canon says there is nothing yet). They behave differently on update: the first gets filled by player input, the second by a depicted event.
+
+### Scope fields to the variant that can set them
+
+A field the SAFE variant can never populate is noise on every SAFE turn. Gate and history markers tied to explicit content belong in the UNSAFE delta only; the shared core keeps the fields both variants actually use.
+
+This does not break the pair rule. Variants must not differ in outcomes, canon, consent, or syntax — dropping a marker that is unreachable in one profile changes none of those. What must stay identical is the behaviour the marker gates: SAFE still forbids NPCs from initiating, it simply says so in prose instead of showing a badge.
+
+### The block's emoji are also keyword triggers
+
+Anything the block prints every turn is a reliable keyword-book trigger, and the two lifetimes match for free. See `keyword-book.md`.
+
 ## NPC statements are not settled fact
 
 A rule worth stating explicitly, because its absence produces a specific tangle: the model writes an NPC line that contradicts canon or an earlier scene, then defends it, because whatever it output reads as established.
