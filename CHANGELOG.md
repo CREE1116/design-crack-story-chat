@@ -1,5 +1,12 @@
 # 변경 내역
 
+## 0.10.2
+
+- **키워드북 초경량 직관형 포맷 전면 개편 및 린터 동기화** (`references/keyword-book.md`, `scripts/check_keyword_book.py`, `scripts/check_kb_slots.py`, `examples/hunter/build/keyword-book.md`).
+  - 복잡한 영어 ID(`kb.xxx`)와 시스템 메타 태그(`activation_setting`, `## Entry text`)를 걷어내고, 크랙 UI 3대 필수 요소(항목명, 키워드, 내용)로 초경량화.
+  - `- 키워드: a, b, c` 및 `- 내용: ...` 직관적 문법 지원 (구형 포맷 100% 하위 호환 유지).
+  - `check_keyword_book.py` 및 `check_kb_slots.py` 검증기에서 한국어 제목 기반 로드 및 한도 검사 완벽 지원.
+
 ## 0.10.1
 
 - **시스템 프롬프트용 초압축 이미지 출력 규칙 템플릿 정립** (`references/image-output-rules.md`, `references/system-prompt-presets.md`, `references/output-contract.md`).
