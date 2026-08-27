@@ -1,5 +1,11 @@
 # 변경 내역
 
+## 0.9.4
+
+- **이미지 생성 프롬프트 문법 전면 제거 및 호스팅/웹 갤러리 제작 전문화** (`image-assets.md`, `docs/image-assets.md`, `SKILL.md`).
+  - 생성 모델별(SDXL, Pony, Illustrious, Flux) 프롬프트 문법 및 품질 프리픽스 서술을 완전히 제거하여 스킬 본연의 역할(스토리챗 설계 및 배포)에 집중.
+  - 에셋 축 설계, Cloudflare Pages 디렉터리 레이아웃, `index.html` 반응형 쇼케이스 템플릿, 배포 전 축 무결성 검증(`deploy.py --check`)을 중심으로 문서 재정립.
+
 ## 0.9.3
 
 - **Cloudflare Pages 기반 초고속 호스팅 및 웹 쇼케이스 갤러리 일체화 지원** (`image-assets.md`, `docs/image-assets.md`, `tools/images/deploy.py`).

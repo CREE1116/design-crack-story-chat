@@ -190,22 +190,22 @@ scripts/                          릴리스 빌드, 전체 검증
 
 ---
 
-## 이미지 자산
+## 이미지 호스팅 및 웹 쇼케이스
 
-스토리챗은 외부 호스팅 이미지를 `{IMG}/인물/상황.png` 형태로 조합해 부를 수 있습니다.
+스토리챗은 외부 호스팅 이미지를 `![]({IMG}/카테고리/번호.png)` 형태로 조합해 실시간 호출할 수 있습니다.
 
-**이미지를 생성하는 기능은 없습니다.** 어떤 도구로 그릴지는 제작자가 정할 일이고, 생성기는 몇 달 단위로 바뀝니다. 대신 생성기와 무관하게 필요한 두 가지를 제공합니다 — 프롬프트 시트와, 넣은 파일이 프롬프트의 요구와 맞는지 검사해 올리는 것.
+**이미지를 직접 생성하는 기능은 없습니다.** 대신 **Cloudflare Pages를 통한 초고속 호스팅(서울 엣지 0초대 로딩 & 무제한 트래픽)** 및 **웹 쇼케이스 갤러리(`index.html`) 자동 생성**을 지원합니다.
 
 ```bash
 export CRACK_PROMPTS=examples/hunter/build/assets/prompts.json
 cd tools/images
 
-python3 deploy.py --scaffold --root ~/내이미지폴더   # 축 목록대로 폴더·배치표 생성
-python3 deploy.py --check    --root ~/내이미지폴더   # 이름이 축 목록과 맞는지
-python3 deploy.py --root ~/내이미지폴더 --repo 계정/저장소 --create
+python3 deploy.py --scaffold --root ~/내이미지폴더   # 폴더, _배치표.md, index.html(웹 갤러리) 자동 생성
+python3 deploy.py --check    --root ~/내이미지폴더   # 파일 이름이 축 목록과 맞는지 검사
 ```
 
-`--scaffold`가 인물·장면별 폴더를 미리 깔고 폴더마다 들어갈 정확한 파일 이름을 적어둡니다. 그림은 넣기만 하면 됩니다. 올리기 전에 **축의 닫힌 목록과 실제 파일 이름이 일치하는지 검사**합니다 — 한 글자만 달라도 영원히 깨진 링크가 되는데, 플레이 중에는 그냥 이미지가 안 뜨는 것으로만 보여서 원인을 찾기 어렵기 때문입니다.
+- `--scaffold`가 인물·장면별 폴더와 **Cloudflare Pages 배포용 웹 갤러리(`index.html`)**를 자동 생성합니다.
+- `deploy.py --check`가 배포 전 **축 목록과 파일명이 정확히 일치하는지 검사**하여 깨진 링크를 100% 방지합니다.
 
 자세한 내용은 [docs/image-assets.md](docs/image-assets.md)에 있습니다.
 

@@ -22,7 +22,7 @@ Read the following references completely when their condition applies:
 - Creating the paired safe/unsafe integrated prompts or defining content intensity and escalation boundaries: [references/content-variants.md](references/content-variants.md)
 - Shortening an integrated prompt, lore, character sheet, or rules with shared cultural/model knowledge: [references/semantic-compression.md](references/semantic-compression.md)
 - Assembling files into a Crack prompt, status window, user-note rule, or media rule: [references/crack-prompt-rules.md](references/crack-prompt-rules.md)
-- Producing the image assets a media rule refers to, or building batch generation tooling for them: [references/image-assets.md](references/image-assets.md)
+- Designing image directories, Cloudflare Pages hosting, and showcase web gallery: [references/image-assets.md](references/image-assets.md)
 - Writing in-prompt media rules, URL schemas, and throttling image output: [references/image-output-rules.md](references/image-output-rules.md)
 - Creating, splitting, triggering, or auditing Crack keyword-book entries and trigger directives: [references/keyword-book.md](references/keyword-book.md)
 - Designing conversation continuity, relationship progression, time, or long-session recall: [references/conversation-continuity.md](references/conversation-continuity.md)
