@@ -1,5 +1,13 @@
 # 변경 내역
 
+## 0.9.8
+
+- **18금(🔞) 이모지 선제 표출 규칙 및 키워드북 연동 메커니즘 명문화** (`status-window-guide.md`, `crack-prompt-rules.md`, `system-prompt-presets.md`).
+  - 키스, 스킨십 심화, 침실 이동 등 성적(19+) 장면의 전조 감지 시 이번 턴 상태창 `[상태]` 슬롯에 반드시 `[🔞]` 또는 `[💋]`을 선제 표출하도록 규정.
+  - 상태창의 `🔞` 이모지를 통해 시스템 키워드 엔진이 다음 턴에 성애 연출 모듈(`kb.directive_nsfw`)과 `s` 시리즈 성인 CG 규칙을 지연 없이 즉각 로드하도록 연동.
+- **공식 쇼케이스 웹페이지 GitHub Pages 배포 완료** (`https://cree1116.github.io/design-crack-story-chat/`).
+  - SVG 다크 모노그램 플레이스홀더를 채운 완성형 웹 쇼케이스 갤러리를 `gh-pages` 브랜치로 자동 배포.
+
 ## 0.9.7
 
 - **쇼케이스 웹 템플릿 실시간 프리뷰 및 SVG 플레이스홀더 렌더러 탑재** (`tools/images/web_template/app.js`).
