@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07050d">
+  <meta name="description" content="크랙 스토리챗 공식 에셋 갤러리 및 세계관 웹 쇼케이스">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="스토리챗 에셋 갤러리 & 캐릭터 도감">
+  <meta property="og:description" content="공식 캐릭터 도감과 고해상도 WebP 일러스트 라이브러리">
+  <meta property="og:image" content="/thumbnail.webp">
+  <title>스토리챗 에셋 갤러리 & 캐릭터 도감</title>
+  <link rel="icon" href="/thumbnail.webp" type="image/webp">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div class="ambient ambient-three" aria-hidden="true"></div>
+
+  <!-- 헤더 네비게이션 -->
+  <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="처음으로">
+      <span class="wordmark-mark">C</span>
+      <span class="wordmark-text">CRACK ARCHIVE</span>
+    </a>
+    <nav aria-label="주요 메뉴" class="header-nav">
+      <a href="#story">세계관</a>
+      <a href="#gallery">에셋 갤러리</a>
+      <a href="#characters">인물 도감</a>
+    </nav>
+    <div class="header-controls">
+      <!-- 19+ 성인 모드 토글 -->
+      <button type="button" class="nsfw-toggle" id="nsfw-toggle" title="19+ 특수 씬 및 CG 표시 전환">
+        <span class="nsfw-badge">SAFE</span>
+        <span class="nsfw-label">19+ 모드</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- 히어로 섹션 -->
+    <section class="hero" aria-labelledby="hero-title">
+      <img class="hero-art" src="/banner.webp" alt="작품 대표 배너" onerror="this.style.opacity='0'">
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <p class="eyebrow">OFFICIAL ASSET ARCHIVE & ROSTER</p>
+        <h1 id="hero-title"><span class="title-sub">크랙 스토리챗</span><br>공식 에셋 갤러리</h1>
+        <p class="hero-lead">스토리챗에 실시간 연동되는 공식 고해상도 WebP 일러스트 및 캐릭터 도감 라이브러리입니다. 모든 이미지를 클릭해 표정별 바리에이션과 프롬프트 코드를 확인할 수 있습니다.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#characters">인물 도감 둘러보기</a>
+          <a class="button ghost" href="#gallery">전체 에셋 갤러리</a>
+        </div>
+      </div>
+      <div class="hero-stats" aria-label="작품 정보">
+        <div class="stat-card">
+          <b id="stat-characters">0</b>
+          <span>등장인물</span>
+        </div>
+        <div class="stat-card">
+          <b id="stat-assets">0</b>
+          <span>에셋 바리에이션</span>
+        </div>
+        <div class="stat-card">
+          <b>WebP</b>
+          <span>초고속 엣지 CDN</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 세계관 및 진행 원칙 섹션 -->
+    <section class="section story-section" id="story">
+      <div class="section-heading">
+        <p class="eyebrow">THE PREMISE & WORLD</p>
+        <h2>선택한 방식이<br>새로운 전설이 된다</h2>
+        <p>크랙 스토리챗의 세계는 플레이어의 선택에 따라 유기적으로 반응하며 진행됩니다. 정해진 정답 대신, 당신만의 선택으로 위기를 돌파하고 새로운 서사를 증명하세요.</p>
+      </div>
+      <div class="principles">
+        <article class="principle-card">
+          <span class="index">01</span>
+          <h3>배운다</h3>
+          <p>세계관의 규칙, 세력 간의 역학 관계, 인물들의 과거를 파악하고 숨겨진 단서를 수집합니다.</p>
+        </article>
+        <article class="principle-card">
+          <span class="index">02</span>
+          <h3>선택한다</h3>
+          <p>자신만의 방식과 행동으로 위기에 맞서며, 관계의 변화와 서사의 분기점을 이끌어냅니다.</p>
+        </article>
+        <article class="principle-card">
+          <span class="index">03</span>
+          <h3>증명한다</h3>
+          <p>선택의 결과가 세계의 정사로 확정되며, 갤러리의 새로운 상황 CG와 인연이 해금됩니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 에셋 갤러리 및 인물 도감 섹션 -->
+    <section class="section character-section" id="characters">
+      <div class="character-heading">
+        <div>
+          <p class="eyebrow">ASSET ROSTER & VIEWER</p>
+          <h2>공식 에셋 & 등장인물</h2>
+        </div>
+
+        <!-- 갤러리 카테고리 탭 -->
+        <div class="category-tabs" role="tablist" aria-label="에셋 카테고리">
+          <button class="cat-tab active" type="button" data-tab="characters" role="tab" aria-selected="true">👤 인물 도감</button>
+          <button class="cat-tab" type="button" data-tab="scenes" role="tab" aria-selected="false">📍 배경·장소</button>
+          <button class="cat-tab" type="button" data-tab="mobs" role="tab" aria-selected="false">👾 위협·몬스터</button>
+          <button class="cat-tab" type="button" data-tab="events" role="tab" aria-selected="false">🎬 이벤트 CG</button>
+        </div>
+      </div>
+
+      <!-- 검색 및 필터 컨트롤 바 -->
+      <div class="control-bar" id="gallery">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="search-input" placeholder="인물명, 역할, 키워드 검색..." aria-label="에셋 검색">
+        </div>
+        <div class="filters" role="group" aria-label="등장인물 그룹 필터" id="filter-container">
+          <button class="filter-pill active" type="button" data-filter="all">전체</button>
+        </div>
+        <div class="sort-box">
+          <select id="sort-select" aria-label="정렬 순서">
+            <option value="id-asc">번호순 (오름차순)</option>
+            <option value="id-desc">번호순 (내림차순)</option>
+            <option value="name-asc">이름순</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 메인 카드 그리드 -->
+      <div class="character-grid" id="character-grid"></div>
+      
+      <!-- 검색 결과 없음 안내 -->
+      <div class="empty-state hidden" id="empty-state">
+        <p>일치하는 에셋을 찾을 수 없습니다.</p>
+      </div>
+    </section>
+
+    <!-- 피날레 섹션 -->
+    <section class="section finale">
+      <img src="/thumbnail.webp" alt="작품 대표 이미지" onerror="this.style.display='none'">
+      <div class="finale-content">
+        <p class="eyebrow">YOUR STORY BEGINS NOW</p>
+        <h2>복원하지 마라.<br>새롭게 증명하라.</h2>
+        <p>살아 숨 쉬는 인물들과 함께하는 크랙 스토리챗. 프롬프트 마크다운 태그를 복사하여 세션에 바로 적용해보세요.</p>
+        <a class="button primary" href="#top">맨 위로 이동</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- 캐릭터 상세 모달 인스펙터 -->
+  <dialog class="modal" id="character-modal" aria-labelledby="modal-name">
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+    <div class="modal-card">
+      <button type="button" class="modal-close" id="modal-close" aria-label="닫기">✕</button>
+      
+      <div class="modal-body">
+        <!-- 모달 좌측: 고해상도 프리뷰 -->
+        <div class="modal-preview">
+          <img id="modal-image" src="" alt="캐릭터 포트레이트" loading="lazy">
+          <div class="modal-img-overlay">
+            <span class="modal-id-badge" id="modal-id">01</span>
+            <button type="button" class="btn-copy-tag" id="modal-copy-tag" title="이미지 주소 복사">
+              <span>🔗 주소 복사</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 모달 우측: 인물 프로필 & 표정 바리에이션 갤러리 -->
+        <div class="modal-info">
+          <div class="modal-header">
+            <span class="modal-type" id="modal-type">기사학부 · 1학년</span>
+            <h2 class="modal-name" id="modal-name">에리카 아르덴</h2>
+            <p class="modal-role" id="modal-role">깐깐한 정석파 라이벌</p>
+            <p class="modal-quote" id="modal-quote">“기본을 무시한 검술은 검술이 아니야.”</p>
+          </div>
+
+          <!-- 표정/상황 바리에이션 선택기 -->
+          <div class="variant-section">
+            <div class="variant-title-row">
+              <h3>표정 및 상황 바리에이션</h3>
+              <span class="variant-count" id="variant-count">0개</span>
+            </div>
+            <div class="variant-grid" id="modal-variants"></div>
+          </div>
+
+          <!-- 이미지 주소 힌트 -->
+          <div class="prompt-hint">
+            <label for="modal-tag-input">호출 주소 / 파일명:</label>
+            <div class="tag-input-row">
+              <input type="text" id="modal-tag-input" readonly value="/01/a01.webp">
+              <button type="button" class="btn-small primary" id="btn-copy-input">복사</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 토스트 알림 -->
+  <div class="toast" id="toast" role="alert" aria-live="polite">
+    <span class="toast-message">클립보드에 복사되었습니다!</span>
+  </div>
+
+  <!-- 플로팅 맨위로 버튼 -->
+  <button type="button" class="back-to-top" id="back-to-top" aria-label="맨 위로 가기">↑</button>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-brand">
+        <strong>CRACK STORY CHAT</strong>
+        <span>공식 에셋 갤러리 & 쇼케이스</span>
+      </div>
+      <div class="footer-meta">
+        <span>HOSTED ON CLOUDFLARE PAGES</span>
+        <span>HIGH EFFICIENCY WEBP FORMAT</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
