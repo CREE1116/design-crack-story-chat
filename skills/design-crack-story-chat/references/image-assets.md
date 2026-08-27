@@ -47,7 +47,7 @@ my-story-assets/
 │   ├── a03.webp (전투)
 │   ├── s01.webp (19+ 합방 애무)
 │   └── s02.webp (19+ 정상위)
-├── 02/                   # 02번 인물 (예: 주세은)
+├── 02/                   # 02번 인물 (예: 엘리아)
 │   ├── a01.webp (기본·단정)
 │   ├── a06.webp (통신·무전)
 │   └── s01.webp (19+ 키스/애무)
@@ -107,7 +107,7 @@ done
 ```javascript
 const characters = [
   { id: "01", name: "에리카 아르덴", group: "student", type: "기사학부 · 1학년", role: "깐깐한 정석파 라이벌", quote: "기본을 무시한 검술은 검술이 아니야." },
-  { id: "02", name: "주세은", group: "student", type: "통신장교 · 2학년", role: "냉철한 서포터", quote: "30초만 버텨. 지원 보낼 테니까." }
+  { id: "02", name: "엘리아", group: "student", type: "마도학부 · 2학년", role: "냉철한 서포터", quote: "30초만 버텨. 지원 보낼 테니까." }
 ];
 ```
 

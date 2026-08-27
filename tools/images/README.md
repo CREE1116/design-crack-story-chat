@@ -1,6 +1,30 @@
 # 이미지 자산 관리 및 Cloudflare Pages 배포 도구
 
-스토리챗에 사용할 이미지는 제작자가 준비한 이미지를 WebP로 최적화하고, Cloudflare Pages에 호스팅하여 웹 쇼케이스 갤러리와 함께 서빙하는 파이프라인을 제공합니다.
+스토리챗에 사용할 이미지는 단부루 위키 기반의 **초정밀 캐릭터 시각 지문(Visual Fingerprint) 프롬프트**를 구성하고, 제작된 이미지를 WebP로 최적화하여 Cloudflare Pages 및 웹 쇼케이스 갤러리로 서빙하는 통합 툴체인을 제공합니다.
+
+---
+
+## 0. 단부루 공식 태그 검색 및 검증 (`search_tag.py`)
+
+캐릭터의 체형, 헤어, 의상, 눈매 등의 태그를 단부루 2024 공식 위키 DB에서 실시간 검색합니다:
+
+```bash
+python3 search_tag.py "thigh gap" "high ponytail" "tactical vest"
+```
+
+---
+
+## 0.1. 캐릭터 외형 베이스 프롬프트 컴파일러 (`compose_character.py`)
+
+체형 및 신체 고유 디테일(가슴 볼륨, 근육/탄탄함, 골격 실루엣, 허벅지/골반/쇄골 등), 헤어 3요소(색상+스타일+기장), 의상 전 파츠 색상 결속을 자동 린팅하고 불변 베이스 프롬프트 및 UC(Undesired Content)를 생성합니다:
+
+```bash
+# 데모 실행 및 린팅 테스트
+python3 compose_character.py --demo
+
+# characters.md 파싱 및 검증
+python3 compose_character.py --parse-md <작품>/characters.md
+```
 
 ---
 

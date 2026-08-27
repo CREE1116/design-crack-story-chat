@@ -75,7 +75,7 @@
 # `kb.directive_combat` — 연출_특수전투
 - activation_setting: 전체 시작 설정
 - activation_when: 사용자 메시지 또는 모델 출력에 키워드가 감지될 때
-- keywords: [전투, 결투, 교전, 오버라이드, 각성]
+- keywords: [전투, 결투, 교전, 극한전투, 각성]
 
 ## Entry text
 [전투 연출 지침]

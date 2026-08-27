@@ -1,20 +1,18 @@
 /**
  * 크랙 스토리챗 공식 에셋 갤러리 & 쇼케이스 인터랙티브 스크립트
  * - 인물/장소/몬스터/이벤트 4대 카테고리 탭 탐색
- * - 19+ NSFW 모드 토글 (localStorage 연동)
- * - 실시간 검색, 그룹 필터, 정렬
- * - 캐릭터 상세 인스펙터 모달 & 표정 바리에이션 선택기
- * - 원클릭 프롬프트 마크다운 태그 복사 & 토스트 알림
+ * - 실시간 검색, 그룹 필터, 번호순/이름순 정렬
+ * - 캐릭터 상세 인스펙터 모달 & 표정/상황 바리에이션 뷰어
  */
 
 // 전역 데이터 (deploy.py가 주입하거나 기본 fallback 사용)
 const CHARACTERS_DATA = window.CHARACTERS_DATA || [
-  { id: "01", name: "에리카 아르덴", group: "student", type: "기사학부 · 1학년", role: "깐깐한 정석파 라이벌", quote: "기본을 무시한 검술은 검술이 아니야.", variants: ["a01", "a02", "a03", "a04", "a05", "a06", "s01", "s02"] },
+  { id: "01", name: "에리카 아르덴", group: "student", type: "기사학부 · 1학년", role: "깐깐한 정석파 라이벌", quote: "기본을 무시한 검술은 검술이 아니야.", variants: ["a01", "a02", "a03", "a04", "a05", "a06"] },
   { id: "02", name: "테오 아르덴", group: "student", type: "기사학부 · 1학년", role: "호쾌한 전투광", quote: "생각은 나중에. 일단 붙자.", variants: ["a01", "a02", "a03"] },
-  { id: "03", name: "셀리아 아르덴", group: "student", type: "기사학부 · 4학년", role: "차가운 완벽주의 선배", quote: "다시. 아직 부족해.", variants: ["a01", "a02", "a03", "s01"] },
-  { id: "04", name: "엘리아 벨로아", group: "student", type: "마법학부 · 1학년", role: "나른한 마법 오타쿠", quote: "잠깐. 그 술식 다시 보여줘.", variants: ["a01", "a02", "a03", "s01", "s02"] },
+  { id: "03", name: "셀리아 아르덴", group: "student", type: "기사학부 · 4학년", role: "차가운 완벽주의 선배", quote: "다시. 아직 부족해.", variants: ["a01", "a02", "a03"] },
+  { id: "04", name: "엘리아 벨로아", group: "student", type: "마법학부 · 1학년", role: "나른한 마법 오타쿠", quote: "잠깐. 그 술식 다시 보여줘.", variants: ["a01", "a02", "a03"] },
   { id: "05", name: "루시안 벨로아", group: "student", type: "마법학부 · 4학년", role: "오만한 엘리트 선배", quote: "재현된다면 제 평가를 고치죠.", variants: ["a01", "a02"] },
-  { id: "06", name: "미라 로젠펠트", group: "student", type: "상업·공통 · 3학년", role: "기술을 가치로 읽는 협상가", quote: "그래서 이 기술의 가치는 얼마일까?", variants: ["a01", "a02", "s01"] }
+  { id: "06", name: "미라 로젠펠트", group: "student", type: "상업·공통 · 3학년", role: "기술을 가치로 읽는 협상가", quote: "그래서 이 기술의 가치는 얼마일까?", variants: ["a01", "a02"] }
 ];
 
 const SCENES_DATA = window.SCENES_DATA || [
@@ -29,8 +27,7 @@ const MOBS_DATA = window.MOBS_DATA || [
 ];
 
 const EVENTS_DATA = window.EVENTS_DATA || [
-  { id: "event/a01", name: "입학 선서식", type: "공식 행사", role: "전체 신입생 집합", variants: ["a01"] },
-  { id: "event/s01", name: "비밀 연구실 밀회", type: "19+ 특수 씬", role: "합방 및 서약 이벤트", variants: ["s01"], isNsfw: true }
+  { id: "event/a01", name: "입학 선서식", type: "공식 행사", role: "전체 신입생 집합", variants: ["a01"] }
 ];
 
 // 상태 관리 객체
@@ -39,7 +36,6 @@ const state = {
   currentFilter: "all",
   searchQuery: "",
   sortBy: "id-asc",
-  isNsfwMode: localStorage.getItem("crack_nsfw_mode") === "true",
   activeItem: null,
   activeVariant: "a01"
 };
@@ -51,11 +47,9 @@ const el = {
   searchInput: document.querySelector("#search-input"),
   sortSelect: document.querySelector("#sort-select"),
   categoryTabs: document.querySelectorAll(".cat-tab"),
-  nsfwToggle: document.querySelector("#nsfw-toggle"),
   emptyState: document.querySelector("#empty-state"),
   statCharacters: document.querySelector("#stat-characters"),
   statAssets: document.querySelector("#stat-assets"),
-  toast: document.querySelector("#toast"),
   backToTop: document.querySelector("#back-to-top"),
   // 모달 요소
   modal: document.querySelector("#character-modal"),
@@ -68,32 +62,8 @@ const el = {
   modalRole: document.querySelector("#modal-role"),
   modalQuote: document.querySelector("#modal-quote"),
   modalVariants: document.querySelector("#modal-variants"),
-  variantCount: document.querySelector("#variant-count"),
-  modalTagInput: document.querySelector("#modal-tag-input"),
-  btnCopyInput: document.querySelector("#btn-copy-input"),
-  modalCopyTag: document.querySelector("#modal-copy-tag")
+  variantCount: document.querySelector("#variant-count")
 };
-
-// 토스트 메시지 띄우기
-function showToast(message) {
-  if (!el.toast) return;
-  el.toast.querySelector(".toast-message").textContent = message;
-  el.toast.classList.add("show");
-  clearTimeout(el.toast._timer);
-  el.toast._timer = setTimeout(() => {
-    el.toast.classList.remove("show");
-  }, 2200);
-}
-
-// 클립보드 복사 유틸
-async function copyToClipboard(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    showToast(`클립보드 복사 완료: ${text}`);
-  } catch (err) {
-    showToast(`복사 실패 (직접 복사해주세요): ${text}`);
-  }
-}
 
 // 현재 탭에 따른 데이터 소스 가져오기
 function getCurrentDataset() {
@@ -103,16 +73,6 @@ function getCurrentDataset() {
     case "events": return EVENTS_DATA;
     case "characters":
     default: return CHARACTERS_DATA;
-  }
-}
-
-// 19+ NSFW 모드 UI 동기화
-function syncNsfwToggle() {
-  if (!el.nsfwToggle) return;
-  el.nsfwToggle.classList.toggle("active", state.isNsfwMode);
-  const badge = el.nsfwToggle.querySelector(".nsfw-badge");
-  if (badge) {
-    badge.textContent = state.isNsfwMode ? "19+ ON" : "SAFE";
   }
 }
 
@@ -194,11 +154,7 @@ function renderCards() {
     if (state.currentFilter !== "all" && item.group !== state.currentFilter) {
       return false;
     }
-    // 2. 19+ 필터 (SAFE 모드일 때 19+ 전용 이벤트 숨김)
-    if (!state.isNsfwMode && item.isNsfw) {
-      return false;
-    }
-    // 3. 검색어 필터
+    // 2. 검색어 필터
     if (query) {
       const matchName = item.name && item.name.toLowerCase().includes(query);
       const matchRole = item.role && item.role.toLowerCase().includes(query);
@@ -293,15 +249,12 @@ function renderModalVariants(item) {
   el.modalVariants.innerHTML = "";
 
   const variants = item.variants || ["a01"];
-  // SAFE 모드일 때 s 접두사 숨김 여부 처리
-  const visibleVariants = variants.filter(v => state.isNsfwMode || !v.startsWith("s"));
 
   if (el.variantCount) {
-    el.variantCount.textContent = `${visibleVariants.length}개`;
+    el.variantCount.textContent = `${variants.length}개`;
   }
 
-  visibleVariants.forEach(v => {
-    const isNsfw = v.startsWith("s");
+  variants.forEach(v => {
     let imgPath;
     if (state.currentTab === "characters") {
       imgPath = `./${item.id}/${v}.webp`;
@@ -314,7 +267,7 @@ function renderModalVariants(item) {
     itemEl.className = `variant-item ${state.activeVariant === v ? 'active' : ''}`;
     itemEl.innerHTML = `
       <img src="${imgPath}" alt="${v}" loading="lazy" onerror="this.onerror=null; this.src='${placeholder}';">
-      <span class="variant-badge ${isNsfw ? 'nsfw' : ''}">${v.toUpperCase()}</span>
+      <span class="variant-badge">${v.toUpperCase()}</span>
     `;
 
     itemEl.addEventListener("click", () => {
@@ -327,20 +280,17 @@ function renderModalVariants(item) {
   });
 }
 
-// 모달 프리뷰 및 마크다운 태그 갱신
+// 모달 프리뷰 갱신
 function updateModalPreview() {
   if (!state.activeItem) return;
   const item = state.activeItem;
   const v = state.activeVariant;
 
   let imgPath;
-  let markdownTag;
   if (state.currentTab === "characters") {
     imgPath = `./${item.id}/${v}.webp`;
-    markdownTag = `![]({IMG}/${item.id}/${v}.webp)`;
   } else {
     imgPath = `./${item.id}.webp`;
-    markdownTag = `![]({IMG}/${item.id}.webp)`;
   }
 
   const placeholder = getPlaceholderSvg(item.name, `${item.id}/${v}`);
@@ -352,9 +302,6 @@ function updateModalPreview() {
     el.modalImage.src = imgPath;
     el.modalImage.alt = `${item.name} (${v})`;
   }
-  if (el.modalTagInput) {
-    el.modalTagInput.value = imgPath;
-  }
 }
 
 // 모달 닫기
@@ -365,20 +312,6 @@ function closeModal() {
 
 // 이벤트 리스너 초기화
 function initEvents() {
-  // 19+ NSFW 모드 토글
-  if (el.nsfwToggle) {
-    el.nsfwToggle.addEventListener("click", () => {
-      state.isNsfwMode = !state.isNsfwMode;
-      localStorage.setItem("crack_nsfw_mode", state.isNsfwMode);
-      syncNsfwToggle();
-      renderCards();
-      if (state.activeItem) {
-        renderModalVariants(state.activeItem);
-      }
-      showToast(state.isNsfwMode ? "🔞 19+ 성인 씬 모드가 활성화되었습니다." : "🛡️ SAFE 모드로 전환되었습니다.");
-    });
-  }
-
   // 카테고리 탭 전환
   el.categoryTabs.forEach(tab => {
     tab.addEventListener("click", () => {
@@ -416,18 +349,6 @@ function initEvents() {
     el.modal.addEventListener("cancel", closeModal);
   }
 
-  // 마크다운 태그 복사 버튼들
-  if (el.btnCopyInput) {
-    el.btnCopyInput.addEventListener("click", () => {
-      if (el.modalTagInput) copyToClipboard(el.modalTagInput.value);
-    });
-  }
-  if (el.modalCopyTag) {
-    el.modalCopyTag.addEventListener("click", () => {
-      if (el.modalTagInput) copyToClipboard(el.modalTagInput.value);
-    });
-  }
-
   // 플로팅 맨 위로 버튼 스크롤 옵저버
   window.addEventListener("scroll", () => {
     if (el.backToTop) {
@@ -443,7 +364,6 @@ function initEvents() {
 
 // 초기 실행
 document.addEventListener("DOMContentLoaded", () => {
-  syncNsfwToggle();
   updateStats();
   renderFilterButtons();
   renderCards();
