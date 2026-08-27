@@ -35,7 +35,17 @@ LEADING_TAGS = 4   # 이만큼은 인물마다 달라야 썸네일에서 구분�
 
 
 def parse_roster(characters_md: str) -> set[str]:
-    return set(re.findall(r"^##\s+`char\.([a-z0-9-]+)`", characters_md, re.MULTILINE))
+    headings = re.findall(r"^##\s+(.+)$", characters_md, re.MULTILINE)
+    roster: set[str] = set()
+    for h in headings:
+        m = re.search(r"`?char\.([a-z0-9-]+)`?", h)
+        if m:
+            roster.add(m.group(1))
+            continue
+        name_match = re.match(r"^([가-힣a-zA-Z0-9\s]+?)(?:\s*[「『·\(0-9]|$)", h.strip())
+        if name_match:
+            roster.add(name_match.group(1).strip())
+    return roster
 
 
 def validate(project: Path, quiet: bool = False) -> bool:
@@ -54,9 +64,24 @@ def validate(project: Path, quiet: bool = False) -> bool:
     people = cfg.get("characters", {})
     ok = True
 
-    # 1. 명부 대조 — 두 방향 모두
-    missing = sorted(roster - set(people))
-    orphan = sorted(set(people) - roster)
+    # 1. 명부 대조 — 한글명 및 슬러그 양방향 매핑
+    people_map: dict[str, str] = {}
+    for slug, obj in people.items():
+        people_map[slug] = slug
+        if isinstance(obj, dict) and "ko" in obj:
+            people_map[obj["ko"]] = slug
+
+    missing: list[str] = []
+    matched_slugs: set[str] = set()
+    for r in sorted(roster):
+        if r in people_map:
+            matched_slugs.add(people_map[r])
+        elif r in people:
+            matched_slugs.add(r)
+        else:
+            missing.append(r)
+
+    orphan = sorted(set(people.keys()) - matched_slugs)
     if missing:
         ok = False
         print(f"FAIL 이미지 프롬프트 누락 {len(missing)}명: {', '.join(missing)}")

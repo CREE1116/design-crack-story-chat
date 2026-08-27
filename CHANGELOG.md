@@ -1,5 +1,11 @@
 # 변경 내역
 
+## 0.10.3
+
+- **캐릭터 원본 명세(`characters.md`) 내 구형 슬러그 문법(`char.xxx`) 완전 제거 및 자연어 단일화**.
+  - `## \`char.shim-gaeul\` — 심가을` 같은 프로그래머식 난해한 문법을 걷어내고 `## 심가을 「測候」` (또는 `## 에리카 아르덴 01`)와 같은 자연스러운 한국어 인물명 헤딩으로 단일화.
+  - `check_image_assets.py` 린터에서 한국어 인물명과 이미지 슬러그를 양방향 자동 매핑하도록 고도화.
+
 ## 0.10.2
 
 - **키워드북 초경량 직관형 포맷 전면 개편 및 린터 동기화** (`references/keyword-book.md`, `scripts/check_keyword_book.py`, `scripts/check_kb_slots.py`, `examples/hunter/build/keyword-book.md`).
