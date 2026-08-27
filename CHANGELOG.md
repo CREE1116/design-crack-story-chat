@@ -1,5 +1,12 @@
 # 변경 내역
 
+## 0.9.5
+
+- **인물 번호화, a/s 접두사, WebP 자동 변환 및 쇼케이스 웹 템플릿 고도화** (`image-output-rules.md`, `image-assets.md`, `tools/images/`).
+  - `{base}/{id}/a01.webp` (Safe/일반) 및 `{base}/{id}/s01.webp` (NSFW/성인) 표준 URL 스키마 및 시스템 프롬프트/키워드북 매핑 규격화.
+  - 배포 시 모든 이미지를 `.webp` 포맷으로 자동 일괄 변환(`convert_to_webp`) 파이프라인 탑재.
+  - 반응형 다크 아카데미 쇼케이스 웹 템플릿(`tools/images/web_template/`: `index.html`, `styles.css`, `app.js`) 내장 및 `--scaffold` 시 자동 주입 지원.
+
 ## 0.9.4
 
 - **이미지 생성 프롬프트 문법 전면 제거 및 호스팅/웹 갤러리 제작 전문화** (`image-assets.md`, `docs/image-assets.md`, `SKILL.md`).

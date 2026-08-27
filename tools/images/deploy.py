@@ -61,11 +61,37 @@ def resolve_config(explicit: str | None) -> Path:
     )
 
 
-EXT = ".png"
+EXT = ".webp"
+SUPPORTED_EXTS = {".webp", ".png", ".jpg", ".jpeg"}
 # 축 이름 → 저장소 안의 디렉터리. 인물은 슬러그 자체가 디렉터리라 별도 처리.
-FIXED_AXES = {"scenes": "scene", "backgrounds": "bg", "monsters": "mob"}
-MAX_FILE_MB = 20        # jsDelivr 파일 상한보다 훨씬 보수적으로 잡는다
+FIXED_AXES = {"scenes": "scene", "backgrounds": "bg", "monsters": "mob", "events": "event"}
+MAX_FILE_MB = 10        # WebP는 보통 500KB~2MB 사이
 WARN_FILE_MB = 2        # 스토리챗 삽화로는 이 이상이면 대개 과하다
+
+
+def convert_to_webp(root: Path, quality: int = 85) -> int:
+    """루트 디렉터리 내의 모든 png/jpg 파일을 webp로 변환한다."""
+    count = 0
+    try:
+        from PIL import Image
+    except ImportError:
+        print("  [경고] Pillow(PIL) 모듈이 없어 자동 webp 변환을 건너뜁니다. (pip install Pillow)")
+        return 0
+
+    for p in sorted(root.rglob("*")):
+        if p.is_file() and p.suffix.lower() in {".png", ".jpg", ".jpeg"}:
+            webp_path = p.with_suffix(".webp")
+            try:
+                with Image.open(p) as img:
+                    img.save(webp_path, "WEBP", quality=quality)
+                p.unlink()
+                count += 1
+                print(f"  [변환 완료] {p.name} → {webp_path.name}")
+            except Exception as e:
+                print(f"  [변환 실패] {p}: {e}")
+    if count:
+        print(f"▸ 총 {count}개 이미지를 WebP로 일괄 변환했습니다.")
+    return count
 
 
 def run(cmd: list[str], cwd: Path | None = None, check: bool = True) -> str:
@@ -222,64 +248,41 @@ def scaffold(cfg: dict, root: Path) -> int:
 
     (root / "_배치표.md").write_text("\n".join(lines), encoding="utf-8")
 
-    # Cloudflare Pages 및 웹 호스팅용 index.html 갤러리 생성
-    html_cards = []
-    for slug, entry in people.items():
-        html_cards.append(f"  <h2>{label(entry, slug)} ({slug})</h2>\n  <div class=\"grid\">")
-        for s, sv in situations.items():
-            rel_path = f"{slug}/{s}{EXT}"
-            html_cards.append(
-                f"    <div class=\"card\">\n"
-                f"      <img src=\"{rel_path}\" alt=\"{label(sv, s)}\" loading=\"lazy\" onerror=\"this.parentElement.style.opacity='0.4'\">\n"
-                f"      <div class=\"info\"><strong>{label(sv, s)}</strong><div class=\"path\">{rel_path}</div></div>\n"
-                f"    </div>"
-            )
-        html_cards.append("  </div>")
+    # Cloudflare Pages 쇼케이스 웹 템플릿 (index.html, styles.css, app.js) 복사 및 주입
+    template_dir = HERE / "web_template"
+    if (template_dir / "styles.css").is_file():
+        shutil.copy2(template_dir / "styles.css", root / "styles.css")
+    if (template_dir / "index.html").is_file():
+        shutil.copy2(template_dir / "index.html", root / "index.html")
 
-    for key, folder_name in FIXED_AXES.items():
-        entries = cfg.get(key, {})
-        if not entries:
-            continue
-        html_cards.append(f"  <h2>{folder_name}</h2>\n  <div class=\"grid\">")
-        for n, v in entries.items():
-            rel_path = f"{folder_name}/{n}{EXT}"
-            html_cards.append(
-                f"    <div class=\"card\">\n"
-                f"      <img src=\"{rel_path}\" alt=\"{label(v, n)}\" loading=\"lazy\" onerror=\"this.parentElement.style.opacity='0.4'\">\n"
-                f"      <div class=\"info\"><strong>{label(v, n)}</strong><div class=\"path\">{rel_path}</div></div>\n"
-                f"    </div>"
-            )
-        html_cards.append("  </div>")
+    # characters 데이터 추출하여 app.js 생성
+    js_characters = []
+    for idx, (slug, entry) in enumerate(people.items(), 1):
+        num_id = f"{idx:02d}"
+        js_characters.append({
+            "id": num_id,
+            "name": label(entry, slug),
+            "group": "student" if idx <= 15 else "faculty",
+            "type": entry.get("type", "주요 인물"),
+            "role": entry.get("role", slug),
+            "quote": entry.get("quote", ""),
+            "img": f"/{num_id}/a01{EXT}"
+        })
 
-    html_content = (
-        "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n"
-        "  <meta charset=\"UTF-8\">\n"
-        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
-        "  <title>스토리챗 에셋 갤러리 (Cloudflare Pages)</title>\n"
-        "  <style>\n"
-        "    body { background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; padding: 2rem; margin: 0; }\n"
-        "    h1 { color: #38bdf8; margin-bottom: 0.5rem; }\n"
-        "    .subtitle { color: #94a3b8; margin-bottom: 2rem; }\n"
-        "    h2 { color: #a855f7; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-top: 2rem; }\n"
-        "    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-top: 1rem; }\n"
-        "    .card { background: #1e293b; border-radius: 8px; overflow: hidden; border: 1px solid #334155; text-align: center; }\n"
-        "    .card img { width: 100%; height: auto; display: block; background: #020617; min-height: 120px; }\n"
-        "    .card .info { padding: 0.75rem; font-size: 0.875rem; }\n"
-        "    .card .path { color: #38bdf8; font-family: monospace; font-size: 0.8rem; margin-top: 0.25rem; }\n"
-        "  </style>\n</head>\n<body>\n"
-        "  <h1>스토리챗 에셋 갤러리</h1>\n"
-        "  <p class=\"subtitle\">Cloudflare Pages에 호스팅되는 공식 일러스트 및 미디어 라이브러리입니다.</p>\n"
-        + "\n".join(html_cards)
-        + "\n</body>\n</html>\n"
+    app_js_code = (
+        "// 크랙 스토리챗 공식 에셋 갤러리 도감 데이터\n"
+        f"window.CHARACTERS_DATA = {json.dumps(js_characters, ensure_ascii=False, indent=2)};\n\n"
     )
-    (root / "index.html").write_text(html_content, encoding="utf-8")
+    if (template_dir / "app.js").is_file():
+        app_js_code += (template_dir / "app.js").read_text(encoding="utf-8")
+    (root / "app.js").write_text(app_js_code, encoding="utf-8")
 
     total = len(people) * len(situations) + sum(len(cfg.get(k, {})) for k in FIXED_AXES)
     print(f"폴더 {made}개, 자리 {total}개를 준비했습니다: {root}")
     print(f"  배치표: {root / '_배치표.md'}")
-    print(f"  웹 갤러리: {root / 'index.html'} (Cloudflare Pages 루트)")
+    print(f"  웹 쇼케이스: {root / 'index.html'}, {root / 'styles.css'}, {root / 'app.js'}")
     print(f"  이미 채워진 자리: {len(found)}개")
-    print("\n  그림을 넣은 뒤 Cloudflare Pages에 배포하거나 `python deploy.py --check` 로 이름을 확인하세요.")
+    print("\n  WebP 이미지를 넣은 뒤 Cloudflare Pages에 배포하거나 `python deploy.py --check` 로 확인하세요.")
     return 0
 
 
@@ -381,7 +384,9 @@ def main() -> int:
     ap.add_argument("--create", action="store_true", help="저장소가 없으면 공개로 생성")
     ap.add_argument("--tag", help="이 태그를 찍고 주소에 사용 (캐시 지연 없음)")
     ap.add_argument("--scaffold", action="store_true",
-                    help="축 목록대로 빈 폴더와 배치표를 만든다 (그림 넣기 전에 실행)")
+                    help="축 목록대로 빈 폴더와 배치표, 웹 쇼케이스 템플릿을 만든다")
+    ap.add_argument("--convert-webp", action="store_true",
+                    help="폴더 내의 PNG/JPG 이미지를 WebP로 일괄 변환한다")
     ap.add_argument("--check", action="store_true", help="검사만 하고 종료")
     ap.add_argument("--dry-run", action="store_true", help="업로드 없이 계획만 출력")
     ap.add_argument("--verify", action="store_true", help="배포 후 주소가 열리는지 확인")
@@ -391,12 +396,21 @@ def main() -> int:
     cfg = load_config(config_path)
     root = Path(args.root or Path.cwd() / cfg.get("config", {}).get("output_dir", "out"))
 
+    if args.convert_webp:
+        if not root.is_dir():
+            sys.exit(f"이미지 폴더가 없습니다: {root}")
+        convert_to_webp(root)
+        return 0
+
     if args.scaffold:
         root.mkdir(parents=True, exist_ok=True)
         return scaffold(cfg, root)
 
     if not root.is_dir():
         sys.exit(f"이미지 폴더가 없습니다: {root}\n  먼저 `python deploy.py --scaffold` 를 실행하세요.")
+
+    # 검사 전 자동 webp 변환 시도
+    convert_to_webp(root)
 
     ok, files = audit(cfg, root)
     if not ok:

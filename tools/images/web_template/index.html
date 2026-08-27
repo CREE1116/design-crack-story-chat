@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0814">
+  <meta name="description" content="크랙 스토리챗 공식 에셋 갤러리 및 세계관 웹 쇼케이스">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="스토리챗 에셋 갤러리">
+  <meta property="og:description" content="공식 캐릭터 도감과 일러스트 라이브러리">
+  <meta property="og:image" content="/thumbnail.webp">
+  <title>스토리챗 에셋 갤러리</title>
+  <link rel="icon" href="/thumbnail.webp" type="image/webp">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="처음으로">
+      <span class="wordmark-mark">C</span>
+      <span>CRACK STORY CHAT</span>
+    </a>
+    <nav aria-label="주요 메뉴">
+      <a href="#story">이야기</a>
+      <a href="#world">세계관</a>
+      <a href="#calendar">일정/타임라인</a>
+      <a href="#characters">인물 도감</a>
+    </nav>
+    <span class="age-mark">OFFICIAL ASSETS</span>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <img class="hero-art" src="/banner.webp" alt="작품 대표 배너" onerror="this.style.display='none'">
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <p class="eyebrow">OFFICIAL ASSET ARCHIVE & ROSTER</p>
+        <h1 id="hero-title"><span>크랙 스토리챗</span><br>공식 에셋 갤러리</h1>
+        <p class="hero-lead">스토리챗에 실시간 연동되는 공식 고해상도 WebP 일러스트 및 캐릭터 도감 라이브러리입니다.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#characters">등장인물 도감</a>
+          <a href="#story" class="button ghost">세계관 살펴보기</a>
+        </div>
+      </div>
+      <div class="hero-stats" aria-label="작품 정보">
+        <span><b id="stat-characters">0</b> 주요 인물</span>
+        <span><b>WebP</b> 고압축 CDN</span>
+        <span><b>0s</b> 엣지 서빙</span>
+      </div>
+    </section>
+
+    <section class="section story-section" id="story">
+      <div class="section-heading">
+        <p class="eyebrow">THE PREMISE</p>
+        <h2>선택한 방식이<br>새로운 전설이 된다</h2>
+        <p>크랙 스토리챗의 세계는 플레이어의 선택에 따라 유기적으로 반응하며 진행됩니다. 매 턴 갱신되는 상황과 인물들의 표정 변화를 웹 갤러리에서 실시간으로 확인하세요.</p>
+      </div>
+      <div class="principles">
+        <article>
+          <span class="index">01</span>
+          <h3>배운다</h3>
+          <p>세계관의 규칙, 세력 간의 역학 관계, 인물들의 배경을 파악하고 단서를 수집합니다.</p>
+        </article>
+        <article>
+          <span class="index">02</span>
+          <h3>선택한다</h3>
+          <p>자신만의 방식과 행동으로 위기에 맞서며, 관계의 변화를 이끌어냅니다.</p>
+        </article>
+        <article>
+          <span class="index">03</span>
+          <h3>증명한다</h3>
+          <p>선택의 결과가 서사의 정사로 확정되며, 갤러리의 새로운 상황 CG가 해금됩니다.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section character-section" id="characters">
+      <div class="character-heading">
+        <div>
+          <p class="eyebrow">CAST & ROSTER</p>
+          <h2>당신의 이야기를<br>함께할 인물들</h2>
+        </div>
+        <div class="filters" role="group" aria-label="등장인물 필터" id="filter-container">
+          <button class="active" type="button" data-filter="all">전체</button>
+        </div>
+      </div>
+      <div class="character-grid" id="character-grid"></div>
+    </section>
+
+    <section class="section finale">
+      <img src="/thumbnail.webp" alt="대표 썸네일" onerror="this.style.display='none'">
+      <div>
+        <p class="eyebrow">CRACK STORY CHAT</p>
+        <h2>지금 바로<br>이야기를 시작하라.</h2>
+        <p>선택은 당신의 몫입니다. 살아 숨 쉬는 인물들과 함께 새로운 세계를 탐험하세요.</p>
+        <a class="button primary" href="#top">맨 위로 이동</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>크랙 스토리챗 공식 에셋 갤러리</span>
+    <span>HOSTED ON CLOUDFLARE PAGES · WEBP HIGH EFFICIENCY</span>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
