@@ -1,3 +1,387 @@
+// 크랙 스토리챗 공식 에셋 갤러리 도감 데이터 (deploy.py 생성)
+window.CHARACTERS_DATA = [
+  {
+    "id": "01",
+    "name": "심가을",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "shim-gaeul",
+    "quote": "",
+    "img": "/01/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "02",
+    "name": "주하빈",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "ju-habin",
+    "quote": "",
+    "img": "/02/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "03",
+    "name": "노영훈",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "no-younghoon",
+    "quote": "",
+    "img": "/03/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "04",
+    "name": "반호식",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "ban-hosik",
+    "quote": "",
+    "img": "/04/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "05",
+    "name": "강여진",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "kang-yeojin",
+    "quote": "",
+    "img": "/05/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "06",
+    "name": "도재현",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "do-jaehyeon",
+    "quote": "",
+    "img": "/06/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "07",
+    "name": "윤설아",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "yun-seola",
+    "quote": "",
+    "img": "/07/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "08",
+    "name": "차경윤",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "cha-gyeongyun",
+    "quote": "",
+    "img": "/08/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "09",
+    "name": "서다인",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "seo-dain",
+    "quote": "",
+    "img": "/09/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "10",
+    "name": "하무진",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "ha-mujin",
+    "quote": "",
+    "img": "/10/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "11",
+    "name": "진서리",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "jin-seori",
+    "quote": "",
+    "img": "/11/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "12",
+    "name": "차노을",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "cha-noeul",
+    "quote": "",
+    "img": "/12/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "13",
+    "name": "백하람",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "baek-haram",
+    "quote": "",
+    "img": "/13/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "14",
+    "name": "노강현",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "no-ganghyeon",
+    "quote": "",
+    "img": "/14/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  },
+  {
+    "id": "15",
+    "name": "명서경",
+    "group": "student",
+    "type": "주요 인물",
+    "role": "myeong-seogyeong",
+    "quote": "",
+    "img": "/15/a01.webp",
+    "variants": [
+      "normal",
+      "serious",
+      "combat",
+      "hurt",
+      "soft",
+      "guard"
+    ]
+  }
+];
+window.SCENES_DATA = [
+  {
+    "id": "scene/hq-lobby",
+    "name": "hq-lobby",
+    "type": "배경 및 공간",
+    "role": "hq-lobby",
+    "img": "/scene/hq-lobby.webp",
+    "variants": [
+      "hq-lobby"
+    ]
+  },
+  {
+    "id": "scene/hq-exterior",
+    "name": "hq-exterior",
+    "type": "배경 및 공간",
+    "role": "hq-exterior",
+    "img": "/scene/hq-exterior.webp",
+    "variants": [
+      "hq-exterior"
+    ]
+  },
+  {
+    "id": "scene/measure-room",
+    "name": "measure-room",
+    "type": "배경 및 공간",
+    "role": "measure-room",
+    "img": "/scene/measure-room.webp",
+    "variants": [
+      "measure-room"
+    ]
+  },
+  {
+    "id": "scene/guild-booths",
+    "name": "guild-booths",
+    "type": "배경 및 공간",
+    "role": "guild-booths",
+    "img": "/scene/guild-booths.webp",
+    "variants": [
+      "guild-booths"
+    ]
+  },
+  {
+    "id": "scene/gate-site",
+    "name": "gate-site",
+    "type": "배경 및 공간",
+    "role": "gate-site",
+    "img": "/scene/gate-site.webp",
+    "variants": [
+      "gate-site"
+    ]
+  },
+  {
+    "id": "scene/overflow",
+    "name": "overflow",
+    "type": "배경 및 공간",
+    "role": "overflow",
+    "img": "/scene/overflow.webp",
+    "variants": [
+      "overflow"
+    ]
+  }
+];
+window.MOBS_DATA = [
+  {
+    "id": "mob/swarm",
+    "name": "군체",
+    "type": "적 및 위협",
+    "role": "swarm",
+    "img": "/mob/swarm.webp",
+    "variants": [
+      "swarm"
+    ]
+  },
+  {
+    "id": "mob/beast",
+    "name": "수형",
+    "type": "적 및 위협",
+    "role": "beast",
+    "img": "/mob/beast.webp",
+    "variants": [
+      "beast"
+    ]
+  },
+  {
+    "id": "mob/shell",
+    "name": "갑각",
+    "type": "적 및 위협",
+    "role": "shell",
+    "img": "/mob/shell.webp",
+    "variants": [
+      "shell"
+    ]
+  },
+  {
+    "id": "mob/drift",
+    "name": "부유",
+    "type": "적 및 위협",
+    "role": "drift",
+    "img": "/mob/drift.webp",
+    "variants": [
+      "drift"
+    ]
+  },
+  {
+    "id": "mob/mimic",
+    "name": "의태",
+    "type": "적 및 위협",
+    "role": "mimic",
+    "img": "/mob/mimic.webp",
+    "variants": [
+      "mimic"
+    ]
+  },
+  {
+    "id": "mob/core",
+    "name": "핵",
+    "type": "적 및 위협",
+    "role": "core",
+    "img": "/mob/core.webp",
+    "variants": [
+      "core"
+    ]
+  }
+];
+window.EVENTS_DATA = [];
+
 /**
  * 크랙 스토리챗 공식 에셋 갤러리 & 쇼케이스 인터랙티브 스크립트
  * - 인물/장소/몬스터/이벤트 4대 카테고리 탭 탐색
