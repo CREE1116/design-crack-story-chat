@@ -115,15 +115,70 @@
 
 없는 파일을 실패로 취급하면 안 된다. 프롬프트가 "조합이 없으면 그 자리만 생략"을 이미 규정하므로 **부분 배포가 정상 상태**다. 반대로 목록에 없는 파일은 반드시 막는다. 그것은 프롬프트와 자산이 갈라졌다는 신호다.
 
-### 호스팅
+### 호스팅: Cloudflare Pages + 웹 쇼케이스 일체화 (권장 표준)
 
-정적 파일이면 무엇이든 되지만 다음을 확인한다.
+기존의 raw GitHub이나 jsDelivr는 한국 통신사(SKT/KT/LGU+)별 간헐적 차단, 100MB 단일 파일 제한, 캐시 갱신 지연(수십 분) 문제가 있었습니다. **현재 실전 크랙 생태계에서는 Cloudflare Pages를 통한 웹페이지 + 이미지 동시 호스팅이 표준으로 사용됩니다.**
 
-- **핫링크가 허용되는가.** 이미지 호스트 상당수가 외부 페이지에서의 직접 참조를 막는다.
-- **주소가 축 구조를 그대로 표현할 수 있는가.** 업로드마다 임의 ID를 발급하는 호스트는 조합 주소 방식과 맞지 않는다. 그런 호스트를 쓰면 에셋 목록을 프롬프트에 나열해야 하고, 조합 주소로 아꼈던 글자 예산이 사라진다.
-- **캐시 수명.** CDN을 끼면 갱신이 즉시 반영되지 않는다. 이미지를 교체할 때는 불변 태그·버전 경로를 쓰거나 캐시 무효화 수단을 확인한다.
+#### 1. Cloudflare Pages를 사용하는 이유
+- **서울 엣지(POP) 0초대 로딩**: 한국 유저에게 가장 빠른 초고속 응답 속도와 무제한 대역폭(무료 티어) 제공.
+- **도메인 자유도**: `https://<project-name>.pages.dev/` 무료 도메인 제공 및 개인 커스텀 도메인(`https://jangsue.uk/OR/...`) 원클릭 연결.
+- **Git 연동 자동 배포**: GitHub 저장소에 이미지를 커밋하고 `git push`하면 수 초 만에 글로벌 엣지에 자동 배포.
+- **웹 쇼케이스(Viewer) 일체화**: 단순 파일 저장소가 아니라, 루트에 `index.html`을 두어 **작품 소개, 등장인물 도감(Roster), 일러스트 갤러리를 겸하는 반응형 웹페이지**를 동시에 운영.
 
-배포 도구는 마지막에 **프롬프트에 넣을 기준 주소 한 줄**을 출력한다. 사람이 주소를 손으로 조립하면 축 구조가 틀어진다.
+#### 2. Cloudflare Pages 디렉터리 레이아웃
+```text
+my-story-assets/
+├── index.html            # 작품 소개 및 인물별 일러스트 갤러리 웹페이지
+├── 장소/
+│   ├── 1.png
+│   ├── 2.png
+│   └── 21.png
+├── 주세은/
+│   ├── 1.png
+│   ├── 2.png
+│   └── 7.png
+├── 세라/
+│   ├── 1.png
+│   └── 2.png
+├── 몬스터/
+│   ├── 31.png
+│   └── 32.png
+└── 이벤트/
+    ├── 1.png
+    └── 101.png
+```
+
+#### 3. 기본 쇼케이스 웹페이지 (`index.html`) 템플릿
+루트에 아래와 같은 경량 반응형 웹 갤러리를 배치하면, 유저나 크리에이터가 웹 브라우저로 접속했을 때 작품 설정과 모든 인물의 표정 일러스트를 한눈에 둘러볼 수 있습니다:
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>작품명 — Asset Gallery & Roster</title>
+  <style>
+    body { background: #121212; color: #eee; font-family: sans-serif; padding: 2rem; }
+    h1 { color: #4ade80; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+    .card { background: #1e1e1e; border-radius: 8px; overflow: hidden; border: 1px solid #333; text-align: center; }
+    .card img { width: 100%; height: auto; display: block; }
+    .card .caption { padding: 0.75rem; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>작품명 — Asset Gallery</h1>
+  <p>크랙 스토리챗에 실시간 연동되는 고해상도 공식 일러스트 에셋 라이브러리입니다.</p>
+  <div class="grid">
+    <div class="card"><img src="장소/21.png" alt="지상 폐허"><div class="caption">장소/21.png (지상 폐허)</div></div>
+    <div class="card"><img src="주세은/1.png" alt="주세은 기본"><div class="caption">주세은/1.png (기본)</div></div>
+    <div class="card"><img src="주세은/7.png" alt="주세은 무전"><div class="caption">주세은/7.png (무전)</div></div>
+    <div class="card"><img src="몬스터/32.png" alt="아머트론"><div class="caption">몬스터/32.png (아머트론)</div></div>
+  </div>
+</body>
+</html>
+```
 
 ### 배포 후 표본 확인
 

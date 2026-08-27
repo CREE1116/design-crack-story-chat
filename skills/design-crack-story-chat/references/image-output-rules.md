@@ -14,18 +14,22 @@
 
 ## 역할과 아키텍처
 
-크랙 스토리챗은 마크다운 이미지 태그(`![](URL)`)를 통해 외부 호스팅(CDN, GitHub, jsDelivr 등)된 이미지를 대화 중간에 실시간으로 호출할 수 있습니다.
+크랙 스토리챗은 마크다운 이미지 태그(`![](URL)`)를 통해 외부 호스팅(**Cloudflare Pages**, 커스텀 CDN 등)된 이미지를 대화 중간에 실시간으로 호출할 수 있습니다.
 
-- **[image-assets.md](image-assets.md)**: 이미지를 오프라인에서 **어떻게 일관성 있게 그릴 것인가 (자산 제작)**
+- **[image-assets.md](image-assets.md)**: 이미지를 오프라인에서 **어떻게 일관성 있게 그리고 Cloudflare Pages 웹 갤러리로 호스팅할 것인가 (자산 제작 & 배포)**
 - **[image-output-rules.md](image-output-rules.md) (본 문서)**: 만들어진 이미지를 시스템 프롬프트에서 **어떤 양식으로 정의하고 언제 출력할 것인가 (출력 규약 & 런타임 제어)**
 
 ---
 
 ## URL 구조 및 표준 축 매핑
 
-크랙의 이미지 호출은 **베이스 URL + 카테고리/이름 + 상황/표정 번호.png** 구조를 표준으로 사용합니다.
+크랙의 이미지 호출은 **베이스 URL(`{IMG}`) + 카테고리/이름 + 상황/표정 번호.png** 구조를 표준으로 사용합니다.
 
 ```markdown
+# Cloudflare Pages 무료 도메인
+![](https://<project-name>.pages.dev/[카테고리]/[번호].png)
+
+# 커스텀 도메인
 ![](https://domain.com/[작품ID]/[카테고리]/[번호].png)
 ```
 

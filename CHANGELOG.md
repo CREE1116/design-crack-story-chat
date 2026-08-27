@@ -1,5 +1,12 @@
 # 변경 내역
 
+## 0.9.3
+
+- **Cloudflare Pages 기반 초고속 호스팅 및 웹 쇼케이스 갤러리 일체화 지원** (`image-assets.md`, `docs/image-assets.md`, `tools/images/deploy.py`).
+  - 한국(서울) 엣지 POP을 통한 0초대 로딩 속도 및 무제한 대역폭 서빙 가이드라인 수록.
+  - `deploy.py --scaffold` 실행 시 작품 소개, 등장인물 도감(Roster), 일러스트 갤러리를 겸하는 반응형 웹페이지(`index.html`) 자동 생성 기능 탑재.
+  - Cloudflare Pages 무료 서브도메인(`https://<project-name>.pages.dev/`) 및 커스텀 도메인 매핑 룰 명문화.
+
 ## 0.9.2
 
 - **이미지 출력 규칙 및 스테이징 가이드라인 신설** (`image-output-rules.md`). 마크다운 이미지 호출 문법(`![]({IMG}/[카테고리]/[번호].png)`), 시스템 프롬프트 내 1줄 번호 매핑 압축법, 출력 타이밍 및 스로틀링 4대 원칙(장소 상단 1회, 인물 대사 직전 1회, 동일 인물 중복 금지, 턴당 최대 2장 제한), 키워드북 19+/특수 CG 분리 패턴 수록.

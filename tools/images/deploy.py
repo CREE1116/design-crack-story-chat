@@ -221,11 +221,65 @@ def scaffold(cfg: dict, root: Path) -> int:
             encoding="utf-8")
 
     (root / "_배치표.md").write_text("\n".join(lines), encoding="utf-8")
+
+    # Cloudflare Pages 및 웹 호스팅용 index.html 갤러리 생성
+    html_cards = []
+    for slug, entry in people.items():
+        html_cards.append(f"  <h2>{label(entry, slug)} ({slug})</h2>\n  <div class=\"grid\">")
+        for s, sv in situations.items():
+            rel_path = f"{slug}/{s}{EXT}"
+            html_cards.append(
+                f"    <div class=\"card\">\n"
+                f"      <img src=\"{rel_path}\" alt=\"{label(sv, s)}\" loading=\"lazy\" onerror=\"this.parentElement.style.opacity='0.4'\">\n"
+                f"      <div class=\"info\"><strong>{label(sv, s)}</strong><div class=\"path\">{rel_path}</div></div>\n"
+                f"    </div>"
+            )
+        html_cards.append("  </div>")
+
+    for key, folder_name in FIXED_AXES.items():
+        entries = cfg.get(key, {})
+        if not entries:
+            continue
+        html_cards.append(f"  <h2>{folder_name}</h2>\n  <div class=\"grid\">")
+        for n, v in entries.items():
+            rel_path = f"{folder_name}/{n}{EXT}"
+            html_cards.append(
+                f"    <div class=\"card\">\n"
+                f"      <img src=\"{rel_path}\" alt=\"{label(v, n)}\" loading=\"lazy\" onerror=\"this.parentElement.style.opacity='0.4'\">\n"
+                f"      <div class=\"info\"><strong>{label(v, n)}</strong><div class=\"path\">{rel_path}</div></div>\n"
+                f"    </div>"
+            )
+        html_cards.append("  </div>")
+
+    html_content = (
+        "<!DOCTYPE html>\n<html lang=\"ko\">\n<head>\n"
+        "  <meta charset=\"UTF-8\">\n"
+        "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+        "  <title>스토리챗 에셋 갤러리 (Cloudflare Pages)</title>\n"
+        "  <style>\n"
+        "    body { background: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; padding: 2rem; margin: 0; }\n"
+        "    h1 { color: #38bdf8; margin-bottom: 0.5rem; }\n"
+        "    .subtitle { color: #94a3b8; margin-bottom: 2rem; }\n"
+        "    h2 { color: #a855f7; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; margin-top: 2rem; }\n"
+        "    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-top: 1rem; }\n"
+        "    .card { background: #1e293b; border-radius: 8px; overflow: hidden; border: 1px solid #334155; text-align: center; }\n"
+        "    .card img { width: 100%; height: auto; display: block; background: #020617; min-height: 120px; }\n"
+        "    .card .info { padding: 0.75rem; font-size: 0.875rem; }\n"
+        "    .card .path { color: #38bdf8; font-family: monospace; font-size: 0.8rem; margin-top: 0.25rem; }\n"
+        "  </style>\n</head>\n<body>\n"
+        "  <h1>스토리챗 에셋 갤러리</h1>\n"
+        "  <p class=\"subtitle\">Cloudflare Pages에 호스팅되는 공식 일러스트 및 미디어 라이브러리입니다.</p>\n"
+        + "\n".join(html_cards)
+        + "\n</body>\n</html>\n"
+    )
+    (root / "index.html").write_text(html_content, encoding="utf-8")
+
     total = len(people) * len(situations) + sum(len(cfg.get(k, {})) for k in FIXED_AXES)
     print(f"폴더 {made}개, 자리 {total}개를 준비했습니다: {root}")
-    print(f"  목록: {root / '_배치표.md'}")
+    print(f"  배치표: {root / '_배치표.md'}")
+    print(f"  웹 갤러리: {root / 'index.html'} (Cloudflare Pages 루트)")
     print(f"  이미 채워진 자리: {len(found)}개")
-    print("\n  그림을 넣은 뒤 `python deploy.py --check` 로 이름을 확인하세요.")
+    print("\n  그림을 넣은 뒤 Cloudflare Pages에 배포하거나 `python deploy.py --check` 로 이름을 확인하세요.")
     return 0
 
 
