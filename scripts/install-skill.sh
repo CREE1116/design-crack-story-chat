@@ -9,7 +9,7 @@ NAME="design-crack-story-chat"
 SRC="$ROOT/skills/$NAME"
 MODE="${1:-link}"
 
-for DEST in "$HOME/.claude/skills" "$HOME/.agents/skills"; do
+for DEST in "$HOME/.claude/skills" "$HOME/.agents/skills" "$HOME/.gemini/config/skills" "$ROOT/.agents/skills"; do
   mkdir -p "$DEST"
   TARGET="$DEST/$NAME"
   [ -e "$TARGET" ] || [ -L "$TARGET" ] && rm -rf "$TARGET"

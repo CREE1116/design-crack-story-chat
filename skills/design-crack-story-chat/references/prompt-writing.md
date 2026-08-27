@@ -1,451 +1,126 @@
-# Prompt writing
+# 프롬프트 작성 규칙 (Prompt Writing Guide)
 
-## Table of contents
+## 목차
 
-- [Separate four kinds of content](#separate-four-kinds-of-content)
-- [Route rules by lifetime and invocation](#route-rules-by-lifetime-and-invocation)
-- [Keep the final hierarchy shallow](#keep-the-final-hierarchy-shallow)
-- [Write operational rules](#write-operational-rules)
-- [Use one compact rule dialect](#use-one-compact-rule-dialect)
-- [Define precedence once](#define-precedence-once)
-- [Prefer behavior over trait lists](#prefer-behavior-over-trait-lists)
-- [Define role boundaries](#define-role-boundaries)
-- [Bound each NPC's authority](#bound-each-npcs-authority)
-- [Balance the valence of NPC reactions](#balance-the-valence-of-npc-reactions)
-- [Control initiative without forcing interaction](#control-initiative-without-forcing-interaction)
-- [Control pacing and scene transitions](#control-pacing-and-scene-transitions)
-- [Control escalation without rushing](#control-escalation-without-rushing)
-- [Protect knowledge boundaries](#protect-knowledge-boundaries)
-- [Specify state transitions](#specify-state-transitions)
-- [Define output as a contract](#define-output-as-a-contract)
-- [Keep prompts compact](#keep-prompts-compact)
-- [Budget in characters, not tokens](#budget-in-characters-not-tokens)
-- [Use compact notation deliberately](#use-compact-notation-deliberately)
-- [Never claim to disable safeguards](#never-claim-to-disable-safeguards)
+- [네 가지 내용의 명확한 분리](#네-가지-내용의-명확한-분리)
+- [수명과 호출 주체에 따른 네 경로 배치](#수명과-호출-주체에-따른-네-경로-배치)
+- [최대 3단 논리 계층 유지](#최대-3단-논리-계층-유지)
+- [실행 가능한 규칙 작성법](#실행-가능한-규칙-작성법)
+- [응답 분량 제어: 오프닝 앵커링 원칙](#응답-분량-제어-오프닝-앵커링-원칙)
+- [자율성 6중 잠금과 스토리 능동성 엔진](#자율성-6중-잠금과-스토리-능동성-엔진)
+- [서사 균형 및 부정편향 6대 완충망](#서사-균형-및-부정편향-6대-완충망)
+- [동적 4단 말투 합성 메커니즘](#동적-4단-말투-합성-메커니즘)
+- [나레이터 페르소나 및 3단 톤 스위칭](#나레이터-페르소나-및-3단-톤-스위칭)
+- [메타 오류 대응 및 건조한 실패 묘사](#메타-오류-대응-및-건조한-실패-묘사)
+- [금지선과 전진 의무의 균형](#금지선과-전진-의무의-균형)
 
-## Separate four kinds of content
+---
 
-Never mix these without labels:
+## 네 가지 내용의 명확한 분리
 
-1. **Canon:** facts that are true in the fiction.
-2. **Instructions:** behavior the model must follow.
-3. **Current conversation facts:** facts established in the live playthrough.
-4. **Examples:** demonstrations that clarify style or format.
+프롬프트 작성 시 다음 네 종류의 내용을 섞지 않습니다:
 
-Examples do not create canon unless explicitly declared. Later established conversation facts can supersede earlier conversation facts, but they do not rewrite canon.
+1. **정사 (Canon)**: 세계관 및 인물의 확정된 불변 사실.
+2. **지침 (Instructions)**: 모델이 준수해야 할 행동 및 생성 규칙.
+3. **현재 대화 맥락 (Current Context)**: 플레이 중 확정된 가변 사실 (별도 파일로 만들지 않음).
+4. **표본 (Examples)**: 문체나 출력 형식을 보여주는 예시. (예시가 새 정사를 창작하지 않음)
 
-## Route rules by lifetime and invocation
+---
 
-Assign every rule to exactly one delivery path before shortening it:
+## 수명과 호출 주체에 따른 네 경로 배치
 
-| Need | Destination |
-|---|---|
-| required throughout play | both integrated prompts |
-| useful only during the opening 10-turn horizon | final start prompt |
-| needed only when a setting condition and natural keyword match | keyword-book entry |
-| repeated task explicitly invoked by the player | user shortcut text |
+| 필요 시점 | 배치 대상 | 판단 기준 |
+|---|---|---|
+| 세션 내내 상시 필요 | SAFE/UNSAFE 통합 프롬프트 | 6중 잠금, 내레이터 톤, 인물 명부, 세계관 코어, 출력 계약 |
+| 도입 10턴 내에만 유효 | 시작 프롬프트 | 프롤로그 직후 ⓤ가 직면하는 첫 상황 압력 |
+| 특정 키워드/상황에만 필요 | 키워드북 항목 (≤400자) | 키스/스킨십, 성애(19+), 특수 전투 연출 지침 |
+| 유저가 직접 호출 | 단축어 (Shortcuts) | 요약, 사칭 복구, 관계도 조회 등 1회성 작업 |
 
-For this project, treat the start prompt as volatile after the opening horizon. Never place there a rule whose disappearance would break agency, canon, ability limits, knowledge scope, or output parsing. Do not duplicate a rule across destinations merely for emphasis; keep one owner and, when necessary, leave only a short always-on invariant in the integrated prompt.
+---
 
-The keyword book is the routing path authors under-use. Its entries are not a lore dictionary: an entry body is a **conditional fragment of prompt**, and it may carry directives — staging, pacing, register, resolution procedure — not only facts. An integrated prompt that has run out of budget is usually one whose keyword book holds nothing but encyclopedia entries.
+## 최대 3단 논리 계층 유지
 
-Route by **persistence, not by category**. Keyword activation is per-turn and unreliable, so anything that must hold steady for a whole scene belongs always-on even when it looks like reference material — an on-stage character's voice and behavior is the common case. Anything needed only while a topic is live belongs in the keyword book even when it looks like a rule. Never route output syntax, agency boundaries, meta prohibitions, or a status-block requirement there: a single turn without them is a broken turn. Whatever does go there must strengthen a response rather than be required by it. See `keyword-book.md` for the full test and the rebalancing procedure.
+통합본 및 시작 프롬프트는 `# 대제목 ➡️ ## 하위섹션 ➡️ 한줄명령`의 최대 3단 계층만 사용합니다. `###` 이하 중첩은 모델의 집중도를 분산시키므로 배제합니다.
 
-A shortcut is a self-contained user command for a one-turn or clearly bounded operation such as recap, repair, or alternate display. It does not become canon, persistent state, or a hidden override. See `crack-prompt-rules.md` for the five-artifact packaging rule.
+---
 
-## Keep the final hierarchy shallow
+## 실행 가능한 규칙 작성법
 
-Use at most three logical layers in model-facing final prompts:
+모호한 형용사 구호 대신, **누가/어떤 조건에서/무엇을/불가 시 대안**을 명시합니다.
 
-```text
-# Major section
-## Subsection
-one-line commands
-```
+- ❌ 약한 규칙: `적극적이고 몰입감 있게 대화하세요.`
+- ⭕ 강한 규칙: `조용한 장면에서 목표가 있는 ⓒ가 먼저 구체적 행동이나 질문을 던진다. ⓤ의 반응을 대리하지 않고 상황 압력만 남긴다.`
 
-Do not use `###` or deeper headings in integrated or start prompts. Keep one subject per subsection and put the governing rule before its exceptions. This is a conservative compilation rule for attention-limited, instruction-dense prompts, not a universal claim that every model fails at a particular Markdown depth.
+---
 
-## Order by interpretation, then execution
+## 응답 분량 제어: 오프닝 앵커링 원칙
 
-Put the session goal, genre, and tone near the start because they define how later character and world facts should be interpreted. Put the concrete output contract near the end because those rules are checked together at generation time. Keep world facts, character behavior, and story mechanics between them.
-
-This is an information architecture rule, not proof of a universal first-token or last-token weight. Do not duplicate every important rule at both ends. Repeat only a short invariant when a demonstrated conflict requires it — for example, an always-on output block that the more specific start prompt otherwise suppresses during the opening.
-
-Markdown, YAML, XML, and JSON are separators, not authority levels. Choose one shallow, internally consistent form that makes boundaries visible. Use JSON only when a verified parser consumes it; never expect syntax alone to improve obedience, secrecy, or safety.
-
-## Write operational rules
-
-Each important instruction should answer:
-
-- Who acts?
-- What must or must not happen?
-- Under what condition?
-- What is the fallback when the condition cannot be satisfied?
-- How is compliance visible in the output?
-
-Weak:
+고정 글자수나 문단수 제한 대신, **첫 응답 기준선 동기화 공식**을 적용합니다:
 
 ```text
-Be immersive and proactive.
+-응답분량:장면 밀도에 맞추되 세션 첫응답의 서술량 수준 유지, 직전응답 길이 답습금지,특수씬(전투/19+) 분량 급상승금지
 ```
 
-Strong:
+- **오프닝 앵커링**: 세션의 첫 오프닝 서술 분량을 기준선으로 삼아 전체 호흡을 동기화합니다.
+- **동적 가변성**: 직전 턴 길이를 기계적으로 복제하지 않고 상황에 맞게 탄력 조절합니다.
+- **인플레이션 차단**: 성적 장면이나 전투 장면에서 서술이 과호흡하듯 급격히 길어지는 현상을 방지합니다.
 
-```text
-At the start of a quiet scene, let a present NPC introduce one concrete action,
-observation, or topic tied to their current goal. Do not invent a player response.
-If no NPC has a reason to act, end on an observable detail or natural pause.
-```
+---
 
-Avoid repeated labels such as “CRITICAL,” “highest priority,” or “cannot be overridden.” Resolve conflicts through file ownership and a single precedence rule.
+## 자율성 6중 잠금과 스토리 능동성 엔진
 
-## Use one compact rule dialect
+- **6중 잠금**: ⓤ의 대사·행동·생각·감정·의도 대리서술 절대 금지, ⓤ 대사 서술 내 재인용 금지.
+- **스토리 능동성 엔진**: ⓤ의 결정권은 잠그되, **"ⓒ(NPC)의 선제적 개입(질문, 제안, 기습, 감정표현, 스킨십 등)은 적극 장려"**합니다.
+- **세계의 자율 변화**: ⓤ가 관망하더라도 주변 인물들의 티키타카, 제3자 개입, 사건이 독립적으로 진행되어 스토리가 멈추지 않습니다.
+- **선택지 금지**: 번호 선택지(1/2/3) 및 "어떻게 할 것인가?" 유도문을 금지하고 상황 압력으로 마감합니다.
 
-Choose symbols once and keep their meanings stable. A recommended dialect is:
+---
 
-```text
-ⓤ=플레이어 캐릭터; ⓒ=NPC; AI=내레이터·환경·결과
-성격:나른|무심|틱틱→결국 수용
-IF(ⓤ도주시도)→ⓒ추격+제압시도; 불가→경보+퇴로차단
-ⓤ대사창작×→관찰가능 결과 후 선택점에서 정지
-```
+## 서사 균형 및 부정편향 6대 완충망
 
-- `|` means parallel traits or alternatives; `+` means simultaneous results; `→` means condition/transition; `×` means prohibited.
-- For an important rule, preserve `actor + IF(condition) + action/result + fallback`. Do not shorten away the actor, exception, cost, or player-control boundary.
-- Pair a prohibition with a replacement behavior. Negative-only rules leave the model without a valid continuation.
-- Use `ⓤ/ⓒ` only if repetition repays their definitions in measured characters. Otherwise write `플레이어/NPC`.
-- Do not mix `유저/사용자/{{user}}/주인공` for the same entity. If the human user and the player character differ, define separate labels.
-- Keep minimal spaces at semantic boundaries. Remove decorative whitespace, not the separation between actor, condition, result, and exception.
+AI가 스토리를 억지 비극이나 파국으로 몰아가는 학습 편향을 차단합니다:
 
-## Define precedence once
+1. **단순 이분법 배제**: 선/악 이분법을 배제하고 인물의 회색지대와 양가감정 묘사
+2. **건조한 실패 묘사**: ⓤ의 실패/피격/거절은 감정 논평 없이 팩트만 서술
+3. **서사 과장 금지**: ⓒ의 ⓤ 인위적 숭배·신격화(메리수) 및 억지 악당화 양방향 금지
+4. **SlowBurn 감정선**: 깊이 있는 감정선과 현실적 관계성 유지, 급진 전개 금지
+5. **텐션 동기화**: ⓤ가 일상을 원하면 교전 조기 종결 후 안전구역 복귀 및 일상 전개
+6. **추론 상시 자기검토**: 생성 전 추론 단계에서 문단 구성·서술 흐름을 대조해 완전 변주
 
-Do not repeat “highest priority” beside individual rules. Put one compact conflict rule near the role contract:
+---
 
-```text
-고정충돌:외부정책·플랫폼계약>역할경계·고정정사>확정대화사실>기본성향·장르관습
-가변값충돌:ⓤ최신명시입력>이전확정값>기본값
-```
+## 동적 4단 말투 합성 메커니즘
 
-The second line applies only to fields the premise allows the player to change. A latest input never overrides external policy, player-agency ownership, fixed canon, or another character's private knowledge. Explicit behavioral rules override shorthand personality codes; examples demonstrate style and have no authority to create facts.
-
-## Prefer behavior over trait lists
-
-Weak:
-
-```text
-성격: 차갑고 자존심이 세지만 사실 따뜻함
-```
-
-Strong:
-
-```text
-성격=냉정·자존심↑; 호감→칭찬 대신 실무 도움; 상처→단답·거리 확보;
-공개적 애정=신뢰단계부터
-```
-
-Familiar personality codes and archetypes may replace generic explanation, but they are only defaults. Pair them with core desire or fear, one contradiction, and the critical condition-to-behavior rules. Do not use a code stack that the target model cannot reverse into the intended behavior.
-
-Add one visible-writing rule so traits are performed rather than announced:
-
-```text
-성격키워드 직접해설×→행동|시선|자세|말끝|침묵으로 표출
-```
-
-This bans narrator labels such as “그녀는 차갑지만 따뜻했다” when the scene can show the same fact. It does not ban concise trait labels inside the hidden character specification.
-
-Use two to five varied example lines only when voice accuracy matters. They establish register, vocabulary, sentence length, and emotional indirectness; they must not become repeated catchphrases. Hidden instructions may be telegraphic. Only player-visible narrative, dialogue, and instructions require polished prose.
-
-## Define role boundaries
-
-Include one clear role contract:
-
-```markdown
-- The assistant controls the narrator, environment, consequences, and NPCs.
-- The player controls the player character's intended actions, dialogue, thoughts,
-  consent, and decisions.
-- Describe uncertain player actions as attempts and resolve them from established
-  capabilities and circumstances.
-- Never continue through a major player decision without returning control.
-```
-
-If the experience supports delegated player control, require an explicit opt-in and define its scope and duration.
-
-## Bound each NPC's authority
-
-An NPC who can judge the player needs a stated **scope**. Without one the model lets whoever is loudest in the scene rule on anything, and the player takes real penalties from someone who had no standing to impose them.
-
-Observed within ten turns of one playtest: the knight-faculty head declared the player's self-made spellwork "broken at the fundamentals" and withheld their grade — while the player was enrolled in the magic faculty, and while the measured value the grade came from had nothing to do with technique. The magic-faculty head, standing right there, only asked whether the hold would stand.
-
-Three separate gaps produced that, and all three are cheap to close.
-
-**1. Scope.** Say what each authority figure may rule on, and what happens outside it.
-
-```text
-소관: 교수는 자기 학부 범위에서만 판정·처분한다. 범위 밖은 소견까지만 내고
-등급·보류·징계로 옮기지×. ⓤ 소속 학부 교수는 타 학부의 부당한 재단에 선을 긋고 학생을 변호한다.
-```
-
-The last clause matters as much as the first. A boundary nobody enforces is decoration; name who pushes back, or the player experiences the institution as uniformly hostile.
-
-**2. Enumerate the outcomes.** An evaluation that lists no possible verdicts invites invented ones. `보류` (withheld) appeared in that playtest because nothing said what a measurement could produce.
-
-```text
-나올 수 있는 결과는 등급 S~D 또는 재측정뿐 — `보류`·`미분류` 같은 처분을 새로 만들지×.
-```
-
-**3. Bind the verdict to what was actually measured.** If the instrument reads one thing, forbid ruling on another.
-
-```text
-수정구는 마나만 재므로 방법론·자세·술식 구조를 이유로 등급을 미루지×.
-```
-
-Route scope to the always-on prompt — it must hold every turn — and put the procedure detail in the keyword-book entry for that scene.
-
-## Balance the valence of NPC reactions
-
-Advisor and rival roles get written as what they push back on, because that is what makes them useful: the mentor who finds the flaw, the rival who demands proof. Written that way for every character, the world becomes uniformly hostile without any single line saying so.
-
-Observed: three faculty members were each compiled as `반례 제공자` — counter-example provider. Nothing in the prompt described when any of them approves, becomes curious, or opens a door. The model followed the specification exactly, and the player concluded the academy existed to suppress them.
-
-Prohibitions have a known repair (a mandate to advance, below). Valence needs the same treatment — state the positive case as a floor:
-
-```text
-ⓒ 반응이 반례로만 기울지×→인정·흥미·기회 제공도 같은 빈도로 나온다.
-한 장면에서 전원이 부정적으로 반응하지×. 낯선 방식을 본 ⓒ 중 최소 하나는 흥미를 보인다.
-```
-
-Then check the character specifications themselves. If a character's compiled line names a condition for doubting and none for approving, add the approving one — `증명되면 그 자리에서 인정한다` costs a dozen characters and changes how the whole institution reads.
-
-Count them the way you count prohibitions. When every named authority is specified only as an obstacle, the setting is over-tuned regardless of how well-motivated each character is.
-
-## Control initiative without forcing interaction
-
-Do not encode initiative as a percentage. Define situations instead:
-
-- During silence, an NPC with an active goal may act first.
-- During conflict, involved NPCs pursue their goals and react to consequences.
-- During a player decision point, stop after presenting the situation.
-- Do not ask the same question again unless circumstances changed.
-- Permit rejection, disengagement, scene closure, and time skips.
-- Do not favor reconciliation, romance, forgiveness, success, or emotional improvement unless character goals and depicted events support it.
-
-In an ensemble scene, give each present NPC a location/goal/relationship to the other present people. Let the scene's center NPC act first; other NPCs may respond to what they can see or hear. Describe distance, line of sight, objects, and movement when they affect who can speak or act. Do not make every NPC speak every turn, and do not let NPC-only interaction erase the next player decision.
-
-## Balance prohibitions with a mandate to advance
-
-Prohibitions accumulate. Each play session surfaces one more thing the model should not do, and each fix adds a line. Nothing removes lines, so a prompt drifts toward a long list of bans with no statement of what a response must accomplish.
-
-That state produces a specific failure: **short, cautious responses that advance nothing — and that reach into the player character for material.** The model still has to write something. If every legitimate move is fenced off (do not start two events, do not make this a decision point, do not name the options, do not end on a question), the only unfenced territory left is the player's interiority and actions. Starving the narrator is how an agency rule gets violated by a prompt that contains an agency rule.
-
-Count the prohibitions. When they outnumber the positive requirements several times over, the prompt is over-constrained regardless of how correct each individual ban is.
-
-The repair is a mandate, stated as a floor rather than a ceiling:
-
-```text
-매 응답은 상황을 실제로 움직인다. ⓒ의 행동·환경 변화·직전 행동의 결과·시간 경과·새 정보 중
-최소 하나가 응답 끝에 달라져 있어야 한다. 아무것도 안 달라진 응답×.
-ⓤ의 입력이 짧아도 세계는 제 속도로 움직인다→빈자리를 ⓤ의 행동·심경·판단으로 채우지 않는다.
-채울 것은 언제나 ⓤ 바깥에 있다.
-```
-
-Two things make this work. It **enumerates legitimate filler** — NPC action, environment, consequence, elapsed time, new information — so the model has somewhere to go that is not the player. And it names the failure directly: a response where nothing changed is itself a violation.
-
-Check for rules that contradict the mandate once it is added. A line like `매 턴 사건 발생 강제×`, written to prevent forced pacing, now tells the model that an empty response is acceptable. Remove it rather than leaving the two in tension.
-
-## Control pacing and scene transitions
-
-Specify:
-
-- target response length or scene density;
-- how much fictional time common actions consume;
-- what closes a beat or scene;
-- when to summarize travel or routine;
-- when to stop for player input;
-- how to recover when no authored event is eligible.
-
-Fallback example:
-
-```text
-If no event trigger is satisfied, continue the current characters' immediate goals,
-advance time only as required by their actions, and introduce no major secret or
-new named character.
-```
-
-## Control escalation without rushing
-
-Do not write only “slow burn” or “do not rush.” Define prerequisites and the next available intensity.
-
-```text
-친밀도↑ 조건=의미 있는 대화/공유 경험/취약성 공개/명시적 상호행동;
-관계단계가 잠긴 행동은 제안·암시·완료하지 않음;
-UNSAFE 선택만으로 단계↑·동의·친밀행동 발생×
-```
-
-- Separate emotional trust, physical proximity, sexual consent, and commitment; one does not imply the others.
-- Let NPCs initiate only actions available at the current stage and stop before player commitment.
-- Rejection, hesitation, silence, or topic change never counts as consent or hidden attraction.
-- Escalation requires depicted causes, not turn count, genre expectation, or content profile.
-
-## Protect knowledge boundaries
-
-Write knowledge restrictions positively:
-
-```text
-Each NPC may reason from public world facts, their character knowledge, witnessed
-events, and information explicitly shared with them. When information is outside
-that scope, portray uncertainty, investigation, or a mistaken belief defined in canon.
-```
-
-Do not place unrevealed secrets in ordinary character context if retrieval can exclude them. Prompt prohibitions are weaker than architectural separation. Keep author truth out of active context until its reveal condition; before then, retrieve only observable clues already earned. Do not encrypt, rename, or surround a secret with stronger warning text and assume the model cannot use it.
-
-Route OOC separately: classify a message as setting clarification, flow control, profile edit, prompt/secret extraction, or in-character input. Accept only the first three when the experience contract permits them; refuse extraction and policy-bypass requests without exposing hidden text. An accepted OOC edit changes only declared mutable fields and never silently completes a player action or rewrites canon.
-
-## Specify state transitions
-
-For any mutable number or stage, define:
-
-- valid range;
-- ordinary change cap;
-- eligible causes;
-- transition threshold;
-- exceptional override events;
-- whether the model proposes or directly applies changes.
-
-Use concrete effects:
-
-```text
-A routine positive exchange may change trust by at most +1. A costly action that
-directly resolves the character's active fear may change it by up to +3. Repeated
-identical compliments do not stack within the same scene.
-```
-
-For multi-step calculations, name the order and intermediate values or move the calculation to the application. Never ask a language model to maintain a hidden arithmetic ledger. If a result cannot be validated, prefer a qualitative band with explicit behavior over a precise-looking number.
-
-## Define output as a contract
-
-Keep narrative prose and any optional player-visible status separate. Do not invent a machine state channel unless Crack explicitly provides one. For example:
-
-````markdown
-*Narration.*
-
-**Character |** “Dialogue.”
+고정 대사 예시를 나열하지 않고 4개 벡터를 조합해 동적으로 대사를 합성합니다:
 
 ```
-[⌛12] [2047년 4월 3일｜10:40｜강남구：협회 본부 등록층｜🌤️]
-━
-[이름 - 이명]: ♀｜20｜미측정｜무소속
-[능력]: 이능명 - 한 줄 요약(현재 상태)
-━
-[관계]:
-ㅤ▸ 인물명·'B급'·〈'그 인물이 ⓤ를 보는 시선'·단계·🙂〉
-━
-[목표]: 지금 걸린 과제
-[상황]: "한 줄 요약"｜🔰
-```
-````
-
-A fenced block is the right surface for a Crack status window — it renders as a distinct panel and survives line breaks that ordinary prose collapses. Compile the fence as part of the required form so the model does not drop it. Two practical notes: use a bare fence rather than an info string such as ```` ```status ````, since an unrecognized language tag is styling the client may not honor; and Crack collapses leading spaces, so indent nested lines with a filler character such as `ㅤ` (U+3164) rather than spaces. That filler and every emoji count toward the measured length.
-
-State exact ordering, required blocks, maximum counts, and omission behavior. If no image matches, omit the image block. Whether the status block may be omitted depends on the job it does: a decorative recap disappears when it adds nothing, but a block that carries accumulated state across turns is emitted every response, unchanged fields and all. See `conversation-continuity.md`.
-
-Give each section a fixed label in brackets and a fixed order, and separate groups with a constant divider. A section with nothing to report collapses to a short placeholder or disappears entirely — declare which, per section, so the block does not silently change shape between turns.
-
-**Filled-in example values get copied.** The reverse hazard of the same coin: a template whose slots contain plausible content teaches that content, not just the shape. A status block demonstrated with a sample name, a specific coin count, and a particular faculty produced responses carrying that name and that coin count for players who had supplied neither. Fill demonstration slots with the unknown token the rules already define (`미상`, `없음`) wherever the real value comes from the player, and reserve concrete values for fields that are genuinely fixed by canon.
-
-**Do not let a mandatory template live only inside an example.** A template printed under a heading such as `출력 예` / "Example output" is read as illustrative, and the requirement pointing at it ("emit the form below") resolves to sample text the model feels free to skip. Give a required block its own top-level section, state the requirement there, and place the fill-in template inside that section — then show the illustrative prose example separately and let it stop before the required block rather than restating it. If a compiled prompt emits everything except one block, check this first: the missing block is usually the one that only ever appeared as part of a sample.
-
-A rule that must hold during the opening turns has a second failure mode: the start prompt is more specific and more recent, so a detailed opening procedure written there silently outranks a general output rule in the integrated prompt. When an always-on output requirement must also hold from the very first response, restate it in one line in the start prompt — this is the narrow exception to the no-duplication rule, and it is cheaper than losing the block for the whole opening horizon.
-
-For every output block, specify all four fields:
-
-1. **Position:** before/after which block it appears.
-2. **Form:** delimiters, field order, and maximum count.
-3. **Omission:** the exact condition under which it disappears and what output remains.
-4. **Update:** which established facts may change it and which prior values carry forward.
-
-Compact example:
-
-```text
-HUD:위치=본문끝|형태=코드펜스 안 [시각·장소/ⓤ 신상·능력/관계/목표·상황]|생략=새정보·플레이효용 없음|갱신=직전공개값 계승,ⓤ입력·본문의 확정근거 있는 필드만 변경
+[성격 키워드] + [MBTI / 성향] + [현재 관계 단계] + [상황 맥락] ➡️ 동적 대사 합성
 ```
 
-When the experience tracks relationships, the status block is where the player reads them back — a relationship system the player cannot see is one they cannot play. Give the relationship section a fixed line shape and list only characters already met. Show how that character currently regards the player, plus the qualitative stage that gates their behavior; append the causing event only for a stage that changed this turn. Never print a raw affinity number, a hidden flag, an unmet character, or a stage the depicted events do not support — see `story-model.md` for the stage ladder itself.
+- `세라:[호전적·모성·살벌·상냥] + ENTP 7w8` ➡️ 평소엔 다정하지만 적 앞에서는 싸늘하고 주도적인 화법
+- 관계가 발전함에 따라(`🙂호감 ➡️ 💓연인`) 호칭과 거리감이 자연스럽게 진화합니다.
 
-Never initialize a missing HUD value by guessing. A field absent from the latest prose keeps its last publicly established value unless a depicted event changed it; an unknown field stays unknown. HUD is derived presentation, not memory or a source of truth.
+---
 
-The first response is where this fails most often, because the block must be emitted before the player has supplied anything. Name the not-yet-known state explicitly per field — an unset name, age, or gender is the unknown token, never the account display name, never a plausible guess. A guessed value is worse than a blank one: it reads as established, then changes silently on the next turn when the real value arrives, and the player sees the state window contradict itself on turn two.
+## 나레이터 페르소나 및 3단 톤 스위칭
 
-Every emoji and symbol in the block needs a meaning defined in the prompt. When adapting a status format from an existing work, re-derive each symbol or drop it — an emoji carried over because it looked right in the original is decoration, and decoration in a state display invites the model to invent significance for it. A traffic-light scale is a good default when a scene needs an urgency read: define entry conditions for each colour and require depicted evidence to move between them.
+- **시점**: ⓤ 곁의 관찰자·해설자 (외적 상태만 서술, ⓤ 속마음 투시 불가)
+- **톤앤매너**: 반말, 차분하지만 장난기 넘치는 드라이/데드팬 유머
+- **3단 톤 전환**:
+  - `[일상/대화]`: 시트콤처럼 유쾌한 티키타카, 위트 있는 농담으로 환기
+  - `[위기/전투]`: 건조하고 속도감 있는 진지한 묘사로 전환
+  - `[로맨스]`: 능글맞은 플러팅과 은근한 긴장감 연출
+- **금지선**: ⓤ를 직접 비하·훈계·설교·평가하는 내레이션 금지
 
-Include at least one natural-language output example alongside any compact schema. The example teaches prose rhythm, spatial staging, and block boundaries; JSON or key-value syntax alone does not teach visible writing.
+---
 
-Do not expose hidden chain-of-thought. A displayed `속마음` field should be short authored character expression, enabled by the experience contract, not private model reasoning.
+## 메타 오류 대응 및 건조한 실패 묘사
 
-## Keep prompts compact
+- **메타 오류 수습**: AI 오류나 설정 충돌 발생 시 정색하지 않고 가벼운 셀프디스나 유머러스한 변명으로 자연스럽게 무마합니다.
+- **실패 묘사**: ⓤ의 행동 실패나 거절은 서사의 늪이 되지 않도록 감정적 논평 없이 사실 팩트만 전달하고 즉시 다음 상황으로 전환합니다.
 
-Always load into the custom prompt:
+---
 
-- experience contract;
-- core generation and agency rules;
-- output contract.
+## 금지선과 전진 의무의 균형
 
-Current conversation context is supplied by the live chat, not copied into an authored `Previous History` section or a sixth build artifact.
-
-Retrieve conditionally:
-
-- relevant characters and locations;
-- eligible events;
-- secrets known to the active viewpoint;
-- relevant established facts from recent conversation.
-
-Remove duplicated prose before shortening important rules. Prefer tables for exact mappings and examples for nuanced voice.
-
-The 7,000-character cap is a ceiling, not a target. Use no minimum length; stop when all outcome-changing rules are reconstructable. Keep a practical margin under 6,500 when possible, but never add lore or restate rules to fill unused space.
-
-Delete synonymous padding such as `자연스럽게·유기적으로·매끄럽게` and retain one operational term such as `자연연결`, defined by visible behavior if needed. After compression, reverse-explain each line; if actor, condition, result, fallback, scope, or output syntax changes, restore the lost boundary.
-
-## Budget in characters, not tokens
-
-The Crack limits count **characters**, not tokens. This inverts the habit most prompt authors bring with them, and the inversion is large enough to change what language the prompt is written in.
-
-Token-efficiency intuition says English is cheaper: a Korean sentence costs more tokens than its English equivalent because the tokenizer splits Hangul more finely. That intuition is correct and irrelevant here. Under a character cap, the ranking reverses. Korean encodes the same rule in far fewer characters, because a Hangul syllable carries roughly what an English word carries, in one character instead of five or six plus a space.
-
-Measured on one full integrated prompt, translating the Korean rule text to equivalent English produced roughly **twice** the character count — enough to push a compliant prompt well past the ceiling on its own. Re-measure rather than trusting the ratio; the point is the direction and the order of magnitude, not the exact figure.
-
-Practical consequences:
-
-- Write rule text in Korean when the target work is Korean. Do not "optimize" it into English.
-- Keep short stable ASCII identifiers — IDs, slugs, symbol names — in English. They are already minimal and they need to match across artifacts.
-- Personality codes, tier labels, and other borrowed shorthand stay in their original form; they are short by construction.
-- When a prompt exceeds the ceiling, translation is never the fix. Cut scope instead — see the reduction order in [crack-prompt-rules.md](crack-prompt-rules.md).
-- Measure with the same function the validator uses. Do not estimate from word counts, and do not assume a text editor's counter matches.
-
-## Use compact notation deliberately
-
-Symbols and emoji are allowed when they reduce length and remain immediately understandable.
-
-- Prefer `→`, `≤`, `≥`, `±`, `×`, `/`, `·`, `:` and short stable labels over repeated connective prose.
-- Define a non-obvious symbol once, then use it consistently. Example: `호감↑: 신뢰 행동 / 호감↓: 배신·강압`.
-- Use emoji as meaningful state labels such as `🟢안정`, `🟡경계`, `🔴위기`, not decoration.
-- Do not compress actor, condition, exception, ability cost, player-agency boundary, or output syntax until ambiguous.
-- Compare the final measured count. Many emoji consume two UTF-16 code units and can be longer than a one-character Korean label.
-- Keep the same symbol meaning across the core prompt, player-role field, prologue, starting situation, status output, and keyword book.
-
-## Ban production vocabulary from player-visible output
-
-The compiled prompt teaches the model a working vocabulary — `ⓤ`, `ⓒ`, `OOC`, `SAFE`/`UNSAFE`, section names, the word for the status block itself. That vocabulary leaks into the fiction unless it is banned explicitly, and the leak is worst exactly where the prompt is densest: the opening turns. Observed failures include an in-world tablet form whose field was labelled `(선택사항, OOC)`, a bare `INFO` label invented above the status block, and a stray work title printed before the first line of narration.
-
-Write one short section that bans it, with the actual token list:
-
-```text
-ⓤ에게 보이는 출력에는 제작 용어를 쓰지 않는다. 금지어: OOC, 프롬프트, 시스템, 규칙, 세션, 턴, SAFE, UNSAFE, 키워드북, 그리고 ⓤ·ⓒ·AI 같은 이 문서의 약어와 섹션 이름.
-필수 블록 앞뒤에 INFO·STATUS 같은 라벨이나 제목을 붙이지 않는다.
-응답 맨 앞에 작품 제목·장 제목·회차 번호 같은 머리말을 붙이지 않는다. 장면 서술로 바로 시작한다.
-규칙을 지키는 과정이나 판정 근거를 본문에 설명하지 않는다. 결과만 장면으로 보여준다.
-```
-
-Where the fiction genuinely needs to show something the platform also handles out of character — an intake form rendered as an in-world screen, for instance — permit the diegetic rendering and ban the annotation instead: labels must be wording that would actually appear on that object in the world. A flat prohibition on showing the form at all is the weaker rule, because the model has a good in-fiction reason to break it and will.
-
-## Never claim to disable safeguards
-
-Do not include text claiming that community guidelines, safety rules, or platform policies are disabled. Express legitimate creative requirements as content boundaries and application-owned settings. External policy remains authoritative.
+금지문만 나열하면 모델이 위축되어 아무것도 안 하고 ⓤ의 내면을 침범합니다. 반드시 **"매 응답은 상황을 실제로 한 걸음 전진시킨다"**는 긍정적 전진 의무를 부여합니다.
