@@ -130,7 +130,7 @@ story.md와 characters.md 틀부터 잡아줘.
 ```
 skills/design-crack-story-chat/   스킬 본체
   SKILL.md                        진입점 — 워크플로와 라우팅
-  references/                     주제별 상세 문서 15개 (장르별 프리셋, 상태창 가이드 포함)
+  references/                     주제별 상세 문서 16개 (프리셋, 상태창, 오프닝 설계 가이드 포함)
   scripts/                        검증 스크립트 8개
   assets/story-chat-template/     story.md · characters.md 틀
 
