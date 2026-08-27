@@ -255,7 +255,8 @@ def scaffold(cfg: dict, root: Path) -> int:
     if (template_dir / "index.html").is_file():
         shutil.copy2(template_dir / "index.html", root / "index.html")
 
-    # characters 데이터 추출하여 app.js 생성
+    # 4대 카테고리(인물, 장소, 몬스터, 이벤트) 데이터 추출
+    situation_keys = list(situations.keys()) if situations else ["a01", "a02", "a03", "s01"]
     js_characters = []
     for idx, (slug, entry) in enumerate(people.items(), 1):
         num_id = f"{idx:02d}"
@@ -266,12 +267,51 @@ def scaffold(cfg: dict, root: Path) -> int:
             "type": entry.get("type", "주요 인물"),
             "role": entry.get("role", slug),
             "quote": entry.get("quote", ""),
-            "img": f"/{num_id}/a01{EXT}"
+            "img": f"/{num_id}/a01{EXT}",
+            "variants": situation_keys
+        })
+
+    js_scenes = []
+    for s_slug, s_val in cfg.get("scenes", {}).items():
+        js_scenes.append({
+            "id": f"scene/{s_slug}",
+            "name": label(s_val, s_slug),
+            "type": "배경 및 공간",
+            "role": s_slug,
+            "img": f"/scene/{s_slug}{EXT}",
+            "variants": [s_slug]
+        })
+
+    js_mobs = []
+    for m_slug, m_val in cfg.get("monsters", {}).items():
+        js_mobs.append({
+            "id": f"mob/{m_slug}",
+            "name": label(m_val, m_slug),
+            "type": "적 및 위협",
+            "role": m_slug,
+            "img": f"/mob/{m_slug}{EXT}",
+            "variants": [m_slug]
+        })
+
+    js_events = []
+    for e_slug, e_val in cfg.get("events", {}).items():
+        is_nsfw = e_slug.startswith("s")
+        js_events.append({
+            "id": f"event/{e_slug}",
+            "name": label(e_val, e_slug),
+            "type": "19+ 특수 씬" if is_nsfw else "이벤트 컷씬",
+            "role": e_slug,
+            "img": f"/event/{e_slug}{EXT}",
+            "variants": [e_slug],
+            "isNsfw": is_nsfw
         })
 
     app_js_code = (
-        "// 크랙 스토리챗 공식 에셋 갤러리 도감 데이터\n"
-        f"window.CHARACTERS_DATA = {json.dumps(js_characters, ensure_ascii=False, indent=2)};\n\n"
+        "// 크랙 스토리챗 공식 에셋 갤러리 도감 데이터 (deploy.py 생성)\n"
+        f"window.CHARACTERS_DATA = {json.dumps(js_characters, ensure_ascii=False, indent=2)};\n"
+        f"window.SCENES_DATA = {json.dumps(js_scenes, ensure_ascii=False, indent=2)};\n"
+        f"window.MOBS_DATA = {json.dumps(js_mobs, ensure_ascii=False, indent=2)};\n"
+        f"window.EVENTS_DATA = {json.dumps(js_events, ensure_ascii=False, indent=2)};\n\n"
     )
     if (template_dir / "app.js").is_file():
         app_js_code += (template_dir / "app.js").read_text(encoding="utf-8")
