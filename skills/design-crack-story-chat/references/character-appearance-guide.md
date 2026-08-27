@@ -120,7 +120,96 @@ $$\text{헤어 태그} = [\text{색상}] + [\text{스타일/묶음/앞머리}] +
 
 ---
 
-## 6. 단부루 태그 검색 도구 활용법
+## 6. NAI V5 레퍼런스-프리(Reference-Free) 캐릭터 100% 고정 실전 비법
+
+NovelAI V5는 **단부루 태그와 자연어 묘사의 이행률(Follow-rate)이 매우 높은 최신 모델**입니다. 이미지 레퍼런스(Reference Image)가 없는 환경에서도 프롬프트 구조화만으로 인물의 시각적 정체성을 100% 고정할 수 있는 6대 실전 테크닉입니다.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🧠 [NAI V5 캐릭터 고정 6대 핵심 원칙]                                        │
+│                                                                             │
+│ 1. 👑 두상(Head)이 8할이다: [명도+색상] + [형태+결] + [앞머리] + [눈매+동공]    │
+│    (1.5::light green hair, bob cut straight hair, swept bangs, green eyes, tsurime::)│
+│                                                                             │
+│ 2. 🛡️ 가슴/체형 앵커 필수: 아티스트 스타일에 따른 체형 흔들림 방지          │
+│    (small breasts, medium breasts, flat chest 등 무조건 박아둘 것)          │
+│                                                                             │
+│ 3. 👗 의상 4단 자연어 덩어리: [색상] + [소재/질감] + [아이템] + [디테일/장식]│
+│    (black cotton crop top with cross laced front, brown leather scout vest) │
+│                                                                             │
+│ 4. 📐 구도(Shot)별 하의 스마트 분기: 상반신(`upper body`) 샷은 하의 생략     │
+│                                                                             │
+│ 5. 🎭 표정 전환 시 눈/입 가중치 오버라이드: 충돌 태그는 `1.5~1.8::...::`로 억제│
+│    (1.5::smile, open mouth, happy::, 1.8::closed eyes::)                    │
+│                                                                             │
+│ 6. 🎲 인물별 고유 시드(Seed) 고정: 시드 고정 없이는 위의 모든 것이 무효      │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 1) 👑 두상(Head) 8할 고정 원칙 & 1.5 가중치 묶음
+
+캐릭터 인상의 80%는 두상(헤어, 앞머리, 눈매, 동공)에서 결정됩니다.
+
+1. **헤어 색상에 명도 접두사 필수 결속 (`light` / `dark`)**:
+   - ❌ `green hair` (매 컷마다 연두색, 청록색, 짙은 녹색으로 색조 튐)
+   - ⭕ `light green hair` 또는 `dark green hair` (명도를 확정하여 색조 흔들림 차단)
+2. **헤어 형태 + 결(Texture) 결합**:
+   - `bob cut straight hair` (단발 + 생머리 직모 결속)
+   - `wavy hair in high ponytail` (웨이브 결 + 하이 포니테일)
+   - `messy short hair` (더벅머리 숏컷)
+3. **앞머리(Bangs) 필수 지정**:
+   - 앞머리를 지정하지 않으면 AI가 매번 다른 이마/앞머리를 생성합니다.
+   - `swept bangs` (옆으로 넘긴 앞머리), `blunt bangs` (일자 뱅), `parted bangs` (가르마 뱅), `messy bangs` (자연스러운 잔머리 뱅) 중 하나를 반드시 고정합니다.
+4. **눈매 각도 + 동공 색상 결속**:
+   - `green eyes, tsurime` (녹색 눈 + 날카롭게 올라간 고양이상 눈매)
+   - `amber eyes, tareme` (호박색 눈 + 순한 처진 강아지상 눈매)
+5. **두상 1.5 가중치 묶음 (`1.5::...::`)**:
+   - 의상이나 배경에 밀려 두상이 왜곡되지 않도록 두상 파츠 전체를 1.5 가중치 구문으로 묶어 최우선 배치합니다.
+   - `1.5::light green hair, bob cut straight hair, swept bangs, green eyes, tsurime::`
+
+---
+
+### 2) 🛡️ 가슴/체형 앵커 필수 ("가슴 태그는 웬만하면 넣어라")
+
+* 아티스트 스타일 프리셋이나 상황 구도에 따라 가슴 및 체형 볼륨이 제멋대로 흔들립니다.
+* 취향에 관계없이 `flat chest`, `small breasts`, `medium breasts`, `large breasts` 중 하나를 **고정용 등급 앵커**로 무조건 박아두어야 체형 편차가 잡힙니다.
+
+---
+
+### 3) 👗 의상 4단 자연어 결속 덩어리 ("옷은 자연어로 길게")
+
+* 의상 태그를 `top, vest, skirt`처럼 단어로 툭툭 끊으면 AI가 색상과 디테일을 다른 부위에 섞어버립니다 (Color Bleeding).
+* **[색상 + 소재/질감 + 아이템 + 디테일/장식]**의 4단 구조로 하나의 긴 자연어 덩어리를 만듭니다:
+  * ⭕ `black cotton crop top with cross laced front` (검정 + 면 소재 + 크롭탑 + 전면 크로스 레이스)
+  * ⭕ `brown leather scout vest with strap harness and small pouches` (갈색 + 가죽 소재 + 스카우트 조끼 + 스트랩 하네스 및 소형 파우치)
+  * ⭕ `dark grey pleated wool skirt with white trim` (다크 그레이 + 플리츠 울 소재 + 스커트 + 화이트 라인 트리밍)
+
+---
+
+### 4) 📐 구도(Shot)별 하의/신발 스마트 분기
+
+* **상반신(`upper body`) 샷**:
+  * 하의(`skirt`, `pants`), 양말, 신발 태그를 **반드시 생략**합니다. 하의 태그가 남아 있으면 AI가 상반신 샷 구도를 깨고 화각을 아래로 넓히려 하거나 체형 비율이 왜곡됩니다.
+* **카우보이/전신(`cowboy shot`, `full body`) 샷**:
+  * 하의, 양말/스타킹, 신발 태그를 온전하게 포함합니다.
+
+---
+
+### 5) 🎭 표정(Expression) 전환 시 눈/입 가중치 오버라이드
+
+* **순수 감정 표정**: `emotionless`, `calm`, `blush` 등은 베이스 외형과 충돌하지 않으므로 그대로 추가합니다.
+* **눈/입을 변형하는 표정**: `closed eyes`(눈 감음), `winking`(윙크), `smile, open mouth`(활짝 웃음) 등은 베이스에 설정된 눈매(`tsurime`, `open eyes`)와 정면 충돌합니다.
+* **해결책 (가중치 오버라이드)**:
+  * 눈/입 변형 태그에 가중치(`1.5~1.8::...::`)를 주어 베이스 눈매를 눌러줍니다:
+  ```text
+  1.5::smile, open mouth, happy::, 1.8::closed eyes::
+  ```
+
+---
+
+## 7. 단부루 태그 검색 도구 활용법
 
 스킬 내 탑재된 `search_tag.py`를 실행하여 공식 단부루 위키의 태그명과 정의를 실시간으로 검색 및 검증할 수 있습니다.
 
@@ -137,7 +226,7 @@ python3 tools/images/search_tag.py "sharp eyes" --json
 
 ---
 
-## 7. 실전 작성 예시 및 프롬프트 컴파일
+## 8. 실전 작성 예시 및 프롬프트 컴파일
 
 ### `characters.md` 작성 예시 (서유진)
 ```markdown
@@ -145,20 +234,20 @@ python3 tools/images/search_tag.py "sharp eyes" --json
 - **성별/나이**: 여성 / 22세
 - **체형/실루엣**: 162cm, 슬렌더 탄탄한 체형, 미디엄 바스트(`medium breasts`), 좁은 허리(`narrow waist`), 허벅지 갭(`thigh gap`), 슬림 레그(`slim legs`)
 - **헤어**: 다크 브라운 하이 포니테일(`dark brown hair in high ponytail`), 목덜미 잔머리(`loose strands at nape`), 자연스러운 앞머리(`messy bangs`), 등 중간까지 오는 긴 기장(`long hair`)
-- **안면/동공**: 상냥한 아몬드형 갈색 눈(`kind brown almond eyes`), 왼쪽 눈 밑 애교점(`mole under left eye`)
+- **안면/동공**: 상냥한 아몬드형 갈색 눈(`kind brown almond eyes`), 눈매(`tsurime`), 왼쪽 눈 밑 애교점(`mole under left eye`)
 - **비대칭 앵커**: 왼쪽 귀에만 찬 은색 링 귀걸이(`single silver hoop earring on left ear`)
-- **의상 (전 파츠 색상 결속)**:
-  - 아우터: 화이트&스카이블루 의료용 방탄 조끼(`white and light blue medical field vest`)
-  - 이너: 네이비 블루 반팔 기능성 셔츠(`navy blue short-sleeved compression shirt`)
-  - 하의: 다크 그레이 카고 팬츠(`dark grey tactical cargo pants`)
+- **의상 (4단 자연어 결속 덩어리)**:
+  - 아우터: 화이트&스카이블루 의료용 방탄 조끼(`white and light blue medical field vest with pouches`)
+  - 이너: 네이비 블루 면소재 압축 셔츠(`navy blue cotton compression shirt`)
+  - 하의 (전신 샷용): 다크 그레이 카고 팬츠(`dark grey tactical cargo pants`)
   - 손: 블랙 가죽 반장갑(`black fingerless leather gloves`)
   - 신발: 다크 브라운 경량 전술 부츠(`dark brown lightweight combat boots`)
 - **시그니처 소지품**: 허리 파우치에 장착된 청록색 바이오 스캐너(`teal bio-scanner on belt pouch`)
 ```
 
-### 컴파일된 최종 프롬프트 (Base Character Tag)
+### 컴파일된 최종 NAI V5 베이스 프롬프트 (Base Character Tag)
 ```text
-1girl, young woman, 22yo, slender, narrow waist, athletic build, toned, medium breasts, thigh gap, slim legs, dark brown hair, high ponytail, loose strands at nape, messy bangs, long hair, brown eyes, kind almond eyes, mole under left eye, single silver hoop earring on left ear, white and light blue medical field vest, navy blue short-sleeved compression shirt, dark grey tactical cargo pants, black fingerless leather gloves, dark brown lightweight combat boots, teal bio-scanner on belt pouch
+1girl, young woman, 22yo, 1.5::dark brown hair, high ponytail, loose strands at nape, messy bangs, long hair, brown eyes, kind almond eyes, tsurime::, mole under left eye, single silver hoop earring on left ear, medium breasts, slender, narrow waist, thigh gap, white and light blue medical field vest with pouches, navy blue cotton compression shirt, black fingerless leather gloves, teal bio-scanner on belt pouch
 ```
 
 ---
