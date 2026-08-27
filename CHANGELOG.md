@@ -1,5 +1,11 @@
 # 변경 내역
 
+## 0.9.10
+
+- **이미지 생성 프롬프트 잔여 서술 완전 제거 및 스킬 순수화** (`tools/images/README.md`, `SKILL.md`).
+  - 생성 모델(SDXL, Pony, Illustrious, Flux) 및 프롬프트 문법 관련 잔여 테이블 완전 삭제.
+  - WebP 일괄 변환, Cloudflare Pages 호스팅, 인터랙티브 웹 쇼케이스 템플릿 중심으로 툴링 문서 정제.
+
 ## 0.9.9
 
 - **캐릭터별 상태(`💋`) vs 키워드 감지 시스템 전역 알럿(`🔞`) 역할 분리 확립** (`status-window-guide.md`, `crack-prompt-rules.md`).
