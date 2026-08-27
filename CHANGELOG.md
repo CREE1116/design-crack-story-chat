@@ -1,5 +1,16 @@
 # 변경 내역
 
+## 0.10.1
+
+- **시스템 프롬프트용 초압축 이미지 출력 규칙 템플릿 정립** (`references/image-output-rules.md`, `references/system-prompt-presets.md`, `references/output-contract.md`).
+  - 글로벌 상황번호 매트릭스(`S01~S18`, `A01~A15`) 기반 130자 내외 초압축 템플릿 구축.
+  - 화자 첫 등장 시 1장, 감정 변화 시 1장, 동일 감정 연속 발화 시 재출력 생략 등 런타임 제어 원칙 명문화.
+- **키워드북 19+ 성애 연출 모듈(`kb.directive_nsfw`) 5대 설계 기둥 및 표준 템플릿 분리** (`references/keyword-book.md`, `references/image-output-rules.md`).
+  - 플레이어 주도권/동의, 신체·감각적 정밀 묘사, 오프닝 앵커링 분량 제어, 절정과 사후 여운(필로우토크), A코드 성인 이미지 동적 호출 5대 기둥 정립.
+  - 긴장감/거리감 절제형 문체 및 감각 집중형 문체 변주 가이드 제공.
+- **부정편향 완충망 & 뻔함 방지 엔진(Anti-Cliché Engine) 명문화** (`references/production-patterns.md`).
+  - 맹목적 사이다물, 평면적 악역, 인스턴트 호감, 기계적 번호선택지 강제, 고정 포맷 반복 등 5대 클리셰 차단 6중 그물망 체계화.
+
 ## 0.10.0
 
 NovelAI 및 단부루 2024 공식 위키 DB 기반의 **초정밀 비주얼 엔지니어링 시스템**, **배경 2대 갈래 컴파일러**, **스토리 상세설명란 7대 완성형 배포 명세서**, 및 **신규 빌드 산출물(`character-design.md`, `scene-design.md`, `summary-comment.md`)**을 전면 구축했다.
