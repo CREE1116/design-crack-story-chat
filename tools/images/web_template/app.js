@@ -235,11 +235,11 @@ function renderCards() {
     // 기본 썸네일 이미지 경로 구성
     let defaultImg;
     if (item.img) {
-      defaultImg = item.img;
+      defaultImg = item.img.startsWith("/") ? `.${item.img}` : item.img;
     } else if (state.currentTab === "characters") {
-      defaultImg = `/${item.id}/a01.webp`;
+      defaultImg = `./${item.id}/a01.webp`;
     } else {
-      defaultImg = `/${item.id}.webp`;
+      defaultImg = `./${item.id}.webp`;
     }
 
     const revision = item.revision ? `?v=${item.revision}` : "";
@@ -304,9 +304,9 @@ function renderModalVariants(item) {
     const isNsfw = v.startsWith("s");
     let imgPath;
     if (state.currentTab === "characters") {
-      imgPath = `/${item.id}/${v}.webp`;
+      imgPath = `./${item.id}/${v}.webp`;
     } else {
-      imgPath = `/${item.id}.webp`;
+      imgPath = `./${item.id}.webp`;
     }
 
     const placeholder = getPlaceholderSvg(item.name, v);
@@ -336,10 +336,10 @@ function updateModalPreview() {
   let imgPath;
   let markdownTag;
   if (state.currentTab === "characters") {
-    imgPath = `/${item.id}/${v}.webp`;
+    imgPath = `./${item.id}/${v}.webp`;
     markdownTag = `![]({IMG}/${item.id}/${v}.webp)`;
   } else {
-    imgPath = `/${item.id}.webp`;
+    imgPath = `./${item.id}.webp`;
     markdownTag = `![]({IMG}/${item.id}.webp)`;
   }
 
