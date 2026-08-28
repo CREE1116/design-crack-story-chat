@@ -32,6 +32,7 @@ Read the following references completely when their condition applies:
 - Designing conversation continuity, relationship progression, time, or long-session recall: [references/conversation-continuity.md](references/conversation-continuity.md)
 - Designing the 7-step zoom-in prologue and hot-start bootstrap start prompt: [references/opening-design-guide.md](references/opening-design-guide.md)
 - Formatting narration, dialogue syntax, media calls, and output contracts: [references/output-contract.md](references/output-contract.md)
+- Auto-syncing build artifacts directly into Crack web editor via Playwright: [references/crack-auto-sync-guide.md](references/crack-auto-sync-guide.md)
 - Finishing any creation, revision, or audit: [references/validation.md](references/validation.md)
 
 Use [assets/story-chat-template](assets/story-chat-template) as the starter bundle. Its only authored files are `story.md` and `characters.md`; it deliberately contains no manifest, state/memory layer, output-contract, generation-rule, content-profile, media-rule, parser, or keyword-book source file. Keep the fifth build artifact even when it records no entries.
