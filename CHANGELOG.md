@@ -1,5 +1,13 @@
 # 변경 내역
 
+## 0.10.5
+
+- **NovelAI 이미지 스킬 엔진 전면 흡수 및 정밀 프롬프트 엔지니어링 가이드 구축** (`references/novelai-prompt-engineering.md`, `SKILL.md`).
+  - **정밀 1인칭 POV 카메라 & 시선 기하학 탑재**: 시점 소유자, 앵글(`from above/below/side`), 시선 타겟팅(`looking at viewer`, `eye contact`, `looking down`, `closed eyes`), POV 증거(`pov hands`, `female pov`, `taker pov`).
+  - **일반 상황코드(S01~S18) 공식 Danbooru 태그 사전**: 18종 감정별 검증된 단부루 태그 세트 수록.
+  - **성인 상황코드(A01~A15) 정밀 체위 기하학 사전**: 15종 성애 체위별 공식 단부루 체위 태그 및 결속 기하학 수록.
+  - **3단 레이어 분리 컴파일 아키텍처**: Base Character (불변) + Pose/Emotion (가변) + Scene/Lighting (환경) 결합 공식 정립.
+
 ## 0.10.4
 
 - **NovelAI V5 레퍼런스-프리(Reference-Free) 캐릭터 100% 고정 6대 실전 비법 전면 통합** (`references/character-appearance-guide.md`).

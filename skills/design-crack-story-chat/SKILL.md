@@ -26,6 +26,7 @@ Read the following references completely when their condition applies:
 - Assembling files into a Crack prompt, status window, user-note rule, or media rule: [references/crack-prompt-rules.md](references/crack-prompt-rules.md)
 - Designing image directories, Cloudflare Pages hosting, and showcase web gallery: [references/image-assets.md](references/image-assets.md)
 - Writing in-prompt media rules, URL schemas, and throttling image output: [references/image-output-rules.md](references/image-output-rules.md)
+- Engineering NovelAI V4/V5 prompts, POV camera geometry, S01~S18 emotion & A01~A15 adult pose tag dictionaries: [references/novelai-prompt-engineering.md](references/novelai-prompt-engineering.md)
 - Writing release showcase story descriptions, clickable banner links, asset count tables, and creator comments: [references/story-description-guide.md](references/story-description-guide.md)
 - Creating, splitting, triggering, or auditing Crack keyword-book entries and trigger directives: [references/keyword-book.md](references/keyword-book.md)
 - Designing conversation continuity, relationship progression, time, or long-session recall: [references/conversation-continuity.md](references/conversation-continuity.md)
