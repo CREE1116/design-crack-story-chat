@@ -113,17 +113,25 @@ def parse_keyword_book(kb_text: str) -> tuple[list[KeywordEntry], list[ShortcutE
     keyword_entries: list[KeywordEntry] = []
     shortcuts: list[ShortcutEntry] = []
 
-    # 단축어 섹션 분리
-    shortcut_split = re.split(r"^#+\s*(?:Shortcuts|단축어)\b", kb_text, flags=re.MULTILINE | re.IGNORECASE)
-    kb_part = shortcut_split[0]
-    shortcut_part = shortcut_split[1] if len(shortcut_split) > 1 else ""
+    # 단축어 시작 지점 탐색
+    sc_start_match = re.search(
+        r"^#+\s*(?:Shortcuts?|단축어|Shortcut\s+`?[a-zA-Z0-9_-]+`?)\b",
+        kb_text,
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+    if sc_start_match:
+        kb_part = kb_text[: sc_start_match.start()]
+        shortcut_part = kb_text[sc_start_match.start() :]
+    else:
+        kb_part = kb_text
+        shortcut_part = ""
 
     # 1. 키워드북 항목 파싱
     heading_matches = list(re.finditer(r"^(#{1,3})\s+(.+)$", kb_part, re.MULTILINE))
     filtered_matches = []
     for m in heading_matches:
         t = m.group(2).strip()
-        if re.match(r"^(?:등록 순서|3슬롯|Entry text|입력 본문|본문|내용)\b", t, re.IGNORECASE):
+        if re.match(r"^(?:등록 순서|3슬롯|Entry text|입력 본문|본문|내용|Shortcuts?|단축어)\b", t, re.IGNORECASE):
             continue
         filtered_matches.append(m)
 
@@ -143,16 +151,40 @@ def parse_keyword_book(kb_text: str) -> tuple[list[KeywordEntry], list[ShortcutE
 
     # 2. 단축어 파싱
     if shortcut_part:
-        sc_matches = list(re.finditer(r"^##\s+(.+)$", shortcut_part, re.MULTILINE))
-        for i, match in enumerate(sc_matches):
+        sc_headings = list(
+            re.finditer(
+                r"^#+\s+(?:Shortcut\s+`?([^`\n]+)`?|sc\.([a-zA-Z0-9_-]+)|([^#\n]+))$",
+                shortcut_part,
+                re.MULTILINE | re.IGNORECASE,
+            )
+        )
+        valid_sc_matches = []
+        for m in sc_headings:
+            h_text = m.group(0).strip()
+            if re.match(r"^#+\s*(?:Shortcuts?|단축어)(?:\s*\(.*?\))?\s*$", h_text, re.IGNORECASE):
+                continue
+            if re.search(r"^##\s+(?:Shortcut prompt|프롬프트|내용)\b", h_text, re.IGNORECASE):
+                continue
+            valid_sc_matches.append(m)
+
+        for i, match in enumerate(valid_sc_matches):
             start = match.start()
-            end = sc_matches[i + 1].start() if i + 1 < len(sc_matches) else len(shortcut_part)
+            end = valid_sc_matches[i + 1].start() if i + 1 < len(valid_sc_matches) else len(shortcut_part)
             block = shortcut_part[start:end]
 
-            sc_id = match.group(1).strip()
+            sc_id = match.group(1) or match.group(2) or match.group(3) or "shortcut"
+            sc_id = sc_id.strip()
             name_m = re.search(r"^-\s*(?:name|이름):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
             desc_m = re.search(r"^-\s*(?:description|설명):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
-            prompt_m = re.search(r"^-\s*(?:prompt|프롬프트):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
+
+            # Prompt can be under ## Shortcut prompt or - prompt:
+            prompt_m = re.search(
+                r"^##\s+(?:Shortcut prompt|프롬프트)\s*\n(.*?)(?=^#|\Z)",
+                block,
+                re.MULTILINE | re.DOTALL | re.IGNORECASE,
+            )
+            if not prompt_m:
+                prompt_m = re.search(r"^-\s*(?:prompt|프롬프트):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
 
             name = name_m.group(1).strip() if name_m else sc_id
             desc = desc_m.group(1).strip() if desc_m else ""
