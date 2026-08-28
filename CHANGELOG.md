@@ -1,5 +1,12 @@
 # 변경 내역
 
+## 0.10.7
+
+- **크랙 동기화 툴 브라우저 영구 상주 및 대화형 핫리로드(Hot-Reload) 루프 구축** (`tools/sync/crack_sync.py`, `references/crack-auto-sync-guide.md`).
+  - **입력 후 브라우저 닫힘 방지**: 자동 주입 완료 후 창을 닫지 않고 작가가 직접 임시저장/발행할 수 있도록 브라우저 세션 영구 유지.
+  - **대화형 핫리로드 (`r`)**: 원본 파일 수정 후 `r` 키만 누르면 브라우저를 닫지 않고 변경된 프롬프트와 19개 키워드북 즉시 덮어쓰기 재주입.
+  - **실시간 버전 스위칭 (`v`)**: SAFE ↔ UNSAFE 시스템 프롬프트 실시간 전환 지원.
+
 ## 0.10.6
 
 - **크랙(Crack) Playwright 브라우저 자동 동기화 툴 탑재** (`tools/sync/crack_sync.py`, `references/crack-auto-sync-guide.md`).

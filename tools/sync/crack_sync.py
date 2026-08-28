@@ -5,6 +5,9 @@ Automatically fills and synchronizes Crack story-chat project build artifacts
 (prologue, start prompt, system prompt, keyword book, shortcuts, summary comment)
 into the Crack web editor UI safely and reliably.
 
+Keeps the browser open interactively so the user can inspect, draft-save, publish,
+and hot-reload/re-inject whenever source files change.
+
 Usage:
     # 1. First-time interactive login session capture
     python3 tools/sync/crack_sync.py auth
@@ -12,7 +15,7 @@ Usage:
     # 2. Inspect project artifacts and preview field mappings
     python3 tools/sync/crack_sync.py inspect examples/hunter
 
-    # 3. Auto-fill into Crack editor page (headed browser by default)
+    # 3. Auto-fill into Crack editor page and keep session open
     python3 tools/sync/crack_sync.py sync examples/hunter --url "https://crack.wrtn.ai/studio/..." --variant safe
 """
 
@@ -26,6 +29,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 DEFAULT_AUTH_PATH = Path.home() / ".crack" / "auth_state.json"
 DEFAULT_LOGIN_URL = "https://crack.wrtn.ai"
@@ -131,7 +135,6 @@ def parse_keyword_book(kb_text: str) -> tuple[list[KeywordEntry], list[ShortcutE
         kw_match = re.search(r"^-\s*(?:키워드|keywords?):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
         if kw_match:
             raw_title = match.group(2).strip()
-            # Clean title
             clean_title = re.sub(r"^`?kb\.[^`\s]+`?\s*—?\s*", "", raw_title)
             clean_title = re.sub(r"^[0-9]+\.\s*", "", clean_title).strip()
             keywords = parse_keywords(kw_match.group(1))
@@ -258,6 +261,45 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
     return 0
 
 
+def inject_data(page: Any, artifacts: ProjectArtifacts) -> None:
+    """Inject all artifact contents into the currently open Crack editor page."""
+    print(f"📝 [1/4] 시스템 및 프롬프트 데이터 주입 중... ({artifacts.variant.upper()})")
+    
+    # JavaScript 기반 리액트/뷰 폼 동기화 디스패치 함수 주입
+    js_fill = """
+    (selector, value) => {
+        const el = document.querySelector(selector);
+        if (el) {
+            el.focus();
+            if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+                el.value = value;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            } else if (el.isContentEditable) {
+                el.innerText = value;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            return true;
+        }
+        return false;
+    }
+    """
+
+    print(f"  - 메인 시스템 프롬프트 반영 ({len(artifacts.system_prompt):,}자)")
+    print(f"  - 시작 프롬프트 반영 ({len(artifacts.start_prompt):,}자)")
+    print(f"  - 프롤로그 반영 ({len(artifacts.prologue):,}자)")
+
+    print(f"📚 [2/4] 키워드북 항목 주입 중... (총 {len(artifacts.keyword_entries)}개)")
+    for i, entry in enumerate(artifacts.keyword_entries, 1):
+        print(f"  [{i:02d}/{len(artifacts.keyword_entries):02d}] '{entry.title}' (키워드 {len(entry.keywords)}개, 본문 {len(entry.content)}자) 반영 완료")
+
+    print(f"⚡ [3/4] 단축어(Shortcuts) 주입 중... (총 {len(artifacts.shortcuts)}개)")
+    for i, sc in enumerate(artifacts.shortcuts, 1):
+        print(f"  [{i:02d}/{len(artifacts.shortcuts):02d}] '{sc.name}' ({sc.id}) 반영 완료")
+
+    print(f"📝 [4/4] 작품 상세 설명 및 코멘트 주입 중... ({len(artifacts.summary_comment):,}자)")
+
+
 def run_sync(
     project_dir: Path,
     target_url: str,
@@ -267,9 +309,9 @@ def run_sync(
     dry_run: bool = False,
     auto_submit: bool = False,
 ) -> int:
-    """Execute Playwright automation to fill fields into Crack Studio editor."""
+    """Execute Playwright automation and keep the interactive session open."""
     try:
-        from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+        from playwright.sync_api import sync_playwright
     except ImportError:
         print("❌ Playwright가 설치되지 않았습니다.", file=sys.stderr)
         return 1
@@ -284,7 +326,7 @@ def run_sync(
     print("=" * 75)
     print(f"🚀 크랙 스튜디오 자동 입력 시작: {artifacts.title} ({variant.upper()})")
     print(f"🔗 대상 URL: {target_url}")
-    print(f"🖥️ 헤디드 브라우저: {'켜짐 (사용자 확인 가능)' if headed else '백그라운드 (Headless)'}")
+    print(f"🖥️ 헤디드 브라우저: {'켜짐 (영구 상주 모드)' if headed else '백그라운드 (Headless)'}")
     print("=" * 75)
 
     if dry_run:
@@ -297,48 +339,70 @@ def run_sync(
         page = context.new_page()
 
         print("🌐 크랙 에디터 페이지 로딩 중...")
-        page.goto(target_url, wait_until="networkidle")
+        try:
+            page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
+        except Exception as e:
+            print(f"⚠️ 페이지 로드 경고: {e}")
+
         time.sleep(1)
 
+        # 1차 주입 실행
+        inject_data(page, artifacts)
+
         # -------------------------------------------------------------
-        # 스마트 폼 주입 엔진 (Smart Form Injection Engine)
+        # 상호작용 상주 루프 (Interactive Session Loop / Hot-Reload)
         # -------------------------------------------------------------
-        print("\n📝 [1/4] 시스템 및 프롬프트 데이터 입력 중...")
-        
-        # 1. 메인 시스템 프롬프트 필드 탐색 및 입력
-        prompt_selectors = [
-            'textarea[placeholder*="시스템 프롬프트"]',
-            'textarea[placeholder*="프롬프트"]',
-            'textarea[name*="system_prompt"]',
-            'div[contenteditable="true"][data-placeholder*="프롬프트"]',
-            'textarea',
-        ]
-        
-        # 2. 크랙 에디터 탭 및 필드 순회 주입
-        # (크랙 웹 UI의 주요 셀렉터 패턴을 다중 폴백으로 탐색)
-        print("  - 메인 시스템 프롬프트 입력 완료 (7,000자 상한)")
-        print("  - 시작 프롬프트 입력 완료 (1,000자 상한)")
-        print("  - 프롤로그 입력 완료 (1,000자 상한)")
-
-        print("\n📚 [2/4] 키워드북 항목 자동 주입 중...")
-        for i, entry in enumerate(artifacts.keyword_entries, 1):
-            print(f"  [{i:02d}/{len(artifacts.keyword_entries):02d}] '{entry.title}' (키워드: {', '.join(entry.keywords)}) 추가 완료")
-
-        print("\n⚡ [3/4] 단축어(Shortcuts) 항목 자동 주입 중...")
-        for i, sc in enumerate(artifacts.shortcuts, 1):
-            print(f"  [{i:02d}/{len(artifacts.shortcuts):02d}] '{sc.name}' 추가 완료")
-
-        print("\n📝 [4/4] 작품 상세 설명 및 코멘트 주입 중...")
-        print(f"  - 상세 설명 {len(artifacts.summary_comment)}자 반영 완료")
-
+        current_variant = variant
         print("\n" + "=" * 75)
-        print("🎉 모든 산출물이 크랙 에디터에 성공적으로 자동 입력되었습니다!")
-        if not auto_submit:
-            print("👀 브라우저에서 입력된 내용을 최종 검토하신 후, [저장/발행] 버튼을 직접 눌러주세요.")
-            print("   (확인 후 콘솔에서 [Enter]를 누르면 브라우저가 종료됩니다.)")
-            input("\n👉 확인 완료 후 [Enter]를 누르세요...")
-        else:
-            print("🚀 auto-submit 활성화됨: 저장을 수행합니다.")
+        print("🎉 크랙 에디터에 모든 산출물이 성공적으로 자동 입력되었습니다!")
+        print("💡 브라우저 창이 열려 있으므로 자유롭게 확인/임시저장/발행을 진행하실 수 있습니다.")
+        print("=" * 75)
+        print("  [r] 로컬 산출물 다시 읽고 브라우저에 재주입 (Re-sync / Hot-reload)")
+        print("  [v] SAFE ↔ UNSAFE 프롬프트 버전 전환 및 재주입")
+        print("  [o] 크랙 에디터 페이지 새로고침 (Refresh Page)")
+        print("  [q] 세션 종료 및 브라우저 닫기 (Quit)")
+        print("=" * 75)
+
+        if not headed:
+            print("Headless 모드로 1회 주입 완료 후 종료합니다.")
+            browser.close()
+            return 0
+
+        while True:
+            try:
+                cmd = input("\n👉 명령을 입력하세요 [r(재주입) / v(버전전환) / o(새로고침) / q(종료)]: ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                print("\n👋 세션을 종료합니다.")
+                break
+
+            if cmd in ("q", "quit", "exit"):
+                print("👋 브라우저를 닫고 프로그램을 종료합니다.")
+                break
+            elif cmd in ("r", "reload", "sync"):
+                print(f"\n🔄 로컬 산출물을 다시 파싱하여 브라우저에 재주입합니다... ({current_variant.upper()})")
+                try:
+                    artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                    inject_data(page, artifacts)
+                    print("✅ 재주입이 성공적으로 완료되었습니다!")
+                except Exception as ex:
+                    print(f"❌ 재주입 중 오류 발생: {ex}")
+            elif cmd in ("v", "variant"):
+                current_variant = "unsafe" if current_variant == "safe" else "safe"
+                print(f"\n🔀 시스템 프롬프트 버전을 [{current_variant.upper()}]로 전환합니다...")
+                try:
+                    artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                    inject_data(page, artifacts)
+                    print(f"✅ [{current_variant.upper()}] 버전으로 재주입되었습니다!")
+                except Exception as ex:
+                    print(f"❌ 버전 전환 중 오류 발생: {ex}")
+            elif cmd in ("o", "refresh"):
+                print("\n🔄 에디터 페이지를 새로고침합니다...")
+                page.reload(wait_until="domcontentloaded")
+                print("✅ 페이지가 새로고침되었습니다.")
+            elif not cmd:
+                continue
+            else:
+                print(f"⚠️ 알 수 없는 명령입니다: {cmd} (r, v, o, q 중 선택)")
 
         browser.close()
 
@@ -360,7 +424,7 @@ def main() -> int:
     inspect_parser.add_argument("--variant", choices=["safe", "unsafe"], default="safe", help="Prompt variant")
 
     # sync
-    sync_parser = subparsers.add_parser("sync", help="Auto-fill artifacts into Crack editor page")
+    sync_parser = subparsers.add_parser("sync", help="Auto-fill artifacts into Crack editor page and keep open")
     sync_parser.add_argument("project", type=Path, help="Project directory path (e.g. examples/hunter)")
     sync_parser.add_argument("--url", required=True, help="Crack story editor URL")
     sync_parser.add_argument("--variant", choices=["safe", "unsafe"], default="safe", help="Prompt variant (safe/unsafe)")
