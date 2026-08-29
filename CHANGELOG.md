@@ -1,5 +1,17 @@
 # 변경 내역
 
+## 0.10.9
+
+- **실전 4대 서사 연출 레시피 및 오프닝 안전 수칙 표준화** (`references/opening-design-guide.md`, `references/production-patterns.md`, `references/prompt-writing.md`).
+  - **`{{user}}` 조사 결속 깨짐 방지**: `{{user}}는`, `{{user}}을` 직결 금지 및 3인칭 대명사/역할 호칭 처리 원칙 확립 (`신창섭는` 찐빠 원천 차단).
+  - **초기 환경 변수 100% 구체적 앵커링**: 템플릿 변수 누출 방지 및 날씨/시간/턴수 픽스.
+  - **초반 위기 앵커링**: 당면한 부상/시간 제약/위기를 통한 1턴 행동 동기 부여.
+  - **4대 실전 서사 연출 레시피 탑재**:
+    1. 명암 & 온도 대비 연출 (Atmospheric Contrast: 가혹한 현실 ↔ 따뜻한 안식처)
+    2. 외생적 이벤트 트리거 (Exogenous Event Injection: 루프/정체 시 외부 사건 자율 주입)
+    3. 경제 & 물가 기준 1줄 앵커링 (Economic Scale Anchor: 화폐 가치 인플레이션 방지)
+    4. 비피학적 현실 저항 가드 (Realistic Emotional Resistance: 가학 행위 시 후희 냉소 및 결별 가능)
+
 ## 0.10.8
 
 - **공식 25종 관계 이모지 매트릭스(Relationship Emoji Matrix) 전면 통합** (`references/status-window-guide.md`, `references/character-personality.md`, `references/crack-prompt-rules.md`).
