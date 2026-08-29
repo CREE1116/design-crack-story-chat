@@ -215,10 +215,15 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     # Title extraction
     title = project_dir.name
     if story_path.exists():
-        first_line = story_path.read_text(encoding="utf-8").splitlines()[0]
-        title_m = re.search(r"^#\s+(.+)$", first_line)
-        if title_m:
-            title = title_m.group(1).strip()
+        story_content = story_path.read_text(encoding="utf-8")
+        title_tag = re.search(r"^-\s*Title:\s*(.+)$", story_content, re.MULTILINE | re.IGNORECASE)
+        if title_tag:
+            title = title_tag.group(1).strip()
+        else:
+            first_line = story_content.splitlines()[0]
+            title_m = re.search(r"^#\s+(.+)$", first_line)
+            if title_m and title_m.group(1).strip().lower() != "story":
+                title = title_m.group(1).strip()
 
     keyword_entries, shortcuts = parse_keyword_book(kb_text)
 
@@ -261,12 +266,27 @@ def run_auth(login_url: str = DEFAULT_LOGIN_URL, auth_path: Path = DEFAULT_AUTH_
         page = context.new_page()
         page.goto(login_url)
 
-        input("\n👉 로그인을 완료한 후 여기서 [Enter]를 누르세요...")
+        print("\n👉 브라우저 창에서 크랙 로그인을 완료해 주세요...")
+        print("💡 로그인 상태가 감지되면 세션이 자동으로 `~/.crack/auth_state.json`에 영구 저장됩니다.")
 
-        context.storage_state(path=str(auth_path))
-        print(f"\n✅ 로그인 세션이 성공적으로 저장되었습니다! ({auth_path})")
-        print("이제 `sync` 서브커맨드로 자동 입력을 실행할 수 있습니다.")
-        browser.close()
+        for _ in range(300):  # 최대 5분간 로그인 감지 대기
+            try:
+                if page.is_closed():
+                    break
+                cookies = context.cookies()
+                if cookies and len(cookies) > 0:
+                    auth_path.parent.mkdir(parents=True, exist_ok=True)
+                    context.storage_state(path=str(auth_path))
+                time.sleep(1)
+            except Exception:
+                break
+
+        try:
+            if not page.is_closed():
+                context.storage_state(path=str(auth_path))
+                print(f"\n✅ 로그인 세션이 성공적으로 저장되었습니다! ({auth_path})")
+        except Exception:
+            pass
 
     return 0
 
@@ -293,55 +313,493 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
     return 0
 
 
-def inject_data(page: Any, artifacts: ProjectArtifacts) -> None:
-    """Inject all artifact contents into the currently open Crack editor page."""
-    print(f"📝 [1/4] 시스템 및 프롬프트 데이터 주입 중... ({artifacts.variant.upper()})")
-    
-    # JavaScript 기반 리액트/뷰 폼 동기화 디스패치 함수 주입
-    js_fill = """
-    (selector, value) => {
-        const el = document.querySelector(selector);
-        if (el) {
-            el.focus();
-            if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-                el.value = value;
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-                el.dispatchEvent(new Event('change', { bubbles: true }));
-            } else if (el.isContentEditable) {
-                el.innerText = value;
-                el.dispatchEvent(new Event('input', { bubbles: true }));
+def fill_react_input(page: Any, selector_or_locator: Any, value: str) -> bool:
+    """Safely fill text into React-controlled input/textarea and trigger all change events."""
+    try:
+        if isinstance(selector_or_locator, str):
+            loc = page.locator(selector_or_locator).first
+        else:
+            loc = selector_or_locator
+        if loc.count() > 0:
+            loc.scroll_into_view_if_needed(timeout=2000)
+            loc.click(timeout=2000)
+            loc.fill(value, timeout=3000)
+            return True
+    except Exception:
+        pass
+
+    # JavaScript dispatch fallback
+    try:
+        page.evaluate(
+            """
+            ([sel, val]) => {
+                let el = typeof sel === 'string' ? document.querySelector(sel) : sel;
+                if (el) {
+                    el.focus();
+                    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+                        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                            window.HTMLInputElement.prototype, "value"
+                        )?.set || Object.getOwnPropertyDescriptor(
+                            window.HTMLTextAreaElement.prototype, "value"
+                        )?.set;
+                        if (nativeInputValueSetter) {
+                            nativeInputValueSetter.call(el, val);
+                        } else {
+                            el.value = val;
+                        }
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    } else if (el.isContentEditable) {
+                        el.innerText = val;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    return true;
+                }
+                return false;
             }
-            return true;
-        }
-        return false;
-    }
+        """,
+            [selector_or_locator if isinstance(selector_or_locator, str) else None, value],
+        )
+        return True
+    except Exception:
+        return False
+
+
+def switch_tab(page: Any, tab_names: list[str]) -> bool:
+    """Switch to a tab by searching for matching visible text."""
+    for name in tab_names:
+        try:
+            locs = page.locator(
+                f"button:visible:has-text('{name}'), div[role='tab']:visible:has-text('{name}'), a:visible:has-text('{name}'), span:visible:has-text('{name}')"
+            )
+            count = locs.count()
+            for idx in range(count):
+                el = locs.nth(idx)
+                txt = el.inner_text().strip()
+                if name in txt and len(txt) <= len(name) + 10:
+                    el.click(timeout=2000)
+                    time.sleep(0.8)
+                    return True
+        except Exception:
+            continue
+    return False
+
+
+def dump_dom_summary(page: Any) -> None:
+    """Print all visible buttons, tabs, inputs, and textareas for inspection."""
+    print("\n🔍 --- [현재 페이지 DOM 요소 덤프] ---")
+    print(f"URL: {page.url}")
+    print(f"Title: {page.title()}")
+
+    # Buttons
+    buttons = page.locator("button:visible, div[role='button']:visible, a:visible").all_inner_texts()
+    clean_btns = [b.strip().replace("\n", " ") for b in buttons if b.strip() and len(b.strip()) < 30]
+    print(f"🔘 버튼/링크 ({len(clean_btns)}개): {', '.join(clean_btns[:20])}")
+
+    # Inputs & Textareas
+    inputs = page.locator("input:visible, textarea:visible:not([aria-hidden='true']):not([name='hiddenTextarea'])").all()
+    print(f"📝 입력창 ({len(inputs)}개 발견):")
+    for i, inp in enumerate(inputs, 1):
+        tag = inp.evaluate("el => el.tagName.toLowerCase()")
+        ph = inp.get_attribute("placeholder") or ""
+        aria = inp.get_attribute("aria-label") or ""
+        name = inp.get_attribute("name") or ""
+        print(f"   [{i:02d}] <{tag}> placeholder='{ph}' aria-label='{aria}' name='{name}'")
+    print("------------------------------------------\n")
+
+
+def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
+    """Inject prologue, start prompt, and system prompt into editor."""
+    print("\n🧠 [프롬프트 주입 시작] (" + artifacts.variant.upper() + ")")
+
+    # ── [스토리 설정] 탭 → 제작자 커스텀 선택 → 메인 시스템 프롬프트 주입 ──
+    print("   📌 [스토리 설정] 탭 클릭...")
+    story_tab = page.locator("button:has-text('스토리 설정')").first
+    if story_tab.count() > 0:
+        story_tab.click()
+        time.sleep(1.5)
+
+        tpl_btn = page.locator("button:has-text('기본 프롬프트'), button:has-text('프롬프트 템플릿')").first
+        if tpl_btn.count() > 0:
+            tpl_btn.click()
+            time.sleep(0.8)
+            custom_opt = page.locator(
+                "div:text('제작자 커스텀'), li:text('제작자 커스텀'), [role='option']:has-text('제작자 커스텀')"
+            ).first
+            if custom_opt.count() > 0:
+                custom_opt.click(timeout=5000)
+                time.sleep(1.2)
+                print("   ✅ [제작자 커스텀] 프롬프트 양식 전환 완료!")
+            else:
+                print("   ⚠️ '제작자 커스텀' 옵션 못 찾음")
+
+        sys_ta = page.locator("textarea:visible, div[contenteditable='true']:visible").first
+        if sys_ta.count() > 0:
+            fill_react_input(page, sys_ta, artifacts.system_prompt)
+            print(f"   ✅ [메인 시스템 프롬프트] 주입 완료 ({len(artifacts.system_prompt):,}자)")
+        else:
+            print("   ⚠️ 시스템 프롬프트 입력창 못 찾음")
+    else:
+        print("   ⚠️ '스토리 설정' 탭 못 찾음")
+
+    # ── [시작 설정] 탭 → [0] 프롤로그 + [1] 시작 상황 (세계관/역할) 주입 ──
+    print("   📌 [시작 설정] 탭 클릭...")
+    start_tab = page.locator("button:has-text('시작 설정')").first
+    if start_tab.count() > 0:
+        start_tab.click()
+        time.sleep(1.5)
+        all_tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
+        if len(all_tas) >= 1:
+            fill_react_input(page, all_tas[0], artifacts.prologue)
+            print(f"   ✅ [프롤로그] 주입 완료 ({len(artifacts.prologue):,}자)")
+        if len(all_tas) >= 2:
+            # [1] = 시작 상황 (사용자의 역할, 세계관 등) -> artifacts.start_prompt 주입
+            fill_react_input(page, all_tas[1], artifacts.start_prompt)
+            print(f"   ✅ [시작 프롬프트 (시작 상황)] 주입 완료 ({len(artifacts.start_prompt):,}자)")
+        elif len(all_tas) == 1:
+            print("   ⚠️ 시작 상황 입력창을 찾지 못했습니다.")
+    else:
+        print("   ⚠️ '시작 설정' 탭 못 찾음")
+
+    return True
+
+
+def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
+    """Inject keyword entries into keyword book tab.
+
+    실제 DOM 플로우:
+      1. '키워드북' 탭 클릭
+      2. '+ 키워드 노트 추가' 클릭 → 새 행 생성
+      3. ✏️ 연필 버튼 클릭 → input에 제목 입력 → Enter로 확정
+      4. ∨ chevron down 버튼 클릭하여 아코디언 확장
+      5. 정보(본문) textarea에 content 입력
+      6. 키워드 input에 tag 입력 후 Enter
+      7. ^ chevron up 버튼 클릭하여 아코디언 접기
     """
+    print(f"\n📚 [키워드북 주입 시작] (총 {len(artifacts.keyword_entries)}개 항목)")
 
-    print(f"  - 메인 시스템 프롬프트 반영 ({len(artifacts.system_prompt):,}자)")
-    print(f"  - 시작 프롬프트 반영 ({len(artifacts.start_prompt):,}자)")
-    print(f"  - 프롤로그 반영 ({len(artifacts.prologue):,}자)")
+    # 키워드북 탭
+    page.locator("button:has-text('키워드북')").first.click()
+    time.sleep(1.5)
 
-    print(f"📚 [2/4] 키워드북 항목 주입 중... (총 {len(artifacts.keyword_entries)}개)")
     for i, entry in enumerate(artifacts.keyword_entries, 1):
-        print(f"  [{i:02d}/{len(artifacts.keyword_entries):02d}] '{entry.title}' (키워드 {len(entry.keywords)}개, 본문 {len(entry.content)}자) 반영 완료")
+        print(
+            f"   [{i:02d}/{len(artifacts.keyword_entries):02d}] '{entry.title}' "
+            f"(키워드 {len(entry.keywords)}개, 본문 {len(entry.content)}자)...",
+            end=" ", flush=True,
+        )
+        try:
+            # 1) 키워드 노트 추가 버튼 클릭
+            add_btn = page.locator("button:has-text('키워드 노트 추가'), button:has-text('+ 키워드 노트 추가')").first
+            add_btn.click(timeout=5000)
+            time.sleep(1.0)
 
-    print(f"⚡ [3/4] 단축어(Shortcuts) 주입 중... (총 {len(artifacts.shortcuts)}개)")
+            # 2) ✏️ 연필 버튼 클릭하여 제목 변경
+            pencil_btn = page.locator("button:has(path[d*='M16.05']), button:has(path[d*='M16.0'])").last
+            pencil_btn.click(timeout=5000)
+            time.sleep(0.5)
+
+            title_inp = page.locator("input:visible").first
+            fill_react_input(page, title_inp, entry.title)
+            time.sleep(0.3)
+            title_inp.press("Enter")
+            time.sleep(0.6)
+
+            # 3) ∨ chevron down 버튼 클릭하여 아코디언 확장
+            chevron_btn = page.locator("button:has(path[d*='M12 15']), button:has(path[d*='12 15']), button:has(path[d*='M7.41'])").last
+            if chevron_btn.count() > 0:
+                chevron_btn.click(timeout=5000)
+            else:
+                row = page.locator(f"div:has(p:has-text('{entry.title}'))").first
+                if row.count() > 0:
+                    row.locator("button").last.click(timeout=5000)
+            time.sleep(0.8)
+
+            # 4) 정보 (본문) textarea 입력
+            info_ta = page.locator("textarea[placeholder*='엘다리스'], textarea[placeholder*='정보'], textarea:visible").last
+            fill_react_input(page, info_ta, entry.content)
+            time.sleep(0.3)
+
+            # 5) 키워드 태그 input 입력
+            kw_inp = page.locator("input[placeholder*='단어 입력 후 엔터'], input[placeholder*='엔터'], input:visible").last
+            for kw in entry.keywords:
+                kw_inp.fill(kw)
+                kw_inp.press("Enter")
+                time.sleep(0.08)
+            time.sleep(0.3)
+
+            # 6) 아코디언 접기
+            chevron_up = page.locator("button:has(path[d*='M12 9']), button:has(path[d*='12 9'])").last
+            if chevron_up.count() > 0:
+                chevron_up.click(timeout=3000)
+                time.sleep(0.4)
+
+            print("완료")
+        except Exception as ex:
+            print(f"실패 ({ex})")
+
+    print(f"   ✅ 키워드북 {len(artifacts.keyword_entries)}개 완료!")
+    return True
+
+
+def inject_shortcuts(page: Any, artifacts: ProjectArtifacts) -> bool:
+    """Inject shortcuts into shortcuts tab.
+
+    실제 DOM 플로우:
+      1. '단축어' 탭 클릭
+      2. '+ 단축어 추가' 버튼 클릭 → 드롭다운 펼침
+      3. '신규 추가' (div/li, button 아님) 클릭 → 인라인 폼 생성
+      4. INPUT[0]=단축어이름, INPUT[1]=설명, TEXTAREA=프롬프트 직접 채우기
+      5. 별도 저장 버튼 없음 (저장은 탭 전환/완료 시 자동)
+    """
+    print(f"\n⚡ [단축어 주입 시작] (총 {len(artifacts.shortcuts)}개 항목)")
+
+    # 단축어 탭
+    page.locator("button:has-text('단축어')").first.click()
+    time.sleep(1.2)
+
     for i, sc in enumerate(artifacts.shortcuts, 1):
-        print(f"  [{i:02d}/{len(artifacts.shortcuts):02d}] '{sc.name}' ({sc.id}) 반영 완료")
+        print(f"   [{i:02d}/{len(artifacts.shortcuts):02d}] '{sc.name}' ({sc.id})...", end=" ", flush=True)
+        try:
+            # 1) '+ 단축어 추가' 버튼 클릭 → 드롭다운 펼침
+            add_btn = page.locator("button:has-text('단축어 추가')").first
+            add_btn.click(timeout=5000)
+            time.sleep(0.8)
 
-    print(f"📝 [4/4] 작품 상세 설명 및 코멘트 주입 중... ({len(artifacts.summary_comment):,}자)")
+            # 2) '신규 추가' 항목 클릭 (div/li, not button)
+            new_item = page.get_by_text("신규 추가", exact=True).first
+            if new_item.count() == 0:
+                new_item = page.locator("text='신규 추가'").first
+            new_item.click(timeout=5000)
+            time.sleep(1.2)
+
+            # 3) 인라인 폼 직접 채우기 (모달 없음)
+            name_inp = page.locator("input[placeholder*='시점전환'], input[placeholder*='단축어 이름']").last
+            if name_inp.count() == 0:
+                name_inp = page.locator("input:visible").last
+            fill_react_input(page, name_inp, sc.name)
+            time.sleep(0.15)
+
+            desc_inp = page.locator("input[placeholder*='용도'], input[placeholder*='설명해주세요']").last
+            if desc_inp.count() == 0:
+                desc_inp = page.locator("input:visible").nth(-2)
+            fill_react_input(page, desc_inp, sc.description)
+            time.sleep(0.15)
+
+            prompt_ta = page.locator("textarea[placeholder*='프롬프트'], textarea[placeholder*='자동 주입']").last
+            if prompt_ta.count() == 0:
+                prompt_ta = page.locator("textarea:visible").last
+            fill_react_input(page, prompt_ta, sc.prompt)
+            time.sleep(0.2)
+
+            print("완료")
+        except Exception as ex:
+            print(f"실패 ({ex})")
+
+    print("   ✅ 단축어 주입 프로세스 완료!")
+    return True
+
+
+def inject_basic_info(page: Any, artifacts: ProjectArtifacts) -> bool:
+    """Inject title and short summary into 프로필 tab."""
+    print("\n📝 [기본 정보 (프로필) 주입 시작]")
+
+    # 프로필 탭 클릭
+    prof_tab = page.locator("button:has-text('프로필')").first
+    if prof_tab.count() > 0:
+        prof_tab.click()
+        time.sleep(1.0)
+
+    # 작품 이름 입력 (placeholder='스토리의 이름을 입력해 주세요')
+    title_inp = page.locator("input:visible[placeholder*='이름'], input:visible[placeholder*='제목'], input:visible").first
+    if title_inp.count() > 0:
+        fill_react_input(page, title_inp, artifacts.title)
+        print(f"   ✅ [작품 제목] '{artifacts.title}' 입력 완료")
+
+    # 작품 소개 (placeholder='간단한 소개를 입력해 주세요')
+    desc_ta = page.locator("textarea:visible, div[contenteditable='true']:visible").first
+    if desc_ta.count() > 0:
+        fill_react_input(page, desc_ta, artifacts.summary_comment[:500])
+        print(f"   ✅ [작품 간단 소개] 입력 완료 ({len(artifacts.summary_comment[:500]):,}자)")
+
+    return True
+
+
+def inject_publish_info(page: Any, artifacts: ProjectArtifacts) -> bool:
+    """Inject detailed description into publish screen via 엔딩 설정 -> 다음 button only."""
+    print("\n📋 [발행 상세 설명 주입 시작]")
+
+    # 1. 반드시 엔딩 설정 탭 클릭 후 -> 하단 다음 버튼 클릭
+    ending_tab = page.locator("button:has-text('엔딩 설정')").first
+    if ending_tab.count() > 0:
+        ending_tab.click()
+        time.sleep(1.0)
+        next_btn = page.locator("button:text('다음'), button:has-text('다음')").first
+        if next_btn.count() > 0:
+            next_btn.click()
+            time.sleep(1.5)
+            print("   ✅ '엔딩 설정' -> '다음' 버튼 클릭 완료")
+
+    # 2. 상세 설명 textarea (placeholder='스토리의 성격이나 서사, 과거 사건 등 상세한 내용을 작성해 주세요')
+    detail_ta = page.locator("textarea[placeholder*='상세한 내용'], textarea[placeholder*='서사'], textarea:visible").first
+    if detail_ta.count() > 0:
+        # 배너 + 통계표 + 코멘트 마크다운
+        detail_text = artifacts.summary_comment if len(artifacts.summary_comment) < 1000 else artifacts.summary_comment[:980]
+        fill_react_input(page, detail_ta, detail_text.strip())
+        print(f"   ✅ [상세 설명] 주입 완료 ({len(detail_text.strip()):,}자)")
+    else:
+        print("   ⚠️ 상세 설명 textarea를 찾지 못했습니다.")
+
+    return True
+
+def navigate_to_create_story(page: Any) -> bool:
+    """Safely navigate from https://crack.wrtn.ai to '내 작품' -> '작품 만들기'."""
+    print("\n🧭 [에디터 진입 탐색 시작]")
+
+    # Check if already inside editor
+    has_editor = (
+        page.locator(
+            "button:visible:has-text('프롬프트'), button:visible:has-text('키워드북'), div[role='tab']:visible:has-text('프롬프트')"
+        ).count()
+        > 0
+    )
+    if has_editor:
+        print("   ✅ 이미 에디터 화면에 진입되어 있습니다.")
+        return True
+
+    # 1. '내 작품' 메뉴 찾아서 클릭
+    print("   🔍 1단계: '내 작품' 메뉴 탐색 중...")
+    my_works = page.locator(
+        "button:visible:has-text('내 작품'), a:visible:has-text('내 작품'), div[role='tab']:visible:has-text('내 작품'), span:visible:has-text('내 작품')"
+    )
+    if my_works.count() > 0:
+        try:
+            my_works.first.click()
+            time.sleep(1.5)
+            print("   ✅ '내 작품' 메뉴 클릭 완료")
+        except Exception:
+            pass
+
+    # 2. '작품 만들기' 버튼 찾아서 클릭
+    print("   🔍 2단계: '작품 만들기' 버튼 탐색 중...")
+    create_btn = page.locator(
+        "button:visible:has-text('작품 만들기'), a:visible:has-text('작품 만들기'), button:visible:has-text('새 작품'), div[role='button']:visible:has-text('작품 만들기')"
+    )
+    if create_btn.count() > 0:
+        try:
+            create_btn.first.click()
+            time.sleep(1.5)
+            print("   ✅ '작품 만들기' 버튼 클릭 완료")
+        except Exception as e:
+            print(f"   ⚠️ '작품 만들기' 클릭 실패: {e}")
+
+    # 3. '스토리' 선택 클릭
+    print("   🔍 3단계: '스토리' 타입 선택 중...")
+    story_btn = page.locator(
+        "button:visible:has-text('스토리'), div[role='button']:visible:has-text('스토리'), a:visible:has-text('스토리'), p:visible:has-text('스토리')"
+    )
+    if story_btn.count() > 0:
+        try:
+            for idx in range(story_btn.count()):
+                el = story_btn.nth(idx)
+                txt = el.inner_text().strip()
+                if "스토리" in txt and len(txt) < 25:
+                    el.click(timeout=2000)
+                    time.sleep(2.5)
+                    print("   ✅ '스토리' 선택 완료 -> 에디터 진입!")
+                    return True
+        except Exception:
+            pass
+
+    return True
+
+
+def auto_navigate_and_inject_all(page: Any, artifacts: ProjectArtifacts) -> None:
+    """Detect page state, enter editor via '내 작품' -> '작품 만들기', and inject all tabs."""
+    print("\n===========================================================================")
+    print("🚀 [전체 일괄 자동 주입 모드 실행]")
+    print("===========================================================================")
+
+    # 1. 내 작품 -> 작품 만들기 진입
+    navigate_to_create_story(page)
+    time.sleep(1)
+
+    # 2. 기본 정보 주입
+    inject_basic_info(page, artifacts)
+    time.sleep(0.5)
+
+    # 3. 프롬프트 3종 주입
+    inject_prompts(page, artifacts)
+    time.sleep(0.5)
+
+    # 4. 키워드북 주입
+    inject_keywords(page, artifacts)
+    time.sleep(0.5)
+
+    # 5. 단축어 주입
+    inject_shortcuts(page, artifacts)
+    time.sleep(0.5)
+
+    # 6. 등록 상세 설명 주입
+    inject_publish_info(page, artifacts)
+    time.sleep(0.5)
+
+    print("\n🎉 모든 산출물 주입 완료! 브라우저 창에서 검토 후 [임시저장] 또는 [발행]을 진행하세요.")
+
+
+DEFAULT_PROFILE_DIR = Path.home() / ".crack" / "profile"
+DEFAULT_LOGIN_URL = "https://crack.wrtn.ai"
+
+
+def run_auth(login_url: str = DEFAULT_LOGIN_URL, profile_dir: Path = DEFAULT_PROFILE_DIR) -> int:
+    """Launch persistent browser profile for 1-time login."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("❌ Playwright가 설치되지 않았습니다.", file=sys.stderr)
+        return 1
+
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    print("=" * 70)
+    print(f"🔑 크랙(Crack) 영구 브라우저 프로필 로그인 모드")
+    print(f"저장 경로: {profile_dir}")
+    print("브라우저 창에서 로그인하시면 이후 모든 실행에서 로그인이 영구 유지됩니다.")
+    print("=" * 70)
+
+    with sync_playwright() as p:
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=str(profile_dir),
+            headless=False,
+            slow_mo=50,
+        )
+        page = context.pages[0] if context.pages else context.new_page()
+        page.goto(login_url)
+
+        print("\n👉 브라우저 창에서 크랙 로그인을 완료해 주세요...")
+        print("💡 로그인이 끝나면 언제든 브라우저를 닫거나 콘솔에서 [Enter]를 누르시면 됩니다.")
+
+        try:
+            input("\n👉 로그인을 완료한 후 여기서 [Enter]를 누르세요...")
+        except (KeyboardInterrupt, EOFError):
+            pass
+
+        print(f"\n✅ 로그인 프로필이 영구 저장되었습니다! ({profile_dir})")
+        context.close()
+
+    return 0
 
 
 def run_sync(
     project_dir: Path,
     target_url: str,
     variant: str = "safe",
-    auth_path: Path = DEFAULT_AUTH_PATH,
+    profile_dir: Path = DEFAULT_PROFILE_DIR,
     headed: bool = True,
     dry_run: bool = False,
+    auto_inject: bool = False,
     auto_submit: bool = False,
 ) -> int:
-    """Execute Playwright automation and keep the interactive session open."""
+    """Execute Playwright automation with persistent browser profile."""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -349,16 +807,13 @@ def run_sync(
         return 1
 
     artifacts = load_project_artifacts(project_dir, variant=variant)
-
-    if not auth_path.exists():
-        print(f"⚠️ 저장된 세션 파일이 없습니다: {auth_path}")
-        print("먼저 `python3 tools/sync/crack_sync.py auth`를 실행해 로그인 세션을 저장해 주세요.")
-        return 1
+    profile_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 75)
-    print(f"🚀 크랙 스튜디오 자동 입력 시작: {artifacts.title} ({variant.upper()})")
+    print(f"🚀 크랙 스튜디오 자동 입력 도구 실행: {artifacts.title} ({variant.upper()})")
     print(f"🔗 대상 URL: {target_url}")
     print(f"🖥️ 헤디드 브라우저: {'켜짐 (영구 상주 모드)' if headed else '백그라운드 (Headless)'}")
+    print(f"📁 브라우저 프로필: {profile_dir} (영구 로그인 유지)")
     print("=" * 75)
 
     if dry_run:
@@ -366,11 +821,14 @@ def run_sync(
         return run_inspect(project_dir, variant=variant)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=not headed, slow_mo=50)
-        context = browser.new_context(storage_state=str(auth_path))
-        page = context.new_page()
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=str(profile_dir),
+            headless=not headed,
+            slow_mo=50,
+        )
+        page = context.pages[0] if context.pages else context.new_page()
 
-        print("🌐 크랙 에디터 페이지 로딩 중...")
+        print("🌐 크랙 페이지 로딩 중...")
         try:
             page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
         except Exception as e:
@@ -378,31 +836,39 @@ def run_sync(
 
         time.sleep(1)
 
-        # 1차 주입 실행
-        inject_data(page, artifacts)
+        # --auto 플래그 지정 시 즉시 주입 실행
+        if auto_inject:
+            print("\n⚡ [--auto 플래그 감지] 즉시 전체 자동 주입을 실행합니다...")
+            time.sleep(1.5)
+            auto_navigate_and_inject_all(page, artifacts)
 
         # -------------------------------------------------------------
         # 상호작용 상주 루프 (Interactive Session Loop / Hot-Reload)
         # -------------------------------------------------------------
         current_variant = variant
         print("\n" + "=" * 75)
-        print("🎉 크랙 에디터에 모든 산출물이 성공적으로 자동 입력되었습니다!")
-        print("💡 브라우저 창이 열려 있으므로 자유롭게 확인/임시저장/발행을 진행하실 수 있습니다.")
-        print("=" * 75)
-        print("  [r] 로컬 산출물 다시 읽고 브라우저에 재주입 (Re-sync / Hot-reload)")
-        print("  [v] SAFE ↔ UNSAFE 프롬프트 버전 전환 및 재주입")
-        print("  [o] 크랙 에디터 페이지 새로고침 (Refresh Page)")
-        print("  [q] 세션 종료 및 브라우저 닫기 (Quit)")
-        print("=" * 75)
+        print("💡 크랙 브라우저가 열렸습니다! 원하는 에디터 페이지로 이동한 뒤 아래 명령을 입력하세요.")
+        print("===========================================================================")
+        print("  [a] 전체 일괄 자동 주입 (기본정보 ➡️ 프롬프트 ➡️ 키워드북 ➡️ 단축어)")
+        print("  [p] 현재 화면에 프롬프트 3종(프롤로그·시작·시스템) 주입")
+        print("  [k] 키워드북 19개 일괄 주입")
+        print("  [s] 단축어 3개 일괄 주입")
+        print("  [i] 기본 정보(제목·상세소개) 주입")
+        print("  [d] 현재 페이지의 버튼/입력창 DOM 목록 분석 (디버깅)")
+        print("  [v] SAFE ↔ UNSAFE 프롬프트 버전 전환")
+        print("  [r] 로컬 산출물 파일 다시 읽기")
+        print("  [q] 브라우저 닫기 및 종료 (Quit)")
+        print("===========================================================================")
 
         if not headed:
-            print("Headless 모드로 1회 주입 완료 후 종료합니다.")
-            browser.close()
+            if not auto_inject:
+                auto_navigate_and_inject_all(page, artifacts)
+            context.close()
             return 0
 
         while True:
             try:
-                cmd = input("\n👉 명령을 입력하세요 [r(재주입) / v(버전전환) / o(새로고침) / q(종료)]: ").strip().lower()
+                cmd = input("\n👉 명령을 입력하세요 [a(전체주입) / p(프롬프트) / k(키워드북) / s(단축어) / d(DOM분석) / q(종료)]: ").strip().lower()
             except (KeyboardInterrupt, EOFError):
                 print("\n👋 세션을 종료합니다.")
                 break
@@ -410,33 +876,39 @@ def run_sync(
             if cmd in ("q", "quit", "exit"):
                 print("👋 브라우저를 닫고 프로그램을 종료합니다.")
                 break
-            elif cmd in ("r", "reload", "sync"):
-                print(f"\n🔄 로컬 산출물을 다시 파싱하여 브라우저에 재주입합니다... ({current_variant.upper()})")
-                try:
-                    artifacts = load_project_artifacts(project_dir, variant=current_variant)
-                    inject_data(page, artifacts)
-                    print("✅ 재주입이 성공적으로 완료되었습니다!")
-                except Exception as ex:
-                    print(f"❌ 재주입 중 오류 발생: {ex}")
+            elif cmd in ("a", "all", "sync"):
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                auto_navigate_and_inject_all(page, artifacts)
+            elif cmd in ("p", "prompt", "prompts"):
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                inject_prompts(page, artifacts)
+            elif cmd in ("k", "keyword", "keywords", "kb"):
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                inject_keywords(page, artifacts)
+            elif cmd in ("s", "shortcut", "shortcuts", "sc"):
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                inject_shortcuts(page, artifacts)
+            elif cmd in ("i", "info", "basic"):
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                inject_basic_info(page, artifacts)
+            elif cmd in ("g", "reg", "publish", "detail"):
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
+                inject_publish_info(page, artifacts)
+            elif cmd in ("d", "dom", "debug", "inspect"):
+                dump_dom_summary(page)
+            elif cmd in ("r", "reload"):
+                print(f"\n🔄 로컬 산출물을 다시 파싱했습니다 ({current_variant.upper()})")
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
             elif cmd in ("v", "variant"):
                 current_variant = "unsafe" if current_variant == "safe" else "safe"
-                print(f"\n🔀 시스템 프롬프트 버전을 [{current_variant.upper()}]로 전환합니다...")
-                try:
-                    artifacts = load_project_artifacts(project_dir, variant=current_variant)
-                    inject_data(page, artifacts)
-                    print(f"✅ [{current_variant.upper()}] 버전으로 재주입되었습니다!")
-                except Exception as ex:
-                    print(f"❌ 버전 전환 중 오류 발생: {ex}")
-            elif cmd in ("o", "refresh"):
-                print("\n🔄 에디터 페이지를 새로고침합니다...")
-                page.reload(wait_until="domcontentloaded")
-                print("✅ 페이지가 새로고침되었습니다.")
+                print(f"\n🔀 시스템 프롬프트 버전을 [{current_variant.upper()}]로 전환했습니다.")
+                artifacts = load_project_artifacts(project_dir, variant=current_variant)
             elif not cmd:
                 continue
             else:
-                print(f"⚠️ 알 수 없는 명령입니다: {cmd} (r, v, o, q 중 선택)")
+                print(f"⚠️ 알 수 없는 명령입니다: {cmd} (a, p, k, s, i, d, v, r, q 중 선택)")
 
-        browser.close()
+        context.close()
 
     return 0
 
@@ -448,7 +920,7 @@ def main() -> int:
     # auth
     auth_parser = subparsers.add_parser("auth", help="Interactive 1-time login session capture")
     auth_parser.add_argument("--url", default=DEFAULT_LOGIN_URL, help="Login page URL")
-    auth_parser.add_argument("--auth-path", default=DEFAULT_AUTH_PATH, type=Path, help="Auth storage file path")
+    auth_parser.add_argument("--profile-dir", default=DEFAULT_PROFILE_DIR, type=Path, help="Browser profile dir path")
 
     # inspect
     inspect_parser = subparsers.add_parser("inspect", help="Inspect and preview artifact field mapping")
@@ -458,17 +930,18 @@ def main() -> int:
     # sync
     sync_parser = subparsers.add_parser("sync", help="Auto-fill artifacts into Crack editor page and keep open")
     sync_parser.add_argument("project", type=Path, help="Project directory path (e.g. examples/hunter)")
-    sync_parser.add_argument("--url", required=True, help="Crack story editor URL")
+    sync_parser.add_argument("--url", default=DEFAULT_LOGIN_URL, help="Crack story editor URL")
     sync_parser.add_argument("--variant", choices=["safe", "unsafe"], default="safe", help="Prompt variant (safe/unsafe)")
-    sync_parser.add_argument("--auth-path", default=DEFAULT_AUTH_PATH, type=Path, help="Auth storage file path")
+    sync_parser.add_argument("--profile-dir", default=DEFAULT_PROFILE_DIR, type=Path, help="Browser profile dir path")
     sync_parser.add_argument("--headless", action="store_true", help="Run in headless mode (default is headed)")
     sync_parser.add_argument("--dry-run", action="store_true", help="Inspect without opening browser")
+    sync_parser.add_argument("--auto", action="store_true", help="Automatically inject upon start")
     sync_parser.add_argument("--auto-submit", action="store_true", help="Automatically click save/submit button")
 
     args = parser.parse_args()
 
     if args.command == "auth":
-        return run_auth(login_url=args.url, auth_path=args.auth_path)
+        return run_auth(login_url=args.url, profile_dir=args.profile_dir)
     elif args.command == "inspect":
         return run_inspect(project_dir=args.project, variant=args.variant)
     elif args.command == "sync":
@@ -476,12 +949,12 @@ def main() -> int:
             project_dir=args.project,
             target_url=args.url,
             variant=args.variant,
-            auth_path=args.auth_path,
+            profile_dir=args.profile_dir,
             headed=not args.headless,
             dry_run=args.dry_run,
+            auto_inject=args.auto,
             auto_submit=args.auto_submit,
         )
-
     return 0
 
 
