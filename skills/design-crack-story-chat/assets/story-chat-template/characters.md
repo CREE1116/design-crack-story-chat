@@ -2,7 +2,7 @@
 
 <!-- This is character canon only. Do not put narrator rules, parser text, output syntax, changing scene values, SAFE/UNSAFE directions, or keyword-book UI fields here. -->
 
-## `char.example` — Display name
+## 인물 이름 「이명/직책」
 
 ### Dramatic function
 

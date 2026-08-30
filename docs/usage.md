@@ -298,7 +298,7 @@ python3 skills/design-crack-story-chat/scripts/check_freshness.py <내_프로젝
 
 ```
 STALE characters.md: 수정 1 · 추가 0 · 삭제 0
-  ~ char.ban-hosik — 반호식 「不壊」 · 발할라 길드장
+  ~ 반호식 「不壊」 · 발할라 길드장
       → 통합본 현장 인물 씨앗 · 해당 키워드북 항목 · 이미지 프롬프트
 ```
 

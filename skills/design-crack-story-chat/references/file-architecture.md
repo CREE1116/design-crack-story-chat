@@ -85,13 +85,13 @@ Use one self-contained section per character:
 
 ```markdown
 # Characters
-## `char.example` — Display Name
+## 인물 이름 「이명/직책」
 - Role / current goal / fear or cost / contradiction:
 - Behavior: relaxed→; pressure→; trust→; boundary breach→:
 - Speech: register, vocabulary, 2–5 varied sample lines:
 - Knowledge: public / private / false belief / unknown:
 - Ability: effect / activation / cost / hard limit / failure:
-- Relationships: target IDs and current qualitative stage:
+- Relationships: target names and current qualitative stage:
 - Optional detail candidate: topic, factual detail, suggested names/aliases (1–5)
 ```
 
@@ -124,9 +124,9 @@ There is no runtime deliverable or assumed Crack state API. Current profile, sce
 5. Run `python scripts/check_project_layout.py STORY_CHAT_DIR` after compiling. Use `--allow-unbuilt` only before the first build.
 6. Upload the prologue, one selected integrated variant, and start prompt to their matching Crack fields. Register keyword-book entries individually from the fifth file.
 
-## Stable IDs
+## Stable Names and Identities
 
-Keep IDs inline where their canon lives. Recommended prefixes: `char.`, `loc.`, `faction.`, `arc.`, `scene.`, `event.`, `goal.`, `secret.`, `flag.`, `ending.`, and `kb.`. Do not reuse an ID after release; display names may change without changing an ID.
+Keep character and world definitions inline where their canon lives. Use clear, unambiguous display names (e.g. `심가을 「測候」`, `헌터협회 본부`). Do not reuse an identity after release.
 
 ## Change discipline
 

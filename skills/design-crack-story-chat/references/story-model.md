@@ -119,7 +119,7 @@ That failure is easy to miss in review and obvious in play — a character who i
 For each important character, specify:
 
 ```markdown
-## `char.example` — Display Name
+## 인물 이름 「이명/직책」
 
 ### Dramatic function
 - Role in the player's experience:
@@ -156,7 +156,7 @@ For each important character, specify:
 - Information never known initially:
 
 ### Relationships
-- `char.other`: baseline, tension, desired change
+- 상대 인물명: baseline, tension, desired change
 ```
 
 Use familiar type or archetype labels only as compression hints. Operational behavior carries the real instruction. Resolve conflicts as `canon/current state/behavior > desire/fear/contradiction > relationship stage > tags > examples`.

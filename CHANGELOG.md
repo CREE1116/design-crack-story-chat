@@ -1,5 +1,10 @@
 # 변경 내역
 
+## 0.10.10
+
+- **영문 슬러그 잔재(`char.xxx`) 템플릿 및 레퍼런스 전수 제거 완료** (`assets/story-chat-template/characters.md`, `references/file-architecture.md`, `references/story-model.md`, `docs/usage.md`).
+  - 템플릿 및 명세서 내 모든 `char.example`, `char.other`, `char.ban-hosik` 예시를 `인물 이름 「이명/직책」` 등 자연스러운 한국어 인물명으로 전면 교체.
+
 ## 0.10.9
 
 - **실전 4대 서사 연출 레시피 및 오프닝 안전 수칙 표준화** (`references/opening-design-guide.md`, `references/production-patterns.md`, `references/prompt-writing.md`).
