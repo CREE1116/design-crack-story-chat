@@ -1,5 +1,11 @@
 # 변경 내역
 
+## 0.10.11
+
+- **중세 판타지 / 구원 순애 / 피폐 로맨스 100% 순수 시스템 프롬프트 프리셋(Preset 5) 추가** (`references/system-prompt-presets.md`).
+  - 구원순애 통짜프롬 구조를 표준 8대 블록으로 리팩토링한 100% 순수 뼈대 탑재.
+  - 명암·온도 대비(가혹한 현실 ↔ 따뜻한 안식처), 외생적 이벤트, 경제/물가 1줄 앵커링, 편지(✉) 채널, 비피학적 현실 저항 가드, 공식 25종 관계 이모지 연동 완비.
+
 ## 0.10.10
 
 - **영문 슬러그 잔재(`char.xxx`) 템플릿 및 레퍼런스 전수 제거 완료** (`assets/story-chat-template/characters.md`, `references/file-architecture.md`, `references/story-model.md`, `docs/usage.md`).
