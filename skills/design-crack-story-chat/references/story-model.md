@@ -58,7 +58,7 @@ A tier that labels strength but never forbids an action is decoration. Every tie
 A recurring antagonist force needs a closed list of types, not one generic monster.
 
 ```markdown
-## `threat.example`
+## 위협 유형 이름
 - Silhouette: what the player sees first
 - Behavior: how it attacks or spreads
 - Punishes: which player mistake it exploits
@@ -86,7 +86,7 @@ Answer plainly: why does anyone do this for a living?
 - The emergency or failure case.
 - Who absorbs the cost of the case that pays nothing.
 
-This is what gives factions positions instead of flavors. Without it every faction collapses into "the honorable one" and "the arrogant one," and the model will improvise motives that contradict canon.
+This is what gives factions positions instead of flavors. Without it every faction collapses into "the honorable one" and "the arrogant one," and the model will improvise motives that contradict established facts.
 
 ### Route world systems by arc position
 
@@ -182,7 +182,7 @@ Define per-turn change caps, exceptional events, decay if any, and stage-transit
 Use this form:
 
 ```markdown
-## `event.example`
+## 사건 이름
 
 - Purpose: why this event exists
 - Trigger: explicit boolean conditions

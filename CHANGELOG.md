@@ -1,5 +1,16 @@
 # 변경 내역
 
+## 0.10.13
+
+- **심리 생성 기반 캐릭터 설계 방법론 탑재** (`references/character-generation.md`).
+  - 세계의 진실 / 초기 정신 상태 / 관찰 행동 분리.
+  - Temperament·Belief·Desire·Self·Memory·Relationship·State·Trait 슬롯과 심리 생성 순서 표준화.
+  - Unknown 유지, Reflection 게이팅, T0 초기조건 설계, State/Trait 분리 추가.
+- **점식 캐릭터·원본 네임스페이스 재발 방지**.
+  - 템플릿의 점식 예시 제거.
+  - `check_naming.py` 추가 및 통합 검증 연결.
+  - 구원순애 프리셋에 심리 생성 엔진 블록 추가.
+
 ## 0.10.12
 
 - **실전 구원순애 통짜프롬 핵심 노하우 전면 흡수 및 공식 지침 표준화** (`references/output-contract.md`, `references/character-personality.md`, `references/status-window-guide.md`, `references/prompt-writing.md`).

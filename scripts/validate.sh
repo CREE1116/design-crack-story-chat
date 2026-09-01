@@ -11,6 +11,7 @@ run() { echo; echo "── $1"; shift; "$@" || FAIL=1; }
 
 run "원본 대비 신선도"  python3 "$S/check_freshness.py" "$PROJ"
 run "프로젝트 구조"     python3 "$S/check_project_layout.py" "$PROJ"
+run "이름 규칙"         python3 "$S/check_naming.py" "$PROJ"
 run "키워드북 형식"     python3 "$S/check_keyword_book.py" "$PROJ/build/keyword-book.md"
 run "기호 정의"         python3 "$S/check_symbols.py" \
       "$PROJ/build/integrated-prompt-safe.md" "$PROJ/build/integrated-prompt-unsafe.md"

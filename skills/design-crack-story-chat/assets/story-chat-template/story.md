@@ -31,7 +31,7 @@
 
 ### Locations
 
-#### `loc.example` — Display name
+#### 장소 이름 — Display name
 
 - Function / sensory anchors / access:
 - Rules active here:
@@ -72,11 +72,11 @@
 
 ## Story engine
 
-### `arc.example` — Dramatic question
+### 아크 이름 — Dramatic question
 
 - Entry / pressure / possible change / exit:
 
-### `event.example`
+### 사건 이름
 
 - Trigger:
 - Blocker:
@@ -84,11 +84,11 @@
 - Information or state changed:
 - Player decision point:
 
-### `secret.example`
+### 비밀 이름
 
 - Truth / initial owners / observable clues / reveal condition / consequence:
 
-### `ending.example`
+### 결말 이름
 
 - Required conditions / final player decision / result:
 
@@ -106,7 +106,7 @@
 
 <!-- Facts that need not be always-on. The final keyword-book sheet is compiled from these candidates; do not add activation-setting fields here. -->
 
-### `kb.example-lore` — Topic
+### 조건부 로어 이름 — Topic
 
 - Factual detail to inject later:
 - Suggested natural keywords/aliases (1–5; medium specificity):

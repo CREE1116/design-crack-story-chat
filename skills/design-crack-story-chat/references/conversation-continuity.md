@@ -26,7 +26,7 @@ Derive the player-profile fields from what the current project's `story.md` and 
 - Decide first which of two jobs the status block does, because the emission rule follows from it.
   - **Decorative recap** — a convenience summary of what the player just read. Omit it when it adds no playable information.
   - **Fixed HUD** — the block shows accumulated public state such as date/time, location, the player's own sheet, equipment and inventory, relationship standing per character met, and the current objective. Emit it every response only when the experience deliberately promises a fixed HUD; inherit unchanged public fields verbatim.
-- A fixed HUD is still derived presentation, not an authority. It restates only what the conversation already depicted or established; it never becomes a dialogue history, hidden ledger, save file, persistence guarantee, or substitute for canon.
+- A fixed HUD is still derived presentation, not an authority. It restates only what the conversation already depicted or established; it never becomes a dialogue history, hidden ledger, save file, persistence guarantee, or substitute for established facts.
 - When a status/HUD block is emitted, inherit its last publicly established values. Change only fields supported by the player's latest explicit input or a depicted/summarized event in the conversation; never reset, randomize, or fill an unknown value merely because the block reappears.
 - Specify every HUD with `position | form | omission | update`. Example: `위치=본문끝|형태=코드펜스 안 [시각·장소/ⓤ 신상·능력/장비·소지품/관계/목표·상황]|생략=고정HUD면 없음|갱신=직전공개값계승,본문근거필드만변경`.
 

@@ -13,6 +13,17 @@
 - Gender / personality code (MBTI·enneagram·archetype, optional compression):
 - Orientation and relationship boundary (only if romance is available; state the observable response to being approached and the line this character draws, not just the label):
 
+### Initial mental state
+
+- Temperament (stable processing bias, not a complete personality):
+- Belief (current beliefs, confidence, alternative hypotheses):
+- Desire (current wants, including competing wants):
+- Self (known / unknown / mistaken self-concept):
+- Memory (directly experienced starting memories; separate semantic knowledge):
+- Relationship (familiarity / trust / dependence / boundary / curiosity):
+- State at T0 (temporary emotion, body, attention):
+- Trait candidates (do not promote from one event; required repetition or intensity):
+
 ### Observable behavior
 
 - Relaxed →
@@ -22,6 +33,7 @@
 - Boundary crossed →
 - After failure →
 - Never does without an explicit event →
+- Generation note: derive behavior through perception → appraisal → competing desires → emotion → intention → behavior; do not turn this into an event-to-reaction table.
 
 ### Appearance
 

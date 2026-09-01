@@ -2,7 +2,7 @@
 
 ## Contract
 
-Keep the author project intentionally small. Its only editable intermediate files are story and character canon. System prompts are created directly in the final build and never kept as project source files.
+Keep the author project intentionally small. Its only editable intermediate files are the story source and character source. System prompts are created directly in the final build and never kept as project source files.
 
 ```text
 story-chat/
@@ -44,7 +44,7 @@ Generated image assets themselves (the PNG files) belong in neither place. They 
 | `build/*` | all player-facing text and all model-facing system instructions | author notes, source paths, TODOs, unresolved choices |
 | live conversation | current profile, scene facts, prior outcomes, and any visible status | a third source, assumed API, or hidden ledger |
 
-One fact still has one owner: world/event/player-role facts belong in `story.md`; identity/behavior/ability facts belong in `characters.md`. Reference stable IDs across the two files instead of copying a fact.
+One fact still has one owner: world/event/player-role facts belong in `story.md`; identity/behavior/ability facts belong in `characters.md`. Reference stable labels across the two files instead of copying a fact. Use natural Korean names or hyphenated labels; never use dotted programmer namespaces.
 
 ## What belongs in the two sources
 
@@ -120,7 +120,7 @@ There is no runtime deliverable or assumed Crack state API. Current profile, sce
 1. Edit only `story.md` and `characters.md`.
 2. Resolve canon conflicts and mark only genuine author decisions as unresolved.
 3. Compile all five final artifacts in one pass from those two files plus this skill's reusable rules.
-4. Regenerate both integrated variants whenever either source changes; never hand-edit one variant as a separate canon.
+4. Regenerate both integrated variants whenever either source changes; never hand-edit one variant as a separate source of truth.
 5. Run `python scripts/check_project_layout.py STORY_CHAT_DIR` after compiling. Use `--allow-unbuilt` only before the first build.
 6. Upload the prologue, one selected integrated variant, and start prompt to their matching Crack fields. Register keyword-book entries individually from the fifth file.
 

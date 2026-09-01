@@ -28,6 +28,7 @@ Run this checklist before handing off a story-chat design or prompt revision.
 - System instructions exist only in the five final build artifacts.
 - Changing facts are transient conversation context, never authored canon or a required external API.
 - References resolve to defined stable IDs kept inline in the two sources.
+- `scripts/check_naming.py` passes: sources and build contain no retired dotted character/source namespaces; use natural names or hyphenated labels.
 
 ## Experience
 
@@ -54,6 +55,9 @@ Run this checklist before handing off a story-chat design or prompt revision.
 - Important traits have observable behaviors and varied dialogue examples.
 - Character detail matches the format: compact for ensembles, richer for 1:1 character focus.
 - Personality codes and archetypes are optional, non-redundant compression hints mapped to observable behavior.
+- Each important character has World Truth, Initial Mental State, and Observable Behavior separated; Mental State includes Temperament, Belief, Desire, Self, Memory, Relationship, State, and Trait.
+- Character behavior is generated through perception→appraisal→competing desires→emotion→intention→behavior→experience→memory→reflection→update, not a fixed event-to-reaction table.
+- Unknown is preserved for unexperienced preferences, values, relationship meanings, and self-definitions; Reflection is gated by repetition, intensity, or explicit contradiction.
 - Core desire, fear, contradiction, and pressure behavior remain clear without relying only on type codes.
 - Explicit behavior and current relationship stage override generic type or trope expectations.
 - Character tests cover ordinary interaction, opportunity, challenge, failure, trust, and boundary violation without one catchphrase or strategy repeating everywhere.
