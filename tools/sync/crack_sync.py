@@ -192,7 +192,7 @@ def parse_keyword_book(kb_text: str) -> tuple[list[KeywordEntry], list[ShortcutE
                     re.MULTILINE | re.DOTALL | re.IGNORECASE,
                 )
 
-            name = name_m.group(1).strip() if name_m else sc_id
+            name = (name_m.group(1).strip() if name_m else sc_id).lstrip("/")
             desc = desc_m.group(1).strip() if desc_m else ""
             prompt = prompt_m.group(1).strip() if prompt_m else ""
             shortcuts.append(ShortcutEntry(id=sc_id, name=name, description=desc, prompt=prompt))

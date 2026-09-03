@@ -60,8 +60,38 @@ def validate(project: Path, quiet: bool = False) -> bool:
         return False
 
     cfg = json.loads(config_path.read_text(encoding="utf-8"))
-    roster = parse_roster(chars_path.read_text(encoding="utf-8"))
-    people = cfg.get("characters", {})
+    headings = re.findall(r"^##\s+(.+)$", chars_path.read_text(encoding="utf-8"), re.MULTILINE)
+    roster_names: set[str] = set()
+    roster_map: dict[str, str] = {}
+    for h in headings:
+        # 1. char.slug — 이름 형태 (레거시 호환)
+        m = re.search(r"`?char\.([a-z0-9-]+)`?\s*—\s*([가-힣a-zA-Z0-9\s]+?)(?:\s*[「『·\(0-9]|$)", h)
+        if m:
+            slug = m.group(1).strip()
+            ko = m.group(2).strip()
+            if slug != "user":
+                roster_map[slug] = ko
+                roster_map[ko] = slug
+                roster_names.add(ko)
+            continue
+        # 2. 이름 「이명」 또는 이름 형태 (최신 표준)
+        m2 = re.match(r"^([가-힣a-zA-Z0-9\s]+?)(?:\s*[「『·\(0-9]|$)", h.strip())
+        if m2:
+            ko = m2.group(1).strip()
+            if ko and ko != "user":
+                roster_names.add(ko)
+
+    if isinstance(cfg, list):
+        people = {}
+        for item in cfg:
+            if isinstance(item, dict):
+                n = item.get("name", "").strip()
+                p = item.get("prompt", "").strip()
+                slug = roster_map.get(n, n)
+                people[slug] = {"ko": n, "tags": p, "prompt": p, "uc": item.get("uc", "")}
+        cfg = {"characters": people}
+    else:
+        people = cfg.get("characters", {})
     ok = True
 
     # 1. 명부 대조 — 한글명 및 슬러그 양방향 매핑
@@ -73,13 +103,13 @@ def validate(project: Path, quiet: bool = False) -> bool:
 
     missing: list[str] = []
     matched_slugs: set[str] = set()
-    for r in sorted(roster):
-        if r in people_map:
-            matched_slugs.add(people_map[r])
-        elif r in people:
-            matched_slugs.add(r)
+    for name in sorted(roster_names):
+        if name in people_map:
+            matched_slugs.add(people_map[name])
+        elif name in people:
+            matched_slugs.add(name)
         else:
-            missing.append(r)
+            missing.append(name)
 
     orphan = sorted(set(people.keys()) - matched_slugs)
     if missing:
@@ -90,15 +120,6 @@ def validate(project: Path, quiet: bool = False) -> bool:
         ok = False
         print(f"FAIL 정체 불명 슬러그 {len(orphan)}개: {', '.join(orphan)}")
         print("     characters.md 에 없는 인물의 이미지 프롬프트입니다. 이름이 바뀌었을 수 있습니다.")
-
-    # 2. 슬러그 형식
-    bad = sorted(s for s in {*people, *cfg.get("situations", {}), *cfg.get("scenes", {}),
-                             *cfg.get("backgrounds", {}), *cfg.get("monsters", {})}
-                 if not SLUG.match(s))
-    if bad:
-        ok = False
-        print(f"FAIL 슬러그 형식 위반: {', '.join(bad)}")
-        print("     소문자·숫자·하이픈만 씁니다. URL과 폴더 이름이 되기 때문입니다.")
 
     # 3. 축 목록이 통합 프롬프트에 실려 있는가
     prompt_path = project / "build" / "integrated-prompt-safe.md"

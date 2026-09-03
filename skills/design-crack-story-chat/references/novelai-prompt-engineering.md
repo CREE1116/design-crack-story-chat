@@ -126,3 +126,27 @@ $$\text{Final Prompt} = \mathbf{Layer\ 1 (Base\ Character)} + \mathbf{Layer\ 2 (
    - `modern clinic room, soft indoor lighting, bed, cozy atmosphere, high quality`
 
 이 3단 구조를 통해 캐릭터의 고유 외형을 100% 보존하면서 상황에 맞는 수백 장의 바리에이션 이미지를 완벽하게 일관되게 생성할 수 있습니다.
+
+---
+
+## 6. 표준 이미지 프롬프트 JSON 출력 규격
+
+NovelAI 일괄 생성기 및 외부 생성 도구와 연동하기 위해, 인물별 베이스 프롬프트 및 UC(Undesired Content / Negative)를 **표준 JSON 배열 형식**으로 추출하여 관리합니다.
+
+```json
+[
+  {
+    "name": "아리스",
+    "prompt": "1girl, blue hair, halo, robot ears, long hair, small breasts, school uniform",
+    "uc": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, artist name"
+  }
+]
+```
+
+### JSON 필드 규격
+* **`name`**: 캐릭터 이름 (한국어 또는 캐릭터 식별명)
+* **`prompt`**: 긍정 프롬프트 (Layer 1 외형 지문 태그 + 복장/시그니처 아이템)
+* **`uc`**: 부정 프롬프트 (Undesired Content / 기본 결함 방어 태그 및 불필요한 속성 억제 태그)
+
+> 💡 **CLI 자동 추출 도구**:  
+> `python3 tools/images/compose_character.py --output-json build/assets/characters.json` 명령을 실행하면 정의된 인물들의 프롬프트를 이 표준 JSON 포맷으로 1초 만에 즉시 내보낼 수 있습니다.

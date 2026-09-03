@@ -412,11 +412,31 @@ def generate_scene_design_markdown(scenes: list[SceneVisualSpec], project_title:
     return "\n".join(md)
 
 
+def export_standard_json(specs: list[CharacterVisualSpec], output_path: Path | None = None) -> str:
+    """Export character prompts in standard JSON format: [{"name": "...", "prompt": "...", "uc": "..."}]."""
+    data = []
+    for s in specs:
+        # 순수 이름만 추출 (예: '심가을 (Shim Gae-ul)' -> '심가을')
+        clean_name = re.sub(r"\s*\(.*?\)", "", s.name).strip()
+        data.append({
+            "name": clean_name,
+            "prompt": s.compose_prompt(),
+            "uc": s.compose_uc()
+        })
+    json_text = json.dumps(data, ensure_ascii=False, indent=2)
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json_text, encoding="utf-8")
+        print(f"✅ 표준 이미지 프롬프트 JSON이 생성되었습니다: {output_path}")
+    return json_text
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--demo", action="store_true", help="Run a demo test and print character-design.md output")
     parser.add_argument("--output", type=Path, help="Export output character design markdown file (e.g. build/assets/character-design.md)")
     parser.add_argument("--output-scenes", type=Path, help="Export output scene design markdown file (e.g. build/assets/scene-design.md)")
+    parser.add_argument("--output-json", type=Path, help="Export prompt/uc in standard JSON format: [{\"name\": \"...\", \"prompt\": \"...\", \"uc\": \"...\"}]")
     args = parser.parse_args()
 
     # Sample character test data
@@ -527,7 +547,10 @@ def main() -> int:
         args.output_scenes.write_text(doc_scene, encoding="utf-8")
         print(f"✅ 배경 비주얼 디자인 문서가 생성되었습니다: {args.output_scenes}")
 
-    if not args.output and not args.output_scenes:
+    if args.output_json:
+        export_standard_json([spec1, spec2], args.output_json)
+
+    if not args.output and not args.output_scenes and not args.output_json:
         print(doc_char)
         print("\n" + "=" * 80 + "\n")
         print(doc_scene)

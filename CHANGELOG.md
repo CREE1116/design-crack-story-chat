@@ -1,5 +1,18 @@
 # 변경 내역
 
+## 0.10.15
+
+- **단축어 이름(Name) 앞 슬래시(`/`) 전면 배제 및 중복 입력 방지** (`references/shortcuts-guide.md`, `tools/sync/crack_sync.py`).
+  - 크랙 웹/모바일 UI는 단축어 버튼 클릭 시 자동으로 `/` 접두어를 붙여주므로, 이름에 `/`가 들어가면 `//명령어`처럼 슬래시가 2번 입력되는 결함 방지.
+  - `crack_sync.py` 파서에 단축어 이름 앞 `/` 자동 정제(`lstrip("/")`) 방어 로직 추가.
+  - 모든 레시피 예시의 `name:`을 순수 텍스트(`상태창`, `커뮤니티`, `속마음`, `요약` 등)로 표준화.
+- **이미지 프롬프트 표준 JSON 배열 출력 규격 정립** (`references/novelai-prompt-engineering.md`, `tools/images/compose_character.py`).
+  - NovelAI 일괄 생성기 연동용 표준 포맷: `[{"name": "...", "prompt": "...", "uc": "..."}]`.
+  - `compose_character.py`에 `--output-json` 옵션 탑재.
+- **스토리 상세설명(Story Description) 6대 황금 블록 바이블 개편** (`references/story-description-guide.md`).
+  - 클릭형 대표 배너 이미지 링크, 비주얼 볼륨 증명(에셋 통계표), 3초 후킹 시놉시스 & 현실적 딜레마, 핵심 주연 라인업 1줄 요약, 플레이어 가이드 & 단축어 팁, 제작자 코멘트 소통창구.
+  - 마크다운 시각 연출 노하우(가로선 구분, 벽돌 텍스트 금지, 이모지 앵커링) 상세 수록.
+
 ## 0.10.14
 
 - **단축어(Shortcuts) 설계 가이드 신설 및 3대 분류 체계 공식화** (`references/shortcuts-guide.md`).
