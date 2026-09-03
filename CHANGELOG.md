@@ -1,5 +1,13 @@
 # 변경 내역
 
+## 0.10.16
+
+- **크랙 내부 런타임 아키텍처 및 프롬프트 주입 파이프라인 전면 규명** (`references/crack-internal-runtime.md`).
+  - **3단계 런타임 파이프라인 분석**: `[System Message]`(최상단) ➡️ `[Chat History]`(중간) ➡️ `[User Message] + ## Additional Information & Rules`(최하단).
+  - **하단 주입(`<knowledge_base>`)의 Recency Bias 입증**: 왜 키워드북이 메인 프롬프트보다 강력하게 모델을 지배하는지 런타임 위치 원리 규명.
+  - **플랫폼 내장 요소 충돌 방지**: 크랙 자체의 소아성애 거부 가드, 스탯 레벨 정의(`[Story State]`), 이미지 키워드 출력 폼(`{{img::keyword}}`), 비공개 개인 세션 탈옥 구문, 생각 토큰 0 토큰 제한 등의 내장 주입 구조 정리.
+  - `SKILL.md`, `references/crack-prompt-rules.md`, `references/keyword-book.md`에 공식 링크 및 최적화 전략 연계.
+
 ## 0.10.15
 
 - **단축어 이름(Name) 앞 슬래시(`/`) 전면 배제 및 중복 입력 방지** (`references/shortcuts-guide.md`, `tools/sync/crack_sync.py`).
