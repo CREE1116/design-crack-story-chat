@@ -15,7 +15,8 @@ story-chat/
     ├── start-prompt.md            # ≤1,000 chars
     ├── keyword-book.md            # one registration sheet; entry text ≤400 chars
     └── assets/                    # derived production inputs; never pasted into Crack
-        ├── summary-comment.md     # listing/comment blurb
+        ├── story-description.md   # story description for publish page (Markdown supported)
+        ├── summary-comment.md     # plain-text listing/comment blurb (Markdown not supported)
         ├── image-prompts.md       # human-readable prompt sheet
         ├── prompts.json           # machine form of the same content
         └── build-stamp.json       # source digests recorded at compile time
@@ -25,7 +26,7 @@ Do **not** create intermediate `manifest`, `world`, `player`, `prologue`, `story
 
 `build/` is generated output, not a third source. It may be absent before the first compilation. After compilation its **files** are exactly the five above and nothing else.
 
-`build/assets/` is the one permitted subdirectory. It holds **derived production inputs** — material compiled from the two sources that is never pasted into a Crack field and never reaches the model as instructions. Only two kinds belong there: the summary/comment blurb, and the image prompts. Anything model-facing goes in the five artifacts; if something feels like it needs a sixth prompt file, it is a routing mistake, not a missing artifact.
+`build/assets/` is the one permitted subdirectory. It holds **derived production inputs** — material compiled from the two sources that is never pasted into a Crack prompt field and never reaches the model as instructions. Core types include: release showcase descriptions (`story-description.md`, `summary-comment.md`), prompt sheets, and design logs. Anything model-facing goes in the five artifacts; if something feels like it needs a sixth prompt file, it is a routing mistake, not a missing artifact.
 
 Derived does not mean optional. These files are regenerated on every compile exactly like the five, and hand-editing one makes it a second source of truth for whatever it contains. An image prompt sheet takes its appearance text from `characters.md`; a summary blurb takes its claims from the compiled artifacts, not from memory.
 
@@ -62,7 +63,7 @@ Use compact factual sections such as:
 - Hard rules, institutions, locations, history needed in play:
 
 ## Story engine
-### `event.example`
+### `사건-첫교전`
 - trigger / blocker / consequence / player decision point:
 
 ## Opening material
@@ -72,7 +73,7 @@ Use compact factual sections such as:
 [place, present cast, visible problem, first player-controlled opening]
 
 ## Optional lore candidates
-### `kb.example`
+### `키워드-마도학`
 - Topic and factual detail worth loading only after a relevant mention:
 - Suggested names/aliases (1–5):
 ```

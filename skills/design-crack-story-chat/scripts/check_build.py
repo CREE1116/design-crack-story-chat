@@ -143,7 +143,7 @@ def validate(build: Path) -> bool:
 
     derived = build / DERIVED_DIR
     if derived.is_dir():
-        known = {"image-prompts.md", "prompts.json", "summary-comment.md", "build-stamp.json", "character-design.md", "scene-design.md"}
+        known = {"image-prompts.md", "prompts.json", "story-description.md", "summary-comment.md", "build-stamp.json", "character-design.md", "scene-design.md"}
         stray = sorted(p.name for p in derived.iterdir()
                        if p.is_file() and not p.name.startswith(".")
                        and p.name not in known)

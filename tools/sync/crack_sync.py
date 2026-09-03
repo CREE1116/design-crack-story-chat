@@ -60,6 +60,8 @@ class ProjectArtifacts:
     keyword_entries: list[KeywordEntry] = field(default_factory=list)
     shortcuts: list[ShortcutEntry] = field(default_factory=list)
     summary_comment: str = ""
+    story_description: str = ""
+    short_summary: str = ""
     variant: str = "safe"
 
 
@@ -177,14 +179,18 @@ def parse_keyword_book(kb_text: str) -> tuple[list[KeywordEntry], list[ShortcutE
             name_m = re.search(r"^-\s*(?:name|이름):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
             desc_m = re.search(r"^-\s*(?:description|설명):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
 
-            # Prompt can be under ## Shortcut prompt or - prompt:
+            # Prompt can be under ## Shortcut prompt or - prompt: (supports multi-line bullets & code blocks)
             prompt_m = re.search(
                 r"^##\s+(?:Shortcut prompt|프롬프트)\s*\n(.*?)(?=^#|\Z)",
                 block,
                 re.MULTILINE | re.DOTALL | re.IGNORECASE,
             )
             if not prompt_m:
-                prompt_m = re.search(r"^-\s*(?:prompt|프롬프트):\s*(.+)$", block, re.MULTILINE | re.IGNORECASE)
+                prompt_m = re.search(
+                    r"^-\s*(?:prompt|프롬프트):\s*\n?(.*?)(?=^-\s*(?:name|이름|desc|description|설명):|^#|\Z)",
+                    block,
+                    re.MULTILINE | re.DOTALL | re.IGNORECASE,
+                )
 
             name = name_m.group(1).strip() if name_m else sc_id
             desc = desc_m.group(1).strip() if desc_m else ""
@@ -204,6 +210,7 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     sys_prompt_path = build_dir / f"integrated-prompt-{variant}.md"
     kb_path = build_dir / "keyword-book.md"
     summary_path = build_dir / "assets" / "summary-comment.md"
+    story_desc_path = build_dir / "assets" / "story-description.md"
     story_path = project_dir / "story.md"
 
     prologue = prologue_path.read_text(encoding="utf-8").strip() if prologue_path.exists() else ""
@@ -211,9 +218,11 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     system_prompt = sys_prompt_path.read_text(encoding="utf-8").strip() if sys_prompt_path.exists() else ""
     kb_text = kb_path.read_text(encoding="utf-8").strip() if kb_path.exists() else ""
     summary_comment = summary_path.read_text(encoding="utf-8").strip() if summary_path.exists() else ""
+    story_description = story_desc_path.read_text(encoding="utf-8").strip() if story_desc_path.exists() else ""
 
-    # Title extraction
+    # Title and short summary (Logline) extraction
     title = project_dir.name
+    short_summary = ""
     if story_path.exists():
         story_content = story_path.read_text(encoding="utf-8")
         title_tag = re.search(r"^-\s*Title:\s*(.+)$", story_content, re.MULTILINE | re.IGNORECASE)
@@ -224,6 +233,26 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
             title_m = re.search(r"^#\s+(.+)$", first_line)
             if title_m and title_m.group(1).strip().lower() != "story":
                 title = title_m.group(1).strip()
+
+        # 1. 태그 우선 탐색: - Logline: / - 한줄소개: / - 한줄설명: / - Tagline: / - Premise:
+        summary_m = re.search(
+            r"^-\s*(?:Logline|한줄소개|한줄설명|Tagline|Premise|로그라인|소개):\s*(.+)$",
+            story_content,
+            re.MULTILINE | re.IGNORECASE,
+        )
+        if summary_m:
+            short_summary = summary_m.group(1).strip()
+
+    if not short_summary and story_description:
+        # 2. story-description.md의 코멘트 첫 문단 추출
+        comm_m = re.search(r"「제작자 코멘트」\s*\n+(.+?)(?:\n\n|\Z)", story_description, re.DOTALL)
+        if comm_m:
+            first_p = comm_m.group(1).strip().splitlines()[0]
+            short_summary = first_p.strip()
+
+    # 100자 이하의 단문 로그라인으로 정제
+    if len(short_summary) > 100:
+        short_summary = short_summary[:95].rsplit(" ", 1)[0] + "..."
 
     keyword_entries, shortcuts = parse_keyword_book(kb_text)
 
@@ -236,6 +265,8 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
         keyword_entries=keyword_entries,
         shortcuts=shortcuts,
         summary_comment=summary_comment,
+        story_description=story_description,
+        short_summary=short_summary,
         variant=variant,
     )
 
@@ -307,7 +338,9 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
     print(f"5. ⚡ 단축어 (Shortcuts)             : 총 {len(artifacts.shortcuts)}개 등록 예정")
     for i, sc in enumerate(artifacts.shortcuts, 1):
         print(f"   [{i:02d}] {sc.name} ({sc.id}) : {sc.description} | {len(sc.prompt)}자")
-    print(f"6. 📝 상세 설명 / 코멘트              : {len(artifacts.summary_comment):,}자")
+    desc_text = artifacts.story_description if artifacts.story_description else artifacts.summary_comment
+    print(f"6. 📝 작품 한 줄 소개 (Logline)     : '{artifacts.short_summary}' ({len(artifacts.short_summary)}자)")
+    print(f"7. 🌐 작품 상세 설명 (Description)   : {len(desc_text):,}자")
     print("=" * 75)
     print("✨ 모든 산출물이 크랙 규격에 완벽하게 부합합니다!")
     return 0
@@ -464,23 +497,90 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
     return True
 
 
+def clear_existing_keywords(page: Any) -> int:
+    """Delete all existing keyword notes on the keyword book tab to prevent duplicate stacking."""
+    print("   🧹 기존 키워드북 항목 정리(초기화) 중...")
+    del_btn_selector = (
+        "button:visible:has(path[d*='M6 19']), "
+        "button:visible:has(path[d*='19 7']), "
+        "button:visible:has(path[d*='M16 9']), "
+        "button:visible:has(path[d*='trash']), "
+        "button:visible:has(path[d*='M19 4']), "
+        "button:visible:has-text('삭제'), "
+        "button:visible[aria-label*='삭제'], "
+        "button:visible[title*='삭제']"
+    )
+
+    deleted = 0
+    # 최대 50개 항목까지 순차 삭제
+    for _ in range(50):
+        # 1. 화면에 보이는 삭제 버튼 탐색
+        del_btns = page.locator(del_btn_selector)
+        if del_btns.count() == 0:
+            # 혹시 점 3개(더보기) 메뉴 안에 삭제가 있는지 확인
+            more_btns = page.locator("button:visible:has(path[d*='M12 8']), button:visible:has(path[d*='M5 12'])")
+            if more_btns.count() > 0:
+                try:
+                    more_btns.first.click(timeout=1500)
+                    time.sleep(0.3)
+                    del_menu = page.locator("div[role='menuitem']:has-text('삭제'), button:has-text('삭제'), li:has-text('삭제')").first
+                    if del_menu.count() > 0 and del_menu.is_visible():
+                        del_menu.click(timeout=2000)
+                        time.sleep(0.4)
+                    else:
+                        break
+                except Exception:
+                    break
+            else:
+                break
+        else:
+            try:
+                del_btns.first.click(timeout=2500)
+                time.sleep(0.4)
+            except Exception:
+                break
+
+        # 2. 삭제 확인 모달(Dialog) 처리
+        modal_del = page.locator("div[role='dialog'] button:has-text('삭제'), div[role='dialog'] button:has-text('확인')").first
+        if modal_del.count() > 0 and modal_del.is_visible():
+            try:
+                modal_del.click(timeout=2000)
+                time.sleep(0.4)
+            except Exception:
+                pass
+
+        deleted += 1
+        time.sleep(0.3)
+
+    if deleted > 0:
+        print(f"   ✅ 기존 등록된 키워드 {deleted}개 삭제 완료 (초기화)")
+    else:
+        print("   ℹ️ 기존 등록된 키워드 없음")
+    return deleted
+
+
 def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
     """Inject keyword entries into keyword book tab.
 
     실제 DOM 플로우:
       1. '키워드북' 탭 클릭
-      2. '+ 키워드 노트 추가' 클릭 → 새 행 생성
-      3. ✏️ 연필 버튼 클릭 → input에 제목 입력 → Enter로 확정
-      4. ∨ chevron down 버튼 클릭하여 아코디언 확장
-      5. 정보(본문) textarea에 content 입력
-      6. 키워드 input에 tag 입력 후 Enter
-      7. ^ chevron up 버튼 클릭하여 아코디언 접기
+      2. 기존 등록된 키워드 항목이 있으면 전수 삭제(초기화)
+      3. '+ 키워드 노트 추가' 클릭 → 새 행 생성
+      4. ✏️ 연필 버튼 클릭 → input에 제목 입력 → Enter로 확정
+      5. ∨ chevron down 버튼 클릭하여 아코디언 확장
+      6. 정보(본문) textarea에 content 입력
+      7. 키워드 input에 tag 입력 후 Enter
+      8. ^ chevron up 버튼 클릭하여 아코디언 접기
     """
     print(f"\n📚 [키워드북 주입 시작] (총 {len(artifacts.keyword_entries)}개 항목)")
 
     # 키워드북 탭
     page.locator("button:has-text('키워드북')").first.click()
     time.sleep(1.5)
+
+    # 기존 항목 전수 삭제 (중복 누적 방지)
+    clear_existing_keywords(page)
+    time.sleep(0.8)
 
     for i, entry in enumerate(artifacts.keyword_entries, 1):
         print(
@@ -490,13 +590,18 @@ def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
         )
         try:
             # 1) 키워드 노트 추가 버튼 클릭
-            add_btn = page.locator("button:has-text('키워드 노트 추가'), button:has-text('+ 키워드 노트 추가')").first
-            add_btn.click(timeout=5000)
+            add_btn = page.locator(
+                "button:has-text('키워드 노트 추가'), button:has-text('+ 키워드 노트 추가'), button:has-text('노트 추가'), button:has-text('키워드 추가'), button:has-text('+ 추가')"
+            ).first
+            if add_btn.count() > 0:
+                add_btn.scroll_into_view_if_needed(timeout=3000)
+                add_btn.click(timeout=5000)
             time.sleep(1.0)
 
             # 2) ✏️ 연필 버튼 클릭하여 제목 변경
-            pencil_btn = page.locator("button:has(path[d*='M16.05']), button:has(path[d*='M16.0'])").last
-            pencil_btn.click(timeout=5000)
+            pencil_btn = page.locator("button:has(path[d*='M16.05']), button:has(path[d*='M16.0']), button:has-text('수정')").last
+            if pencil_btn.count() > 0:
+                pencil_btn.click(timeout=5000)
             time.sleep(0.5)
 
             title_inp = page.locator("input:visible").first
@@ -542,21 +647,58 @@ def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
     return True
 
 
+def clear_existing_shortcuts(page: Any) -> int:
+    """Delete existing custom shortcuts to prevent duplication upon re-sync."""
+    print("   🧹 기존 단축어 항목 정리 중...")
+    del_selector = (
+        "button:visible:has(path[d*='M6 19']), "
+        "button:visible:has(path[d*='19 7']), "
+        "button:visible:has(path[d*='M16 9']), "
+        "button:visible:has(path[d*='trash']), "
+        "button:visible:has-text('삭제'), "
+        "button:visible[aria-label*='삭제']"
+    )
+    deleted = 0
+    for _ in range(30):
+        del_btns = page.locator(del_selector)
+        if del_btns.count() == 0:
+            break
+        try:
+            del_btns.first.click(timeout=2000)
+            time.sleep(0.3)
+            modal_del = page.locator("div[role='dialog'] button:has-text('삭제'), div[role='dialog'] button:has-text('확인')").first
+            if modal_del.count() > 0 and modal_del.is_visible():
+                modal_del.click(timeout=1500)
+                time.sleep(0.3)
+            deleted += 1
+        except Exception:
+            break
+
+    if deleted > 0:
+        print(f"   ✅ 기존 단축어 {deleted}개 삭제 완료")
+    return deleted
+
+
 def inject_shortcuts(page: Any, artifacts: ProjectArtifacts) -> bool:
     """Inject shortcuts into shortcuts tab.
 
     실제 DOM 플로우:
       1. '단축어' 탭 클릭
-      2. '+ 단축어 추가' 버튼 클릭 → 드롭다운 펼침
-      3. '신규 추가' (div/li, button 아님) 클릭 → 인라인 폼 생성
-      4. INPUT[0]=단축어이름, INPUT[1]=설명, TEXTAREA=프롬프트 직접 채우기
-      5. 별도 저장 버튼 없음 (저장은 탭 전환/완료 시 자동)
+      2. 기존 단축어 정리 (중복 방지)
+      3. '+ 단축어 추가' 버튼 클릭 → 드롭다운 펼침
+      4. '신규 추가' (div/li, button 아님) 클릭 → 인라인 폼 생성
+      5. INPUT[0]=단축어이름, INPUT[1]=설명, TEXTAREA=프롬프트 직접 채우기
+      6. 별도 저장 버튼 없음 (저장은 탭 전환/완료 시 자동)
     """
     print(f"\n⚡ [단축어 주입 시작] (총 {len(artifacts.shortcuts)}개 항목)")
 
     # 단축어 탭
     page.locator("button:has-text('단축어')").first.click()
     time.sleep(1.2)
+
+    # 기존 단축어 정리
+    clear_existing_shortcuts(page)
+    time.sleep(0.5)
 
     for i, sc in enumerate(artifacts.shortcuts, 1):
         print(f"   [{i:02d}/{len(artifacts.shortcuts):02d}] '{sc.name}' ({sc.id})...", end=" ", flush=True)
@@ -616,11 +758,12 @@ def inject_basic_info(page: Any, artifacts: ProjectArtifacts) -> bool:
         fill_react_input(page, title_inp, artifacts.title)
         print(f"   ✅ [작품 제목] '{artifacts.title}' 입력 완료")
 
-    # 작품 소개 (placeholder='간단한 소개를 입력해 주세요')
-    desc_ta = page.locator("textarea:visible, div[contenteditable='true']:visible").first
+    # 작품 소개 / 한 줄 설명 (placeholder='간단한 소개를 입력해 주세요')
+    desc_ta = page.locator("textarea:visible[placeholder*='소개'], textarea:visible[placeholder*='설명'], textarea:visible, div[contenteditable='true']:visible").first
     if desc_ta.count() > 0:
-        fill_react_input(page, desc_ta, artifacts.summary_comment[:500])
-        print(f"   ✅ [작품 간단 소개] 입력 완료 ({len(artifacts.summary_comment[:500]):,}자)")
+        summary_text = artifacts.short_summary if artifacts.short_summary else artifacts.title
+        fill_react_input(page, desc_ta, summary_text)
+        print(f"   ✅ [작품 한 줄 소개] '{summary_text}' 입력 완료 ({len(summary_text):,}자)")
 
     return True
 
@@ -643,10 +786,10 @@ def inject_publish_info(page: Any, artifacts: ProjectArtifacts) -> bool:
     # 2. 상세 설명 textarea (placeholder='스토리의 성격이나 서사, 과거 사건 등 상세한 내용을 작성해 주세요')
     detail_ta = page.locator("textarea[placeholder*='상세한 내용'], textarea[placeholder*='서사'], textarea:visible").first
     if detail_ta.count() > 0:
-        # 배너 + 통계표 + 코멘트 마크다운
-        detail_text = artifacts.summary_comment if len(artifacts.summary_comment) < 1000 else artifacts.summary_comment[:980]
-        fill_react_input(page, detail_ta, detail_text.strip())
-        print(f"   ✅ [상세 설명] 주입 완료 ({len(detail_text.strip()):,}자)")
+        # 배너 + 통계표 + 코멘트 마크다운 (story_description 우선, 없으면 summary_comment 폴백)
+        raw_desc = artifacts.story_description if artifacts.story_description else artifacts.summary_comment
+        fill_react_input(page, detail_ta, raw_desc.strip())
+        print(f"   ✅ [상세 설명] 주입 완료 ({len(raw_desc.strip()):,}자)")
     else:
         print("   ⚠️ 상세 설명 textarea를 찾지 못했습니다.")
 
@@ -809,9 +952,14 @@ def run_sync(
     artifacts = load_project_artifacts(project_dir, variant=variant)
     profile_dir.mkdir(parents=True, exist_ok=True)
 
+    is_existing_project = "projects/" in target_url
     print("=" * 75)
     print(f"🚀 크랙 스튜디오 자동 입력 도구 실행: {artifacts.title} ({variant.upper()})")
-    print(f"🔗 대상 URL: {target_url}")
+    if is_existing_project:
+        print(f"🔗 실행 모드: [기존 프로젝트 로드 & 재주입] (URL: {target_url})")
+    else:
+        print("🔗 실행 모드: [신규 스토리 생성] (URL 생략 시 크랙 스튜디오에서 자동 신규 생성)")
+    print(f"📝 한 줄 소개: '{artifacts.short_summary}' ({len(artifacts.short_summary)}자)")
     print(f"🖥️ 헤디드 브라우저: {'켜짐 (영구 상주 모드)' if headed else '백그라운드 (Headless)'}")
     print(f"📁 브라우저 프로필: {profile_dir} (영구 로그인 유지)")
     print("=" * 75)
@@ -835,6 +983,11 @@ def run_sync(
             print(f"⚠️ 페이지 로드 경고: {e}")
 
         time.sleep(1)
+
+        # 신규 생성 모드인 경우 자동으로 '내 작품' -> '작품 만들기' -> '스토리' 진입
+        if not is_existing_project:
+            navigate_to_create_story(page)
+            time.sleep(1)
 
         # --auto 플래그 지정 시 즉시 주입 실행
         if auto_inject:
