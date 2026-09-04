@@ -9,6 +9,8 @@ Author a story chat from two compact canon sources, then publish each Crack fiel
 
 ## Route the work
 
+[references/README.md](references/README.md) maps each fact to the one reference that owns it, lists the minimum file bundle per task, and settles the boundaries that repeat across files (where prose style goes, which document owns the character counts, keyword-book ordering). Read it when the task spans more than one reference, or when two references seem to say the same thing — never duplicate a rule into a second file.
+
 Read the following references completely when their condition applies:
 
 - Creating or reorganizing files: [references/file-architecture.md](references/file-architecture.md)
@@ -20,7 +22,7 @@ Read the following references completely when their condition applies:
 - Designing high-precision visual fingerprints, body form, hair 3-elements, and color-bound outfits for prompt reproducibility: [references/character-appearance-guide.md](references/character-appearance-guide.md)
 - Designing landscape scenery CGs and staged character-in-scene environment prompts: [references/scene-design-guide.md](references/scene-design-guide.md)
 - Writing or revising any model-facing prompt: [references/prompt-writing.md](references/prompt-writing.md)
-- Designing prose style, sensory somatic writing, and 1st/3rd person literary texture (Nisio Isin / Dazai Osamu / enemies-to-lovers): [references/prose-style-guide.md](references/prose-style-guide.md)
+- Designing prose style, sensory somatic writing, 1st/3rd person literary texture (Nisio Isin / Dazai Osamu / enemies-to-lovers), or revising the prose style of an already-shipped project via an appended style-patch block: [references/prose-style-guide.md](references/prose-style-guide.md)
 - Adopting ready-to-use 100% pure system prompt presets by genre: [references/system-prompt-presets.md](references/system-prompt-presets.md)
 - Designing HUD, status block, situation tagging, or memory anchors: [references/status-window-guide.md](references/status-window-guide.md)
 - Creating the paired safe/unsafe integrated prompts or defining content intensity and escalation boundaries: [references/content-variants.md](references/content-variants.md)
@@ -37,6 +39,7 @@ Read the following references completely when their condition applies:
 - Formatting narration, dialogue syntax, media calls, and output contracts: [references/output-contract.md](references/output-contract.md)
 - Auto-syncing build artifacts directly into Crack web editor via Playwright: [references/crack-auto-sync-guide.md](references/crack-auto-sync-guide.md)
 - Giving a story more than one opening (a different department, route or protagonist): [references/start-sets.md](references/start-sets.md)
+- Writing the player-facing play guide and the up-to-three recommended first replies in Crack's [시작 설정] tab: [references/play-guide.md](references/play-guide.md)
 - Finishing any creation, revision, or audit: [references/validation.md](references/validation.md)
 
 Use [assets/story-chat-template](assets/story-chat-template) as the starter bundle. Its only authored files are `story.md` and `characters.md`; it deliberately contains no manifest, state/memory layer, output-contract, generation-rule, content-profile, media-rule, parser, or keyword-book source file. Keep the fifth build artifact even when it records no entries.

@@ -32,7 +32,9 @@ def validate(root: Path, require_build: bool = True) -> bool:
     names = {entry.name for entry in entries}
     missing = sorted(name for name in SOURCES if not (root / name).is_file())
     import unicodedata
-    ALLOWED_ROOT_PREFIXES = tuple(unicodedata.normalize('NFC', p) for p in ("build", "final", "image", "deploy", "output", "assets", "썸네일", "여캐", "무제"))
+    # start-sets/ 는 references/start-sets.md 가 정한 정본 위치다. 중간 산출물이
+    # 아니라 작성자가 직접 쓰는 원본이므로 허용한다. build/start-sets/ 가 그 생성물이다.
+    ALLOWED_ROOT_PREFIXES = tuple(unicodedata.normalize('NFC', p) for p in ("build", "final", "image", "deploy", "output", "assets", "start-sets", "departments", "썸네일", "여캐", "무제"))
     IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
     extras = sorted(
         entry.name for entry in entries

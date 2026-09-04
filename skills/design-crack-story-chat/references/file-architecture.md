@@ -24,6 +24,8 @@ story-chat/
     └── assets/                    # derived production inputs; never pasted into Crack
         ├── story-description.md   # story description for publish page (Markdown supported)
         ├── summary-comment.md     # plain-text listing/comment blurb (Markdown not supported)
+        ├── play-guide.md          # player-facing guide for Crack's [시작 설정] tab
+        ├── recommended-replies.md # up to 3 suggested first replies, separated by `---`
         ├── image-prompts.md       # human-readable prompt sheet
         ├── prompts.json           # machine form of the same content
         └── build-stamp.json       # source digests recorded at compile time
@@ -33,7 +35,7 @@ Do **not** create intermediate `manifest`, `world`, `player`, `prologue`, `story
 
 `build/` is generated output, not a third source. It may be absent before the first compilation. After compilation its core **files** are exactly the five above and nothing else.
 
-`build/assets/` and `build/start-sets/` are the permitted subdirectories. `assets/` holds **derived production inputs** — material compiled from the two sources that is never pasted into a Crack prompt field and never reaches the model as instructions. Core types include: release showcase descriptions (`story-description.md`, `summary-comment.md`), prompt sheets, and design logs. `start-sets/` holds multiple selectable openings (prologue & start prompt pairs). Anything model-facing goes in the five artifacts or start-sets; if something feels like it needs another prompt file, it is a routing mistake, not a missing artifact.
+`build/assets/` and `build/start-sets/` are the permitted subdirectories. `assets/` holds **derived production inputs** — material compiled from the two sources that is never pasted into a Crack prompt field and never reaches the model as instructions. Core types include: release showcase descriptions (`story-description.md`, `summary-comment.md`), the player-facing guide and suggested first replies (`play-guide.md`, `recommended-replies.md` — see [play-guide.md](play-guide.md)), prompt sheets, and design logs. The play guide is read by the player, not the model; it is the one derived file that a person reads verbatim, so it is not compressed. `start-sets/` holds multiple selectable openings (prologue & start prompt pairs). Anything model-facing goes in the five artifacts or start-sets; if something feels like it needs another prompt file, it is a routing mistake, not a missing artifact.
 
 Derived does not mean optional. These files are regenerated on every compile exactly like the five, and hand-editing one makes it a second source of truth for whatever it contains. An image prompt sheet takes its appearance text from `characters.md`; a summary blurb takes its claims from the compiled artifacts, not from memory.
 

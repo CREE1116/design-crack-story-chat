@@ -137,19 +137,24 @@ World systems, where the premise defines them:
 - Keyword-book entries are registered separately and are not appended to the single story-prompt artifact.
 - Every entry declares which Crack setting is checked and which value/state permits activation.
 - Every entry has 1–5 total keywords, including aliases and spacing variants.
-- Every exact injected entry text is 400 characters or fewer, including whitespace and Markdown.
+- Every exact injected entry text is 400 characters or fewer, including whitespace and Markdown. **Counts are UTF-16 code units** — most emoji are surrogate pairs and cost 2 units each, so a codepoint count under-reports and passes text that Crack truncates. `check_prompt_length.py` judges on `max(codepoints, utf16_units)`; never hand-count.
 - Each keyword book file (`build/keyword-book-safe.md`, `build/keyword-book-unsafe.md`, or `build/keyword-book.md`) contains registration fields and separately delimited entry texts; it is never pasted whole into either integrated prompt.
 - Every entry owns one coherent optional topic.
-- Trigger words are specific, include necessary aliases, and avoid common ambiguous words.
+- Trigger words are specific, include necessary aliases, and avoid common ambiguous words. Each entry carries **2~3 keywords, not the permitted 5** — generic nouns padded in to reach the cap fire in unrelated scenes and cost a slot.
+- **The compiled `Info` block was cross-checked against every registered keyword.** Every string the HUD prints each turn is compared to the whole keyword list. Three failures this pass: a `[상황]` state phrase, a `[관계]` stage emoji (`💋` — once the stage is reached it never unsets, so the entry latches for the rest of the session), and a `🔞` pre-arm marker whose entry body had no instruction to lower it at scene end. Latching values (relationship stage, acquired status) are never triggers; passing values (a date, a location) are.
+- Where an entry reuses an output-contract token as its trigger (`*이름*|` rather than the bare name), the always-on roster carries a one-line seed for that character, because the trigger only fires on the turn **after** the character first speaks.
 - Trigger collisions and overlapping entries were tested.
-- Entry text does not duplicate the always-on story payload.
+- Entry text does not duplicate the always-on story payload. Age, species, rank, appearance, MBTI and base speech pattern live in the always-on roster; an entry that restates them is waste no amount of compression fixes. Entries carry only the delta — stage-gated staging directives, weaknesses and secrets, the chemistry between the paired two, post-arrival cues.
+- **Deduplication ran before compression.** For each artifact, every fact was checked against the always-on layer *before* any sentence was shortened. Skipping this produces a well-compressed duplicate and the false conclusion that the character cap is too small.
+- Any figure the HUD prints every turn (conquest rate, funds, affinity) has its **update rule, per-turn change ceiling, and no-evidence default in the integrated prompt, not the keyword book**. A rule loaded only on trigger while its output is emitted every turn makes the model invent numbers on untriggered turns.
 - Current scene facts, agency rules, output syntax, and currently required ability limits remain outside the keyword book.
 - Character and ability details may live in keyword-book entries, but first-appearance and first-resolution invariants remain available before activation.
 - A keyword first appearing in model output affects the following output, not the output that introduced it.
 - Activation setting conditions are not confused with keyword detection scope; user messages and model output can both supply keywords.
 - Knowledge scope prevents unrevealed secrets from entering an unauthorized viewpoint.
 - Activation does not depend on recursive keyword matching unless Crack explicitly supports it.
-- Every planned scene needs no more than three simultaneously activated entries; a fourth entry is never indispensable.
+- Every planned scene needs no more than three simultaneously activated entries; a fourth entry is never indispensable. **The constraint is concurrent activations, not entry count** — forty entries are fine if two light per scene. Entries pair characters by actual co-occurrence (who shares a room) rather than by org chart, two per entry; a three-person team's leftover member is absorbed into a location-based cross-team pair. Pairing only holds when the integrated prompt also caps scene population (speaking characters per scene, fixed pairs first), otherwise a five-character scene overruns the slots regardless of how well entries are grouped.
+- Character *arrival* is governed by the always-on prompt (rotation rules, who is stationed where), never by a keyword-book entry. An entry cannot summon the character whose name triggers it.
 - Each intended keyword is medium-specificity and naturally likely to appear under regex matching, rather than a one-word generic trigger or exact long phrase.
 - A needed next-turn entry has a story-natural cue in the preceding NPC/narration output; no cue exists solely to force-load or leak a secret.
 - Unknown Crack keyword-book fields beyond the confirmed three-entry cap are marked as unconfirmed rather than invented.
@@ -161,6 +166,14 @@ World systems, where the premise defines them:
 - Entries are classified by type and registered in that order — scene-deepening, then roster, then lookup, then filler. Any effectively-always-on entry sits at the bottom, there are at most two of them, and each one's body is expendable: a turn without it still works. `lint` fails a priority module (19+, kiss, special-scene) registered outside the top three (`priority_module_low`) and a trigger that matches a fixed HUD label (`always_on_trigger`); `report` flags a high-match entry registered high (`high_match_entry_registered_high`).
 - Where a set of characters or factions can be named all at once and outnumbers the three slots, a thin roster entry carrying names and affiliations sits above the individual detail entries — or the names live in the integrated prompt. Otherwise the member that loses the slot race has no name loaded at all and gets invented.
 - **Reachability:** every proper noun the model is expected to *say* — an alias, an epithet, a place name, a term of art — appears inside loaded text, not only in the canon source. Entry titles, headings, IDs, and field names are registration metadata and are not injected; a name that exists only in a title is unreachable and the model will invent a substitute.
+
+## Player-facing fields
+
+- The one-line intro is **30 characters or fewer**; the play guide is **500 or fewer**; there are at most **3 start sets** and **3 recommended replies**. Crack truncates silently past each cap, so the last block of an over-long play guide simply disappears. `crack_sync.py inspect` counts all four and fails on violation.
+- The play guide's layout was **devised for this work**, not copied from another creator. The combination of brackets, emoji and rules a well-known guide uses reads as that creator's signature; borrow the block roles, not the look.
+- Recommended replies demonstrate the **exact** fields the start prompt parses. Anything written in them becomes canon the moment a player sends one, so they carry no name that collides with the cast and no ability the world rules forbid.
+- No shortcut re-prints something the response already carries every turn. A `상태창` shortcut is the standard example: the HUD is already appended by the output contract, so calling it spends the player's quota to see what was just on screen.
+- Every registered shortcut produces a dense response. A shortcut that ends in three lines costs the player the same as one that fills its budget.
 
 ## Prompt behavior
 

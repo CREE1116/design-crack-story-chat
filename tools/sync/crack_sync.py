@@ -56,6 +56,8 @@ class DepartmentStartSetting:
     title: str
     prologue: str
     start_prompt: str
+    play_guide: str = ""
+    replies: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -71,6 +73,8 @@ class ProjectArtifacts:
     summary_comment: str = ""
     story_description: str = ""
     short_summary: str = ""
+    play_guide: str = ""
+    replies: list[str] = field(default_factory=list)
     variant: str = "safe"
 
 
@@ -80,11 +84,51 @@ class ProjectArtifacts:
 # 어떤 프로젝트의 폴더 이름도 이 파일에 적지 않는다.
 START_SET_DIRS = ("start-sets", "departments")
 
+# 크랙 목록 카드의 한 줄 소개 한도. 상세설명(story-description.md)과 다른 필드다.
+LOGLINE_MAX = 30
+PROLOGUE_MAX = 1000
+START_PROMPT_MAX = 1000
+SYSTEM_PROMPT_MAX = 7000
+ENTRY_MAX = 400
+SHORTCUT_MAX = 400
+PLAY_GUIDE_MAX = 500
+REPLY_MAX_COUNT = 3
+
+# UNSAFE 판을 같은 계정에 별도 작품으로 올릴 때 제목을 구분하기 위한 접미사.
+# 핫리로드 경로가 여러 개라 로더 한 곳에서 붙인다.
+TITLE_SUFFIX = ""
+
+# [시작 설정] 탭의 칸은 위치로 찾지 않는다. 보이는 textarea 목록의 순서는
+# 크랙 UI가 바뀌거나 세트를 추가할 때마다 흔들리고, 어긋나면 프롤로그가
+# 시작 상황 칸에, 시작 프롬프트가 플레이 가이드 칸에 조용히 들어간다.
+# 아래는 각 칸의 placeholder 에 실제로 들어 있는 문구다.
+START_TAB_PLACEHOLDERS = {
+    # 프롤로그 칸에는 placeholder 가 없다. 화면의 "자동 생성 기능을 활용하면…"
+    # 문구는 옆 [자동 생성] 버튼의 도움말이지 이 칸의 속성이 아니다. 그래서
+    # 프롤로그만 문구로 못 찾고, 시작 상황 칸을 앵커로 삼아 바로 앞 칸을 쓴다.
+    "prologue": (),
+    "start_prompt": ("사용자의 역할", "이야기가 시작되는"),
+    "play_guide": ("사용자를 위한 가이드",),
+    "reply": ("추천답변", "추천 답변"),
+}
+
+# 크랙이 허용하는 시작 세트 수. 3개가 차면 [설정 추가] 버튼이 사라진다.
+MAX_START_SETS = 3
+
+
+def crack_len(text: str) -> int:
+    """크랙 한도 판정용 글자 수.
+
+    이모지는 UTF-16 서로게이트 페어라 코드포인트로 세면 과소 측정된다. 둘 중
+    큰 값을 쓰는 것은 scripts/check_prompt_length.py 와 같은 규칙이다.
+    """
+    return max(len(text), len(text.encode("utf-16-le")) // 2)
+
 
 def parse_set_meta(folder: Path, index: int) -> dict:
     """meta.md 를 읽는다. 전부 선택 사항이며 없으면 폴더명과 디렉터리 순서를 쓴다."""
     fallback = re.sub(r"^\d+[_-]", "", folder.name)
-    meta = {"title": fallback, "description": "", "default": False, "order": index}
+    meta = {"title": fallback, "description": "", "default": False, "order": index, "enabled": True}
     path = folder / "meta.md"
     if not path.exists():
         return meta
@@ -95,11 +139,15 @@ def parse_set_meta(folder: Path, index: int) -> dict:
             if meta["title"] == fallback:
                 meta["title"] = stripped.lstrip("#").strip() or fallback
             continue
-        m = re.match(r"^-\s*(default|order|title)\s*:\s*(.+)$", stripped, re.IGNORECASE)
+        m = re.match(r"^-\s*(default|order|title|enabled)\s*:\s*(.+)$", stripped, re.IGNORECASE)
         if m:
             key, value = m.group(1).lower(), m.group(2).strip()
             if key == "default":
                 meta["default"] = value.lower() in {"true", "yes", "1", "y"}
+            elif key == "enabled":
+                # 크랙 상한(3개)을 넘겨 기획한 루트를 지우지 않고 보류하는 스위치.
+                # 원본은 그대로 두고 이번 판올림에서만 빼기 위한 것이다.
+                meta["enabled"] = value.lower() in {"true", "yes", "1", "y"}
             elif key == "order":
                 try:
                     meta["order"] = int(value)
@@ -130,6 +178,9 @@ def load_start_sets(project_dir: Path) -> list[DepartmentStartSetting]:
             if not (p_text or s_text):
                 continue
             meta = parse_set_meta(folder, i)
+            if not meta["enabled"]:
+                print(f"   ⏸️ 시작 세트 '{meta['title']}' 는 meta.md 에서 보류 상태입니다 (enabled: false)")
+                continue
             out.append((meta["order"], DepartmentStartSetting(
                 dept_id=folder.name,
                 title=meta["title"],
@@ -289,6 +340,8 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     kb_path = kb_variant_path if kb_variant_path.exists() else (build_dir / "keyword-book.md")
     summary_path = build_dir / "assets" / "summary-comment.md"
     story_desc_path = build_dir / "assets" / "story-description.md"
+    play_guide_path = build_dir / "assets" / "play-guide.md"
+    replies_path = build_dir / "assets" / "recommended-replies.md"
     story_path = project_dir / "story.md"
 
     prologue = prologue_path.read_text(encoding="utf-8").strip() if prologue_path.exists() else ""
@@ -297,6 +350,13 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     kb_text = kb_path.read_text(encoding="utf-8").strip() if kb_path.exists() else ""
     summary_comment = summary_path.read_text(encoding="utf-8").strip() if summary_path.exists() else ""
     story_description = story_desc_path.read_text(encoding="utf-8").strip() if story_desc_path.exists() else ""
+    play_guide = play_guide_path.read_text(encoding="utf-8").strip() if play_guide_path.exists() else ""
+    # 추천 답변은 `---` 로 구분한 최대 3블록.
+    replies: list[str] = []
+    if replies_path.exists():
+        raw = replies_path.read_text(encoding="utf-8").strip()
+        replies = [b.strip() for b in re.split(r"^---+$", raw, flags=re.MULTILINE) if b.strip()]
+        replies = replies[:REPLY_MAX_COUNT]
 
     # Title and short summary (Logline) extraction
     title = project_dir.name
@@ -328,9 +388,8 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
             first_p = comm_m.group(1).strip().splitlines()[0]
             short_summary = first_p.strip()
 
-    # 100자 이하의 단문 로그라인으로 정제
-    if len(short_summary) > 100:
-        short_summary = short_summary[:95].rsplit(" ", 1)[0] + "..."
+    # 한도 초과는 조용히 자르지 않는다. inspect 가 위반으로 보고하고,
+    # 작성자가 story.md 의 `- Logline:` 을 직접 줄이게 한다.
 
     keyword_entries, shortcuts = parse_keyword_book(kb_text)
 
@@ -339,7 +398,7 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
 
     return ProjectArtifacts(
         project_name=project_dir.name,
-        title=title,
+        title=title + TITLE_SUFFIX,
         prologue=prologue,
         start_prompt=start_prompt,
         system_prompt=system_prompt,
@@ -349,6 +408,8 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
         summary_comment=summary_comment,
         story_description=story_description,
         short_summary=short_summary,
+        play_guide=play_guide,
+        replies=replies,
         variant=variant,
     )
 
@@ -425,11 +486,179 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
     for i, sc in enumerate(artifacts.shortcuts, 1):
         print(f"   [{i:02d}] {sc.name} ({sc.id}) : {sc.description} | {len(sc.prompt)}자")
     desc_text = artifacts.story_description if artifacts.story_description else artifacts.summary_comment
-    print(f"6. 📝 작품 한 줄 소개 (Logline)     : '{artifacts.short_summary}' ({len(artifacts.short_summary)}자)")
+    logline_len = len(artifacts.short_summary)
+    logline_flag = "" if logline_len <= LOGLINE_MAX else f"  ⚠️ {LOGLINE_MAX}자 초과 — 크랙에서 잘립니다"
+    print(f"6. 📝 작품 한 줄 소개 (Logline)     : '{artifacts.short_summary}' ({logline_len}자 / {LOGLINE_MAX}자){logline_flag}")
     print(f"7. 🌐 작품 상세 설명 (Description)   : {len(desc_text):,}자")
+    pg = artifacts.play_guide
+    pg_flag = "" if crack_len(pg) <= PLAY_GUIDE_MAX else f"  ⚠️ {PLAY_GUIDE_MAX}자 초과 — 크랙에서 잘립니다"
+    print(f"8. 🎮 플레이 가이드 (Play Guide)     : {len(pg):,}자 / {PLAY_GUIDE_MAX}자" + ("  (없음 — 선택 항목)" if not pg else pg_flag))
+    print(f"9. 💡 추천 답변 (Replies)           : {len(artifacts.replies)}개 / 최대 {REPLY_MAX_COUNT}개")
+    for i, r in enumerate(artifacts.replies, 1):
+        head = r.splitlines()[0][:38]
+        print(f"   [{i}] {head}… ({len(r)}자)")
     print("=" * 75)
-    print("✨ 모든 산출물이 크랙 규격에 완벽하게 부합합니다!")
+
+    # 한도를 출력만 하고 통과를 선언하면 검사기가 아니라 인쇄기다. 실제로 센다.
+    violations: list[str] = []
+
+    def check(label: str, text: str, cap: int) -> None:
+        n = crack_len(text)
+        if n > cap:
+            violations.append(f"{label}: {n:,}자 / {cap:,}자 한도 ({n - cap:,}자 초과)")
+
+    check("프롤로그", artifacts.prologue, PROLOGUE_MAX)
+    check("시작 프롬프트", artifacts.start_prompt, START_PROMPT_MAX)
+    check(f"메인 시스템 프롬프트({artifacts.variant})", artifacts.system_prompt, SYSTEM_PROMPT_MAX)
+    check("한 줄 소개", artifacts.short_summary, LOGLINE_MAX)
+    check("플레이 가이드", artifacts.play_guide, PLAY_GUIDE_MAX)
+    for d in artifacts.departments:
+        check(f"시작세트 '{d.title}' 프롤로그", d.prologue, PROLOGUE_MAX)
+        check(f"시작세트 '{d.title}' 시작상황", d.start_prompt, START_PROMPT_MAX)
+    for e in artifacts.keyword_entries:
+        check(f"키워드북 '{e.title}' 본문", e.content, ENTRY_MAX)
+        if not 1 <= len(e.keywords) <= 5:
+            violations.append(f"키워드북 '{e.title}': 키워드 {len(e.keywords)}개 (1~5개만 허용)")
+    for sc in artifacts.shortcuts:
+        check(f"단축어 '{sc.name}' 프롬프트", sc.prompt, SHORTCUT_MAX)
+    if len(artifacts.replies) > REPLY_MAX_COUNT:
+        violations.append(f"추천 답변 {len(artifacts.replies)}개 (최대 {REPLY_MAX_COUNT}개)")
+    if len(artifacts.departments) > MAX_START_SETS:
+        violations.append(
+            f"시작 세트 {len(artifacts.departments)}개 (크랙 상한 {MAX_START_SETS}개) — "
+            f"초과분은 주입되지 않습니다")
+
+    if violations:
+        print(f"❌ 크랙 규격 위반 {len(violations)}건 — 이대로 주입하면 잘립니다:")
+        for v in violations:
+            print(f"   · {v}")
+        print("=" * 75)
+        return 1
+
+    print("✨ 모든 산출물이 크랙 규격에 부합합니다. (글자 수는 UTF-16 code unit 기준)")
     return 0
+
+
+def dump_fields(page: Any, tag: str = "") -> None:
+    """현재 화면의 입력 칸과 버튼을 그대로 찍는다.
+
+    placeholder 를 추측해서 셀렉터를 쓰면 못 찾을 때 원인을 알 수 없다.
+    이 덤프가 실물을 보여주므로 START_TAB_PLACEHOLDERS 를 사실에 맞춰 고칠 수 있다.
+    """
+    print(f"\n🔬 [필드 덤프{(' — ' + tag) if tag else ''}]")
+    rows = page.evaluate("""() => {
+        const vis = el => {
+            const r = el.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+        };
+        const out = [];
+        document.querySelectorAll("textarea, input, [contenteditable='true']").forEach(el => {
+            if (!vis(el)) return;
+            out.push({
+                kind: "field",
+                tag: el.tagName.toLowerCase(),
+                placeholder: el.getAttribute("placeholder") || "",
+                dataPlaceholder: el.getAttribute("data-placeholder") || "",
+                ariaPlaceholder: el.getAttribute("aria-placeholder") || "",
+                ariaLabel: el.getAttribute("aria-label") || "",
+                name: el.getAttribute("name") || "",
+                len: (el.value !== undefined ? (el.value || "") : (el.innerText || "")).length,
+            });
+        });
+        document.querySelectorAll("button").forEach(el => {
+            if (!vis(el)) return;
+            const t = (el.innerText || "").trim();
+            if (t) out.push({kind: "button", text: t.slice(0, 30)});
+        });
+        return out;
+    }""")
+    for i, r in enumerate(rows):
+        if r["kind"] == "field":
+            hints = " | ".join(
+                f"{k}={r[k]!r}" for k in
+                ("placeholder", "dataPlaceholder", "ariaPlaceholder", "ariaLabel", "name")
+                if r[k]
+            )
+            print(f"   [{i:02d}] <{r['tag']}> 내용{r['len']}자  {hints or '(식별 속성 없음)'}")
+        else:
+            print(f"   [{i:02d}] <button> {r['text']!r}")
+    print(f"   — 총 {len(rows)}개\n")
+
+
+def placeholder_selector(needle: str) -> str:
+    """안내 문구로 입력 칸을 찾는 셀렉터.
+
+    크랙의 칸이 전부 `textarea[placeholder]` 인 것은 아니다. 리치 에디터는
+    `contenteditable` 에 `data-placeholder` 를 쓰고, 일부는 `aria-placeholder`
+    만 있다. 한 종류만 보면 그 칸은 조용히 비어 있는 채로 저장된다.
+    """
+    return ", ".join(
+        f"{tag}:visible[{attr}*='{needle}']"
+        for tag, attr in (
+            ("textarea", "placeholder"),
+            ("input", "placeholder"),
+            ("div[contenteditable='true']", "data-placeholder"),
+            ("div[contenteditable='true']", "aria-placeholder"),
+            ("*", "aria-placeholder"),
+        )
+    )
+
+
+def find_start_field(page: Any, field: str, index: int = 0) -> Any:
+    """[시작 설정] 탭의 칸을 placeholder 문구로 찾는다.
+
+    위치(`textarea[0]`, `[-1]`)로 찾으면 크랙이 칸을 하나 늘리거나 순서를
+    바꾸는 순간 전 필드가 한 칸씩 밀려 조용히 잘못된 자리에 써진다. 실제로
+    프롤로그가 시작 상황 칸에, 시작 프롬프트가 플레이 가이드 칸에 들어간
+    적이 있다. 못 찾으면 아무 데나 쓰지 말고 None 을 돌려준다.
+    """
+    if field == "prologue":
+        return find_prologue_field(page, index)
+    for needle in START_TAB_PLACEHOLDERS[field]:
+        loc = page.locator(placeholder_selector(needle))
+        if loc.count() > index:
+            return loc.nth(index)
+    return None
+
+
+def find_prologue_field(page: Any, index: int = 0) -> Any:
+    """프롤로그 칸 — 시작 상황 칸 바로 앞의, placeholder 없는 textarea.
+
+    이 칸만 식별 속성이 하나도 없어 문구로 찾을 수 없다. 순서를 세는 대신
+    시작 상황 칸(placeholder 가 확실한 칸)을 앵커로 잡고 그 직전 칸을 고르므로,
+    칸이 늘거나 순서가 바뀌어도 함께 움직인다.
+    """
+    idx = page.evaluate("""() => {
+        const vis = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+        const tas = [...document.querySelectorAll("textarea")].filter(vis);
+        const anchors = [];
+        tas.forEach((el, i) => {
+            const ph = el.getAttribute("placeholder") || "";
+            if (ph.includes("사용자의 역할") || ph.includes("이야기가 시작되는")) anchors.push(i);
+        });
+        return anchors.map(i => {
+            const prev = tas[i - 1];
+            if (!prev) return -1;
+            return (prev.getAttribute("placeholder") || "") ? -1 : i - 1;
+        });
+    }""")
+    if not idx or index >= len(idx) or idx[index] < 0:
+        return None
+    return page.locator("textarea:visible").nth(idx[index])
+
+
+def fill_start_field(page: Any, field: str, label: str, value: str, index: int = 0) -> bool:
+    """placeholder 로 찾은 칸에만 쓴다. 못 찾으면 건너뛰고 경고한다."""
+    if not value:
+        return True
+    target = find_start_field(page, field, index)
+    if target is None:
+        print(f"   ⚠️ [{label}] 칸을 찾지 못해 건너뜁니다 — 위치로 추정해 덮어쓰지 않습니다.")
+        dump_fields(page, f"{label} 탐색 실패")
+        return False
+    fill_react_input(page, target, value)
+    print(f"   ✅ [{label}] 주입 완료 ({len(value):,}자)")
+    return True
 
 
 def fill_react_input(page: Any, selector_or_locator: Any, value: str) -> bool:
@@ -569,48 +798,81 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
         time.sleep(1.5)
 
         if artifacts.departments:
-            print(f"\n🏢 [다중 시작 설정 주입 시작] (총 {len(artifacts.departments)}개 부서/시작세트)")
+            print(f"\n🏢 [다중 시작 설정 주입 시작] (총 {len(artifacts.departments)}개 시작 세트)")
             for idx, dept in enumerate(artifacts.departments):
-                print(f"   [{idx+1}/{len(artifacts.departments)}] '{dept.title}' 주입 중...", end=" ", flush=True)
-                if idx > 0:
+                print(f"   [{idx+1}/{len(artifacts.departments)}] '{dept.title}'")
+                # 갱신 실행이면 그 세트는 이미 탭으로 존재한다. 새로 추가하지 말고
+                # 그 탭을 눌러 들어간다. 상한(3개)에 찬 뒤에는 [설정 추가] 버튼이
+                # 사라지므로, 탭을 찾지 못할 때만 추가를 시도한다.
+                existing_tab = page.locator(f"button:visible:has-text('{dept.title}')").first
+                if existing_tab.count() > 0:
+                    existing_tab.click()
+                    time.sleep(1.2)
+                elif idx > 0:
                     add_btn = page.locator("button:visible:has-text('설정 추가'), button:visible:has-text('+ 추가'), button:visible:has-text('시작 추가')").first
+                    if add_btn.count() == 0:
+                        # 세트가 상한(3개)에 차면 크랙이 [설정 추가] 버튼을 없앤다.
+                        # 버튼 없이 계속하면 앞 세트를 덮어쓰므로 여기서 멈춘다.
+                        print(f"   ❌ '설정 추가' 버튼이 없습니다 — 크랙의 시작 세트 상한은 {MAX_START_SETS}개입니다. "
+                              f"남은 {len(artifacts.departments) - idx}개는 주입하지 않습니다(앞 세트 덮어쓰기 방지).")
+                        dump_fields(page, "설정 추가 버튼 탐색 실패")
+                        break
+                    add_btn.click()
+                    time.sleep(1.5)
+
+                # 설정 이름(제목)
+                title_inp = page.locator("input:visible[placeholder*='상황'], input:visible[placeholder*='등장인물'], input:visible[placeholder*='이름']").last
+                if title_inp.count() > 0:
+                    fill_react_input(page, title_inp, dept.title)
+
+                # 각 칸은 placeholder 로 찾는다. 새로 추가된 패널이 마지막이므로
+                # 같은 placeholder 가 여러 개면 마지막 것을 쓴다.
+                for field, label, value in (
+                    ("prologue", "프롤로그", dept.prologue),
+                    ("start_prompt", "시작 상황", dept.start_prompt),
+                    ("play_guide", "플레이 가이드", dept.play_guide or artifacts.play_guide),
+                ):
+                    if not value:
+                        continue
+                    loc = None
+                    if field == "prologue":
+                        loc = find_prologue_field(page, -1 if idx else 0)
+                    else:
+                        for needle in START_TAB_PLACEHOLDERS[field]:
+                            cand = page.locator(placeholder_selector(needle))
+                            if cand.count() > 0:
+                                loc = cand.last
+                                break
+                    if loc is None:
+                        print(f"      ⚠️ [{label}] 칸 못 찾음 — 건너뜁니다")
+                        if idx == 0:
+                            dump_fields(page, f"{label} 탐색 실패")
+                        continue
+                    fill_react_input(page, loc, value)
+                    print(f"      ✅ [{label}] {len(value):,}자")
+                time.sleep(0.5)
+            print(f"   ✅ 시작 세트 주입 완료")
+        else:
+            fill_start_field(page, "prologue", "프롤로그", artifacts.prologue)
+            fill_start_field(page, "start_prompt", "시작 상황 (시작 프롬프트)", artifacts.start_prompt)
+            fill_start_field(page, "play_guide", "플레이 가이드", artifacts.play_guide)
+
+        # ── 추천 답변 (최대 3개) ──
+        if artifacts.replies:
+            print(f"   📌 추천 답변 {len(artifacts.replies)}개 주입...")
+            for i, reply in enumerate(artifacts.replies[:REPLY_MAX_COUNT]):
+                target = find_start_field(page, "reply", i)
+                if target is None:
+                    add_btn = page.locator("button:visible:has-text('추천 답변'), button:visible:has-text('추천답변')").first
                     if add_btn.count() > 0:
                         add_btn.click()
-                        time.sleep(1.5)
-                    else:
-                        print("⚠️ '설정 추가' 버튼 못 찾음", end=" ")
-
-                # 1. 설정 이름(제목) 입력 (placeholder='상황, 등장인물 등')
-                title_inputs = page.locator("input:visible[placeholder*='상황'], input:visible[placeholder*='등장인물'], input:visible[placeholder*='이름']").all()
-                if title_inputs:
-                    fill_react_input(page, title_inputs[-1], dept.title)
-
-                # 2. 현재 활성화된 시작 설정 패널의 프롤로그 및 시작 상황 textarea 주입
-                # 현재 보이는 textarea들 중 마지막 2개(새로 추가된 세트) 또는 전용 placeholder 탐색
-                current_tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
-                if len(current_tas) >= 2:
-                    # 마지막 2개가 현재 선택/추가된 시작 세트의 [프롤로그, 시작상황]
-                    target_prologue_ta = current_tas[-2]
-                    target_start_ta = current_tas[-1]
-                    fill_react_input(page, target_prologue_ta, dept.prologue)
-                    fill_react_input(page, target_start_ta, dept.start_prompt)
-                elif len(current_tas) == 1:
-                    fill_react_input(page, current_tas[0], dept.prologue)
-
-                print("완료!")
-                time.sleep(0.5)
-            print(f"   ✅ 총 {len(artifacts.departments)}개 부서 시작 설정 주입 완료!")
-        else:
-            all_tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
-            if len(all_tas) >= 1:
-                fill_react_input(page, all_tas[0], artifacts.prologue)
-                print(f"   ✅ [프롤로그] 주입 완료 ({len(artifacts.prologue):,}자)")
-            if len(all_tas) >= 2:
-                # [1] = 시작 상황 (사용자의 역할, 세계관 등) -> artifacts.start_prompt 주입
-                fill_react_input(page, all_tas[1], artifacts.start_prompt)
-                print(f"   ✅ [시작 프롬프트 (시작 상황)] 주입 완료 ({len(artifacts.start_prompt):,}자)")
-            elif len(all_tas) == 1:
-                print("   ⚠️ 시작 상황 입력창을 찾지 못했습니다.")
+                        time.sleep(1.0)
+                        target = find_start_field(page, "reply", i)
+                if target is None:
+                    print(f"      ⚠️ 추천 답변 {i+1} 칸 못 찾음 — 건너뜁니다")
+                    continue
+                fill_react_input(page, target, reply)
+                print(f"      ✅ 추천 답변 {i+1} ({len(reply):,}자)")
     else:
         print("   ⚠️ '시작 설정' 탭 못 찾음")
 
@@ -641,9 +903,21 @@ def save_crack_draft(page: Any) -> bool:
         try:
             btn.scroll_into_view_if_needed(timeout=3000)
             btn.click(timeout=4000)
-            print("   ✅ [임시저장] 버튼 클릭 성공!")
-            time.sleep(1.5)
-            return True
+            time.sleep(2.0)
+            # 클릭했다는 사실은 저장됐다는 뜻이 아니다. 버튼이 눌려도 폼 검증에
+            # 걸려 조용히 무시되는 경우가 있어, 저장 표시를 실제로 찾은 뒤에만
+            # 성공이라고 말한다. 못 찾으면 미확인이라고 말하고 화면을 찍는다.
+            toast = page.locator(
+                ":text('저장되었'), :text('저장 완료'), :text('임시저장되었'), "
+                ":text('임시 저장되었'), [role='alert']:visible, [role='status']:visible"
+            )
+            if toast.count() > 0:
+                print("   ✅ [임시저장] 완료 확인")
+                return True
+            print("   ⚠️ [임시저장] 버튼은 눌렀지만 저장 표시를 확인하지 못했습니다.")
+            print("      크랙이 필수 항목 미입력 등으로 저장을 거부했을 수 있습니다. 브라우저 화면을 확인하세요.")
+            dump_fields(page, "임시저장 확인 실패")
+            return False
         except Exception as e:
             print(f"   ⚠️ [임시저장] 버튼 클릭 실패: {e}")
             return False
@@ -930,7 +1204,9 @@ def inject_basic_info(page: Any, artifacts: ProjectArtifacts) -> bool:
     if desc_ta.count() > 0:
         summary_text = artifacts.short_summary if artifacts.short_summary else artifacts.title
         fill_react_input(page, desc_ta, summary_text)
-        print(f"   ✅ [작품 한 줄 소개] '{summary_text}' 입력 완료 ({len(summary_text):,}자)")
+        print(f"   ✅ [작품 한 줄 소개] '{summary_text}' 입력 완료 ({len(summary_text):,}자 / {LOGLINE_MAX}자)")
+        if len(summary_text) > LOGLINE_MAX:
+            print(f"   ⚠️ 한 줄 소개가 {LOGLINE_MAX}자를 넘습니다 — 목록 카드에서 잘립니다. story.md 의 '- Logline:' 을 줄이세요.")
 
     return True
 
@@ -1054,6 +1330,13 @@ def auto_navigate_and_inject_all(page: Any, artifacts: ProjectArtifacts) -> None
     inject_publish_info(page, artifacts)
     time.sleep(0.5)
 
+    # 신규 생성 모드에서 이 주소를 안 찍으면, 다음에 같은 작품을 다시 싱크할
+    # 방법이 없어 매번 새 작품이 하나씩 늘어난다.
+    try:
+        print(f"\n🔗 이 작품의 에디터 주소: {page.url}")
+        print("   다음부터는 `--url '위 주소'` 로 같은 작품을 갱신하세요.")
+    except Exception:
+        pass
     print("\n🎉 모든 산출물 주입 완료! 브라우저 창에서 검토 후 [임시저장] 또는 [발행]을 진행하세요.")
 
 
@@ -1108,8 +1391,11 @@ def run_sync(
     dry_run: bool = False,
     auto_inject: bool = False,
     auto_submit: bool = False,
+    title_suffix: str = "",
 ) -> int:
     """Execute Playwright automation with persistent browser profile."""
+    global TITLE_SUFFIX
+    TITLE_SUFFIX = title_suffix
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -1269,6 +1555,8 @@ def main() -> int:
     sync_parser.add_argument("--dry-run", action="store_true", help="Inspect without opening browser")
     sync_parser.add_argument("--auto", action="store_true", help="Automatically inject upon start")
     sync_parser.add_argument("--auto-submit", action="store_true", help="Automatically click save/submit button")
+    sync_parser.add_argument("--title-suffix", default="",
+                             help="제목 뒤에 붙일 문자열. UNSAFE 판을 별도 작품으로 임시저장할 때 쓴다 (예: --title-suffix ' U')")
 
     args = parser.parse_args()
 
@@ -1286,6 +1574,7 @@ def main() -> int:
             dry_run=args.dry_run,
             auto_inject=args.auto,
             auto_submit=args.auto_submit,
+            title_suffix=args.title_suffix,
         )
     return 0
 

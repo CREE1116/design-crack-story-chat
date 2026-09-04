@@ -38,6 +38,12 @@ def parse_roster(characters_md: str) -> set[str]:
     headings = re.findall(r"^##\s+(.+)$", characters_md, re.MULTILINE)
     roster: set[str] = set()
     for h in headings:
+        # SKILL.md 의 이름 규칙이 정한 하이픈 내부 라벨: `인물-라임` — 라임 (슬라임 / 대리)
+        m = re.search(r"`(?:인물|char)-([^`]+)`", h)
+        if m:
+            roster.add(m.group(1).strip())
+            continue
+        # 폐기된 점 표기. 옛 프로젝트를 읽기 위해서만 남긴다.
         m = re.search(r"`?char\.([a-z0-9-]+)`?", h)
         if m:
             roster.add(m.group(1))
@@ -64,6 +70,19 @@ def validate(project: Path, quiet: bool = False) -> bool:
     roster_names: set[str] = set()
     roster_map: dict[str, str] = {}
     for h in headings:
+        # 0. `인물-라임` — 라임 (…) : SKILL.md 이름 규칙이 정한 하이픈 내부 라벨
+        m0 = re.search(r"`(?:인물|char)-([^`]+)`", h)
+        if m0:
+            label = m0.group(1).strip()
+            ko = label
+            after = re.search(r"`\s*—\s*([가-힣a-zA-Z0-9\s]+?)(?:\s*[「『·\(0-9]|$)", h)
+            if after:
+                ko = after.group(1).strip()
+            if ko and ko != "user":
+                roster_map[label] = ko
+                roster_map[ko] = label
+                roster_names.add(ko)
+            continue
         # 1. char.slug — 이름 형태 (레거시 호환)
         m = re.search(r"`?char\.([a-z0-9-]+)`?\s*—\s*([가-힣a-zA-Z0-9\s]+?)(?:\s*[「『·\(0-9]|$)", h)
         if m:

@@ -120,19 +120,46 @@ python3 tools/sync/crack_sync.py inspect examples/hunter --variant safe
 
 ## 5. 자동 매핑 및 필드 주입 규격
 
-`crack_sync.py`는 빌드 산출물을 크랙 웹 에디터의 각 탭과 필드에 1:1로 정확하게 매핑합니다.
+`crack_sync.py`는 빌드 산출물을 크랙 웹 에디터의 각 탭과 필드에 1:1로 매핑합니다.
+
+> **[시작 설정] 탭의 칸은 위치가 아니라 placeholder 문구로 찾습니다.** 보이는 `textarea` 순서로 잡으면 크랙이 칸을 하나 늘리거나 시작 세트를 추가하는 순간 전체가 한 칸씩 밀립니다. 실제로 프롤로그가 시작 상황 칸에, 시작 프롬프트가 플레이 가이드 칸에 들어간 사고가 있었습니다. 칸을 못 찾으면 **아무 데도 쓰지 않고 경고만** 냅니다 — 조용한 오주입보다 미주입이 낫습니다.
 
 | 크랙 에디터 탭 / 필드 | 대상 소스 파일 | 주입 내용 및 규격 |
 |---|---|---|
 | **작품 제목 (Title)** | `story.md` (`- Title:`) | 스토리 공식 제목 |
-| **한 줄 소개 (Logline)** | `story.md` (`- Logline:` / `- Premise:`) | 검색 및 목록 카드용 핵심 로그라인 (≤ 100자) |
-| **프롤로그 (Prologue)** | `build/prologue.md` | ≤ 1,000자 도입부 서사 |
-| **시작 프롬프트 (Start)** | `build/start-prompt.md` | ≤ 1,000자 첫 턴 상황 압력 |
+| **한 줄 소개 (Logline)** | `story.md` (`- Logline:` / `- Premise:`) | 목록 카드용 로그라인 **(≤ 30자)**. 상세설명과 다른 필드다 — [story-description-guide.md](story-description-guide.md) 참조 |
+| **프롤로그 (Prologue)** | `build/prologue.md` | ≤ 1,000자 도입부 서사. placeholder `자동 생성…초안` |
+| **시작 상황 (Start)** | `build/start-prompt.md` | ≤ 1,000자 첫 턴 상황 압력. placeholder `사용자의 역할…` |
+| **플레이 가이드** | `build/assets/play-guide.md` | 플레이어용 안내판 ([play-guide.md](play-guide.md)). placeholder `사용자를 위한 가이드` |
+| **추천 답변 (최대 3)** | `build/assets/recommended-replies.md` | `---` 로 구분한 최대 3블록. 없으면 건너뜀 |
 | **시스템 프롬프트 (Core)** | `build/integrated-prompt-{safe/unsafe}.md` | ≤ 7,000자 코어 시스템 규칙 (`--variant`에 따라 선택) |
 | **키워드북 (Keyword Book)** | `build/keyword-book-{safe/unsafe}.md` (우선) 또는 `build/keyword-book.md` | **기존 등록 항목 자동 삭제(초기화) 후** 새 항목 일괄 등록 (SAFE/UNSAFE 자동 분기) |
 | **단축어 (Shortcuts)** | 위 키워드북 파일 (Shortcuts 섹션) | 기존 항목 정리 후 단축어 등록 (이름 앞 슬래시 자동 정제) |
 | **작품 상세설명 (Description)** | `build/assets/story-description.md` | 마크다운 3대 블록 (배너+통계표 + 플레이 가이드 & 단축어 + 제작자 코멘트) |
 | *(참고: 써머리 코멘트)* | `build/assets/summary-comment.md` | 발행 후 **고정 댓글**에 복사할 순수 텍스트 4대 블록 (캐릭터 소개 + 이미지 규칙 + 세계관 + 등급 기준) |
+
+---
+
+## 5.5. 실측으로 확인된 크랙 UI 제약
+
+문서로 공개된 값이 아니라 **실제로 넣어 보고 확인한** 것들입니다. 추측한 값은 여기에 적지 않습니다.
+
+| 항목 | 상한 | 넘기면 |
+|---|:---:|---|
+| 한 줄 소개 | 30자 | 목록 카드에서 잘림 |
+| 플레이 가이드 | 500자 | 초과분이 경고 없이 사라짐 (마지막 블록이 통째로) |
+| 시작 세트 | 3개 | [설정 추가] 버튼 자체가 사라짐 |
+| 추천 답변 | 3개 | [추천 답변 추가] 버튼이 사라짐 |
+
+**프롤로그 칸에는 placeholder 가 없습니다.** 화면의 "자동 생성 기능을 활용하면…" 문구는 옆 [자동 생성] 버튼의 도움말이지 그 칸의 속성이 아닙니다. 그래서 이 칸만 문구로 찾을 수 없고, 시작 상황 칸을 앵커로 삼아 바로 앞 칸을 씁니다.
+
+**세트가 이미 있는 작품을 다시 싱크할 때는 [설정 추가] 를 누르면 안 됩니다.** 상한에 걸려 버튼이 없고, 없는 채로 진행하면 앞 세트를 덮어씁니다. 제목이 같은 탭을 먼저 눌러 그 세트로 들어갑니다.
+
+### 칸을 못 찾으면 화면을 찍는다
+
+동기화 도구는 칸이나 버튼 탐색에 실패하면 그 자리에서 **현재 화면의 입력 칸과 버튼을 전부 덤프**합니다(태그, `placeholder`, `data-placeholder`, `aria-placeholder`, `aria-label`, 현재 글자 수). 상주 세션에서는 `d` 명령으로도 같은 것을 볼 수 있습니다.
+
+placeholder 를 짐작해 셀렉터를 고치고 다시 돌리는 왕복 대신, **한 번 실패하면 사실이 나옵니다.** 위의 제약 세 가지가 전부 이 덤프로 밝혀졌습니다.
 
 ---
 

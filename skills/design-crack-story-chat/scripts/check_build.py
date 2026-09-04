@@ -158,6 +158,8 @@ def validate(build: Path) -> bool:
         known = {
             "image-prompts.md", "prompts.json", "prompts-nude.json", "story-description.md", "summary-comment.md",
             "build-stamp.json", "character-design.md", "scene-design.md",
+            # 플레이어가 읽는 두 칸. 모델 프롬프트가 아니라 [시작 설정] 탭으로 간다.
+            "play-guide.md", "recommended-replies.md",
             "preset-adult-poses.json", "preset-emotions.json", "preset-actions.json",
         }
         stray = sorted(p.name for p in derived.iterdir()

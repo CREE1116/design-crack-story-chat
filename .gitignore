@@ -5,3 +5,4 @@ dist/
 tools/imagegen/out/
 *.skill
 .agents/
+.venv/
