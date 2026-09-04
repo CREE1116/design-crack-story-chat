@@ -37,17 +37,26 @@ python3 check_build.py <프로젝트>/build
 python3 check_prompt_length.py build/integrated-prompt-safe.md
 ```
 
-> 키워드북 파일에 이걸 돌리면 7,000자 기준으로 재서 실패합니다. 키워드북은 등록 시트라 프롬프트 상한이 적용되지 않습니다. `check_build.py`나 `check_keyword_book.py`를 쓰세요.
+> 키워드북 파일에 이걸 돌리면 7,000자 기준으로 재서 실패합니다. 키워드북은 등록 시트라 프롬프트 상한이 적용되지 않습니다. `check_build.py` 나 `crack-emu lint` 를 쓰세요.
 
-### `check_keyword_book.py`
+### 키워드북: `crack-emu lint`
 
-항목 형식, 400자, 키워드 개수, ID·키워드 중복을 봅니다.
+항목 형식, 400자(권장 360자), 키워드 1~5개, 중복을 봅니다. 여기에 더해 정적 검사만으로 잡히는 슬롯 결함도 함께 잡습니다.
 
 ```bash
-python3 check_keyword_book.py build/keyword-book.md
+crack-emu --project build lint
 ```
 
-필드 이름은 `activation_setting`, `activation_when`, `keywords` 세 개이고, 대괄호 목록은 `keywords`만입니다. 다른 이름을 쓰면 실패합니다.
+| 규칙 | 뜻 |
+|---|---|
+| `entry_too_long` · `entry_near_limit` | 400자 상한, 360자 권장선 |
+| `entry_keyword_overflow` | 키워드 5개 상한 |
+| `keyword_collision` | 같은 키워드가 두 항목에 등록됨 |
+| `keyword_substring_hazard` | 키워드가 다른 낱말에 묻혀 오발동 — `라임`이 `슬라임`에 걸리는 종류. 조사가 붙은 정상 매칭은 걸러냅니다 |
+| `priority_module_low` | 19+·키스 등 우선 모듈이 3슬롯 밖에 등록됨 |
+| `always_on_trigger` | 상태창 고정 항목명을 트리거로 써서 슬롯 1개를 영구 점유 |
+| `adult_code_in_main_prompt` | 성인 A코드가 메인 프롬프트에 노출됨 |
+| `shortcut_name_slash` | 단축어 이름 앞 `/` — 크랙 UI가 자동으로 붙이므로 `//` 가 됨 |
 
 ### `check_symbols.py`
 
@@ -71,22 +80,33 @@ python3 check_symbols.py build/*.md --strict             # 장식 글리프도 �
 
 **한글이 붙어 있다는 것만으로는 정의로 안 칩니다.** 조사가 붙은 기호(`ⓝ는`)와 주석(`😐중립`)이 구별되지 않아 진짜 결함을 덮어버리기 때문입니다. 이건 실제로 이 스크립트의 첫 판이 부정 대조에서 놓쳤던 지점입니다.
 
-### `check_kb_slots.py`
+### 3슬롯: `crack-emu replay` + `report`
 
-**3슬롯 초과를 시뮬레이션합니다.** 항목을 하나씩 검토해서는 절대 못 찾는 결함입니다.
+**가상 장면 목록 시뮬레이션은 폐지했습니다.** 실제로 턴을 돌려서 측정합니다. 항목을 하나씩 검토해서는 절대 못 찾는 결함이고, 지어낸 장면 목록으로는 진짜 대화에서 무엇이 트리거되는지 알 수 없습니다.
 
 ```bash
-python3 check_kb_slots.py build/keyword-book.md .assets/kb-scenes.txt
-python3 check_kb_slots.py build/keyword-book.md --scene "길드 선택" --text "발할라 아발론 부스"
+crack-emu --project build replay qa1 scenarios/onboarding.txt
+crack-emu --project build report
 ```
 
-장면 파일 형식 — 한 줄에 장면 하나, `#`은 주석:
+시나리오 파일 형식 — 한 줄에 유저 입력 하나, `#`은 주석:
 
 ```
-등급 측정: 측정실에서 마력 총량을 재고 등급 판정을 받는다
-길드 부스 순회: 발할라 아발론 에덴 바벨 네 길드의 부스를 둘러본다
-범람 진압: 군체 범람체가 쏟아지고 통제선에서 진압이 시작된다
+라임 대리님, 안녕하세요. 신입 이정민입니다.
+사랑의 묘약 기획서를 좀 볼 수 있을까요?
+/상태창
 ```
+
+`report` 가 내놓는 것:
+
+| 규칙 | 뜻 |
+|---|---|
+| `slot_overflow` | 매칭이 3슬롯을 넘겨 항목이 드롭된 턴. 어떤 항목이 밀렸는지까지 |
+| `entry_never_fired` | N턴 동안 한 번도 안 걸린 항목 — 키워드가 실제 대화 어휘와 어긋남 |
+| `entry_always_fired` | 매 턴 걸리는 항목 — 메인 프롬프트로 옮길 후보 |
+| `high_match_entry_registered_high` | 자주 걸리면서 목록 상단에 등록 — 남의 슬롯을 계속 뺏음 |
+
+턴마다 발동 기록이 `<store>/../logs/<세션>.jsonl` 에 남습니다. 어떤 키워드가 **직전 턴에서** 걸렸는지 **이번 입력에서** 걸렸는지까지 들어 있습니다.
 
 출력에서 등록 순서대로 앞 3개가 `loaded`, 나머지가 `DROPPED`로 나옵니다.
 

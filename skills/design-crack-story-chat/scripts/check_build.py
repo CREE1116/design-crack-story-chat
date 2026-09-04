@@ -17,13 +17,18 @@ except (ImportError, ValueError, OSError):  # Windows 등
 MAX_PROMPT = 7000
 MAX_OPENING = 1000
 TARGET_PROMPT = 6500
-EXPECTED = {
+CORE_EXPECTED = {
     "prologue.md",
     "integrated-prompt-safe.md",
     "integrated-prompt-unsafe.md",
     "start-prompt.md",
-    "keyword-book.md",
 }
+VALID_KB_SETS = [
+    {"keyword-book-safe.md", "keyword-book-unsafe.md"},
+    {"keyword-book-safe.md", "keyword-book-unsafe.md", "keyword-book.md"},
+    {"keyword-book.md", "keyword-book-unsafe.md"},
+    {"keyword-book.md"},
+]
 # 크랙에 붙이지 않는 파생 제작 입력이 들어가는 유일한 하위 디렉터리.
 DERIVED_DIR = "assets"
 UNSAFE_BANNED = (
@@ -68,15 +73,6 @@ def report_length(label: str, text: str, limit: int, target: int) -> bool:
     return True
 
 
-def load_keyword_validator():
-    try:
-        from check_keyword_book import validate  # type: ignore
-    except ImportError as exc:  # pragma: no cover - only malformed installs hit this
-        print(f"FAIL keyword validator import: {exc}")
-        return None
-    return validate
-
-
 def validate(build: Path) -> bool:
     if not build.is_dir():
         print(f"FAIL {build}: build directory not found")
@@ -86,15 +82,25 @@ def validate(build: Path) -> bool:
     # 산출물 개수를 깨뜨리면 안 된다. check_project_layout.py 와 같은 규칙이다.
     entries = [e for e in build.iterdir() if not e.name.startswith(".")]
     names = {entry.name for entry in entries if entry.is_file()}
-    extra = sorted(names - EXPECTED)
-    missing = sorted(EXPECTED - names)
-    # build/assets/ 는 크랙에 붙이지 않는 파생 제작 입력(이미지 프롬프트 등)의 자리다.
-    # 다섯 개의 크랙 산출물과 달리 모델에게 실리지 않으므로 개수를 세지 않는다.
+    
+    # 코어 파일 누락 검사
+    missing_core = sorted(CORE_EXPECTED - names)
+    kb_files = {n for n in names if n.startswith("keyword-book") and n.endswith(".md")}
+    
+    # 키워드북 세트 일치 검사
+    kb_valid = any(kb_files == valid_set for valid_set in VALID_KB_SETS)
+    
+    all_known = CORE_EXPECTED | kb_files
+    extra = sorted(names - all_known)
+    
     non_files = sorted(entry.name for entry in entries
                        if not entry.is_file() and entry.name != DERIVED_DIR)
     ok = True
-    if missing:
-        print(f"FAIL {build}: missing artifacts: {', '.join(missing)}")
+    if missing_core:
+        print(f"FAIL {build}: missing core artifacts: {', '.join(missing_core)}")
+        ok = False
+    if not kb_valid:
+        print(f"FAIL {build}: invalid keyword book set: {sorted(kb_files)} (expected one of: {VALID_KB_SETS})")
         ok = False
     if extra:
         print(f"FAIL {build}: unexpected artifacts: {', '.join(extra)}")
@@ -104,9 +110,9 @@ def validate(build: Path) -> bool:
         ok = False
     if not ok:
         return False
-    print(f"PASS {build}: exactly {len(EXPECTED)} final artifacts")
+    print(f"PASS {build}: valid final artifacts ({len(CORE_EXPECTED) + len(kb_files)} files: {', '.join(sorted(all_known))})")
 
-    texts = {name: (build / name).read_text(encoding="utf-8") for name in EXPECTED}
+    texts = {name: (build / name).read_text(encoding="utf-8") for name in CORE_EXPECTED}
     ok = report_length("prologue.md", texts["prologue.md"], MAX_OPENING, 900) and ok
     ok = report_length("start-prompt.md", texts["start-prompt.md"], MAX_OPENING, 900) and ok
     safe = texts["integrated-prompt-safe.md"]
@@ -137,20 +143,26 @@ def validate(build: Path) -> bool:
             print(f"FAIL integrated-prompt-unsafe.md: banned bypass phrase: {phrase}")
             ok = False
 
-    validator = load_keyword_validator()
-    if validator is not None:
-        ok = validator(str(build / "keyword-book.md")) and ok
+    # Keyword-book validation moved to the crack-emu harness, which checks the
+    # same authoring limits and additionally measures real three-slot behaviour
+    # over actual turns:
+    #   crack-emu --project <build> lint
+    #   crack-emu --project <build> report
+    if kb_files:
+        print(f"SKIP keyword books ({len(kb_files)}): run `crack-emu --project "
+              f"{build} lint` and `... report`")
 
     derived = build / DERIVED_DIR
     if derived.is_dir():
         known = {
-            "image-prompts.md", "prompts.json", "story-description.md", "summary-comment.md",
+            "image-prompts.md", "prompts.json", "prompts-nude.json", "story-description.md", "summary-comment.md",
             "build-stamp.json", "character-design.md", "scene-design.md",
             "preset-adult-poses.json", "preset-emotions.json", "preset-actions.json",
         }
         stray = sorted(p.name for p in derived.iterdir()
                        if p.is_file() and not p.name.startswith(".")
-                       and p.name not in known)
+                       and p.name not in known
+                       and not (p.name.startswith("preset-") and p.suffix == ".json"))
         if stray:
             print(f"FAIL {derived}: 알 수 없는 파생물: {', '.join(stray)}")
             print("     파생물은 요약 코멘트와 이미지 프롬프트만 둡니다. "

@@ -129,10 +129,10 @@ python3 tools/sync/crack_sync.py inspect examples/hunter --variant safe
 | **프롤로그 (Prologue)** | `build/prologue.md` | ≤ 1,000자 도입부 서사 |
 | **시작 프롬프트 (Start)** | `build/start-prompt.md` | ≤ 1,000자 첫 턴 상황 압력 |
 | **시스템 프롬프트 (Core)** | `build/integrated-prompt-{safe/unsafe}.md` | ≤ 7,000자 코어 시스템 규칙 (`--variant`에 따라 선택) |
-| **키워드북 (Keyword Book)** | `build/keyword-book.md` (키워드북 섹션) | **기존 등록 항목 자동 삭제(초기화) 후** 새 항목 일괄 등록 (중복 방지) |
-| **단축어 (Shortcuts)** | `build/keyword-book.md` (Shortcuts 섹션) | 기존 항목 정리 후 단축어 등록 (이름/설명/프롬프트) |
-| **작품 상세설명 (Description)** | `build/assets/story-description.md` | 마크다운 배너 링크 + 에셋 통계표 + 제작자 코멘트 |
-| *(참고: 써머리 코멘트)* | `build/assets/summary-comment.md` | 발행 후 **고정 댓글**에 복사할 순수 텍스트 인물 명부 |
+| **키워드북 (Keyword Book)** | `build/keyword-book-{safe/unsafe}.md` (우선) 또는 `build/keyword-book.md` | **기존 등록 항목 자동 삭제(초기화) 후** 새 항목 일괄 등록 (SAFE/UNSAFE 자동 분기) |
+| **단축어 (Shortcuts)** | 위 키워드북 파일 (Shortcuts 섹션) | 기존 항목 정리 후 단축어 등록 (이름 앞 슬래시 자동 정제) |
+| **작품 상세설명 (Description)** | `build/assets/story-description.md` | 마크다운 3대 블록 (배너+통계표 + 플레이 가이드 & 단축어 + 제작자 코멘트) |
+| *(참고: 써머리 코멘트)* | `build/assets/summary-comment.md` | 발행 후 **고정 댓글**에 복사할 순수 텍스트 4대 블록 (캐릭터 소개 + 이미지 규칙 + 세계관 + 등급 기준) |
 
 ---
 

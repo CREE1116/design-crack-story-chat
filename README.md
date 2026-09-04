@@ -18,9 +18,9 @@ Claude Code, Cowork, Codex 등 스킬을 읽는 에이전트에서 동작합니�
 | 통합 프롬프트 (UNSAFE) | 7,000자 | 항상 |
 | 프롤로그 | 1,000자 | 최초 1회 |
 | 시작 프롬프트 | 1,000자 | 도입부 |
-| 키워드북 | 항목당 400자, 최대 20개 | 조건부, **동시 3개까지** |
+| 키워드북 | 항목당 400자, 최대 20개 | 조건부, **동시 3개까지** (SAFE/UNSAFE 분리 지원) |
 
-여기에 더해 **파생 산출물** 두 종류가 `build/assets/`에 같이 나옵니다 — 목록에 붙일 요약 코멘트와 이미지 프롬프트. 크랙에 붙이는 것이 아니라 같은 원본에서 매번 다시 생성되는 제작 입력입니다.
+여기에 더해 **파생 산출물**(`build/assets/`)이 같이 나옵니다 — 웹 갤러리/배너 및 에셋 통계표 중심의 **상세설명(`story-description.md`)**, 인물명부/세계관/등급기준 중심의 **댓글 코멘트(`summary-comment.md`)**, 그리고 이미지 프롬프트. 크랙 프롬프트에 직접 붙이는 것이 아니라 같은 원본에서 매번 다시 생성되는 제작 입력입니다.
 
 여기서 사람이 반복해서 틀리는 지점이 정해져 있습니다.
 
@@ -158,11 +158,21 @@ scripts/                          릴리스 빌드, 전체 검증
 | `check_project_layout.py` | 원본 2개 + 산출물 5개 구조 |
 | `check_build.py` | 산출물별 글자수 상한 |
 | `check_prompt_length.py` | 개별 파일 글자수 (코드포인트·UTF-16 둘 다) |
-| `check_keyword_book.py` | 항목 형식, 400자, 키워드 1~5개, 중복 |
 | `check_symbols.py` | **정의 없이 쓰인 기호·이모지** |
-| `check_kb_slots.py` | **장면별 3슬롯 초과 시뮬레이션** |
 | `check_freshness.py` | **원본을 고치고 재컴파일 안 한 상태** |
 | `check_image_assets.py` | 인물 명부와 이미지 프롬프트 대조, 선두 태그 구별 |
+
+키워드북 검증은 `tools/crack-emu` 로 옮겼습니다. 항목 한도뿐 아니라 **실제로 턴을 돌려서** 3슬롯 거동을 측정합니다.
+
+| 명령 | 잡는 것 |
+|---|---|
+| `crack-emu --project <build> lint` | 400자·키워드 5개 한도, 중복, 부분문자열 오발동, 우선 모듈 등록 위치, 상시 발동 트리거 |
+| `crack-emu --project <build> replay <세션> <시나리오>` | 실제 턴에서의 출력 계약 위반 |
+| `crack-emu --project <build> report` | 슬롯 부족으로 드롭된 항목, 한 번도 안 걸린 항목, 매 턴 걸리는 항목 |
+| `crack-emu --project <build> sets` | 시작 세트 목록과 `build/` 반영 |
+| `crack-emu --project <build> serve` | 웹 UI — 직접 플레이하며 검증 결과 확인 |
+
+자세한 내용은 [tools/crack-emu/README.md](tools/crack-emu/README.md).
 
 한 번에 돌리려면,
 

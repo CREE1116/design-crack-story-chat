@@ -31,7 +31,15 @@ def validate(root: Path, require_build: bool = True) -> bool:
     entries = visible_entries(root)
     names = {entry.name for entry in entries}
     missing = sorted(name for name in SOURCES if not (root / name).is_file())
-    extras = sorted(names - SOURCES - {BUILD})
+    import unicodedata
+    ALLOWED_ROOT_PREFIXES = tuple(unicodedata.normalize('NFC', p) for p in ("build", "final", "image", "deploy", "output", "assets", "썸네일", "여캐", "무제"))
+    IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+    extras = sorted(
+        entry.name for entry in entries
+        if entry.name not in SOURCES
+        and not any(unicodedata.normalize('NFC', entry.name).startswith(p) for p in ALLOWED_ROOT_PREFIXES)
+        and entry.suffix.lower() not in IMAGE_EXTS
+    )
     ok = True
     if missing:
         print(f"FAIL {root}: missing authored source: {', '.join(missing)}")

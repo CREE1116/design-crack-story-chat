@@ -227,7 +227,7 @@ python3 check_symbols.py build/integrated-prompt-safe.md
 **대처.**
 
 - 모델이 말해야 하는 고유명사는 전부 본문 안에 넣습니다.
-- `check_kb_slots.py`로 시뮬레이션해서 그 장면에서 밀리는지 확인합니다.
+- `crack-emu replay` 로 그 장면을 실제로 돌리고 `report` 의 `slot_overflow` 에서 밀렸는지 확인합니다.
 - 밀린다면, 그 항목의 핵심 정보가 통합 프롬프트에 한 줄 씨앗으로 있는지 봅니다. 없으면 넣거나 등록 순서를 바꿉니다.
 
 ---

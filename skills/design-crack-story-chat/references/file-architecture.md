@@ -13,7 +13,8 @@ story-chat/
     ├── integrated-prompt-safe.md  # ≤7,000 chars
     ├── integrated-prompt-unsafe.md # ≤7,000 chars
     ├── start-prompt.md            # ≤1,000 chars
-    ├── keyword-book.md            # one registration sheet; entry text ≤400 chars
+    ├── keyword-book-safe.md       # safe registration sheet; entry text ≤400 chars (or unified keyword-book.md)
+    ├── keyword-book-unsafe.md     # unsafe registration sheet with 19+ mature module on top (≤400 chars/entry)
     └── assets/                    # derived production inputs; never pasted into Crack
         ├── story-description.md   # story description for publish page (Markdown supported)
         ├── summary-comment.md     # plain-text listing/comment blurb (Markdown not supported)

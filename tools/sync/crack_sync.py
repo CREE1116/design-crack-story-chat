@@ -51,6 +51,14 @@ class ShortcutEntry:
 
 
 @dataclass
+class DepartmentStartSetting:
+    dept_id: str
+    title: str
+    prologue: str
+    start_prompt: str
+
+
+@dataclass
 class ProjectArtifacts:
     project_name: str
     title: str
@@ -59,10 +67,77 @@ class ProjectArtifacts:
     system_prompt: str
     keyword_entries: list[KeywordEntry] = field(default_factory=list)
     shortcuts: list[ShortcutEntry] = field(default_factory=list)
+    departments: list[DepartmentStartSetting] = field(default_factory=list)
     summary_comment: str = ""
     story_description: str = ""
     short_summary: str = ""
     variant: str = "safe"
+
+
+# ── 시작 세트 ────────────────────────────────────────────────────
+# `start-sets/<id>/{meta.md,prologue.md,start-prompt.md}` 가 정본이고
+# `departments/` 는 구버전 이름이다. 폴더를 만들면 그대로 잡히며,
+# 어떤 프로젝트의 폴더 이름도 이 파일에 적지 않는다.
+START_SET_DIRS = ("start-sets", "departments")
+
+
+def parse_set_meta(folder: Path, index: int) -> dict:
+    """meta.md 를 읽는다. 전부 선택 사항이며 없으면 폴더명과 디렉터리 순서를 쓴다."""
+    fallback = re.sub(r"^\d+[_-]", "", folder.name)
+    meta = {"title": fallback, "description": "", "default": False, "order": index}
+    path = folder / "meta.md"
+    if not path.exists():
+        return meta
+    desc: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            if meta["title"] == fallback:
+                meta["title"] = stripped.lstrip("#").strip() or fallback
+            continue
+        m = re.match(r"^-\s*(default|order|title)\s*:\s*(.+)$", stripped, re.IGNORECASE)
+        if m:
+            key, value = m.group(1).lower(), m.group(2).strip()
+            if key == "default":
+                meta["default"] = value.lower() in {"true", "yes", "1", "y"}
+            elif key == "order":
+                try:
+                    meta["order"] = int(value)
+                except ValueError:
+                    pass
+            else:
+                meta["title"] = value
+            continue
+        if stripped:
+            desc.append(stripped)
+    meta["description"] = " ".join(desc).strip()
+    return meta
+
+
+def load_start_sets(project_dir: Path) -> list[DepartmentStartSetting]:
+    """프롤로그와 첫 상황을 한 쌍으로 묶은 시작 세트를 모두 읽는다."""
+    out: list[tuple[int, DepartmentStartSetting]] = []
+    for dirname in START_SET_DIRS:
+        base = project_dir / dirname
+        if not base.is_dir():
+            continue
+        for i, folder in enumerate(sorted(p for p in base.iterdir() if p.is_dir())):
+            p_file, s_file = folder / "prologue.md", folder / "start-prompt.md"
+            p_text = p_file.read_text(encoding="utf-8").strip() if p_file.exists() else ""
+            s_text = s_file.read_text(encoding="utf-8").strip() if s_file.exists() else ""
+            if not (p_text or s_text):
+                continue
+            meta = parse_set_meta(folder, i)
+            out.append((meta["order"], DepartmentStartSetting(
+                dept_id=folder.name,
+                title=meta["title"],
+                prologue=p_text,
+                start_prompt=s_text,
+            )))
+        if out:
+            break
+    out.sort(key=lambda x: (x[0], x[1].dept_id))
+    return [d for _, d in out]
 
 
 def parse_keywords(raw: str | None) -> list[str]:
@@ -208,7 +283,8 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     prologue_path = build_dir / "prologue.md"
     start_prompt_path = build_dir / "start-prompt.md"
     sys_prompt_path = build_dir / f"integrated-prompt-{variant}.md"
-    kb_path = build_dir / "keyword-book.md"
+    kb_variant_path = build_dir / f"keyword-book-{variant}.md"
+    kb_path = kb_variant_path if kb_variant_path.exists() else (build_dir / "keyword-book.md")
     summary_path = build_dir / "assets" / "summary-comment.md"
     story_desc_path = build_dir / "assets" / "story-description.md"
     story_path = project_dir / "story.md"
@@ -256,6 +332,9 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
 
     keyword_entries, shortcuts = parse_keyword_book(kb_text)
 
+    # 3. 시작 세트 로드 — references/start-sets.md 규약
+    departments = load_start_sets(project_dir)
+
     return ProjectArtifacts(
         project_name=project_dir.name,
         title=title,
@@ -264,6 +343,7 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
         system_prompt=system_prompt,
         keyword_entries=keyword_entries,
         shortcuts=shortcuts,
+        departments=departments,
         summary_comment=summary_comment,
         story_description=story_description,
         short_summary=short_summary,
@@ -331,6 +411,10 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
     print("=" * 75)
     print(f"1. 📖 프롤로그 (Prologue)           : {len(artifacts.prologue):,}자 / 1,000자")
     print(f"2. 🚀 시작 프롬프트 (Start Prompt)     : {len(artifacts.start_prompt):,}자 / 1,000자")
+    if artifacts.departments:
+        print(f"   🏢 부서별 시작 설정 (Departments) : 총 {len(artifacts.departments)}개 등록 예정")
+        for i, d in enumerate(artifacts.departments, 1):
+            print(f"      [{i:02d}] {d.title:<24} | 프롤로그 {len(d.prologue):,}자 | 시작상황 {len(d.start_prompt):,}자")
     print(f"3. 🧠 메인 시스템 프롬프트 ({artifacts.variant}) : {len(artifacts.system_prompt):,}자 / 7,000자")
     print(f"4. 📚 키워드북 항목 (Keyword Book)    : 총 {len(artifacts.keyword_entries)}개 등록 예정")
     for i, e in enumerate(artifacts.keyword_entries, 1):
@@ -481,16 +565,50 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
     if start_tab.count() > 0:
         start_tab.click()
         time.sleep(1.5)
-        all_tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
-        if len(all_tas) >= 1:
-            fill_react_input(page, all_tas[0], artifacts.prologue)
-            print(f"   ✅ [프롤로그] 주입 완료 ({len(artifacts.prologue):,}자)")
-        if len(all_tas) >= 2:
-            # [1] = 시작 상황 (사용자의 역할, 세계관 등) -> artifacts.start_prompt 주입
-            fill_react_input(page, all_tas[1], artifacts.start_prompt)
-            print(f"   ✅ [시작 프롬프트 (시작 상황)] 주입 완료 ({len(artifacts.start_prompt):,}자)")
-        elif len(all_tas) == 1:
-            print("   ⚠️ 시작 상황 입력창을 찾지 못했습니다.")
+
+        if artifacts.departments:
+            print(f"\n🏢 [다중 시작 설정 주입 시작] (총 {len(artifacts.departments)}개 부서)")
+            for idx, dept in enumerate(artifacts.departments):
+                print(f"   [{idx+1}/{len(artifacts.departments)}] '{dept.title}' 주입 중...", end=" ", flush=True)
+                if idx > 0:
+                    add_btn = page.locator("button:visible:has-text('설정 추가')").first
+                    if add_btn.count() > 0:
+                        add_btn.click()
+                        time.sleep(1.5)
+                    else:
+                        print("⚠️ '설정 추가' 버튼 못 찾음", end=" ")
+
+                # 1. 설정 이름(제목) 입력 (placeholder='상황, 등장인물 등')
+                title_inputs = page.locator("input:visible[placeholder*='상황'], input:visible[placeholder*='등장인물']").all()
+                if title_inputs:
+                    fill_react_input(page, title_inputs[-1], dept.title)
+
+                # 2. 프롤로그 textarea (첫 번째 textarea)
+                tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
+                if len(tas) >= 1:
+                    fill_react_input(page, tas[0], dept.prologue)
+
+                # 3. 시작 상황 textarea (역할/세계관 placeholder 또는 두 번째)
+                situ_ta = page.locator("textarea:visible[placeholder*='역할'], textarea:visible[placeholder*='세계관']").all()
+                if situ_ta:
+                    fill_react_input(page, situ_ta[-1], dept.start_prompt)
+                elif len(tas) >= 2:
+                    fill_react_input(page, tas[1], dept.start_prompt)
+
+                print("완료!")
+                time.sleep(0.5)
+            print(f"   ✅ 총 {len(artifacts.departments)}개 부서 시작 설정 주입 완료!")
+        else:
+            all_tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
+            if len(all_tas) >= 1:
+                fill_react_input(page, all_tas[0], artifacts.prologue)
+                print(f"   ✅ [프롤로그] 주입 완료 ({len(artifacts.prologue):,}자)")
+            if len(all_tas) >= 2:
+                # [1] = 시작 상황 (사용자의 역할, 세계관 등) -> artifacts.start_prompt 주입
+                fill_react_input(page, all_tas[1], artifacts.start_prompt)
+                print(f"   ✅ [시작 프롬프트 (시작 상황)] 주입 완료 ({len(artifacts.start_prompt):,}자)")
+            elif len(all_tas) == 1:
+                print("   ⚠️ 시작 상황 입력창을 찾지 못했습니다.")
     else:
         print("   ⚠️ '시작 설정' 탭 못 찾음")
 

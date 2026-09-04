@@ -92,7 +92,7 @@ World systems, where the premise defines them:
 
 ## Crack prompt assembly
 
-- There are exactly five final artifacts: `build/prologue.md`, `build/integrated-prompt-safe.md`, `build/integrated-prompt-unsafe.md`, `build/start-prompt.md`, and `build/keyword-book.md`.
+- There are four core final artifacts (`build/prologue.md`, `build/integrated-prompt-safe.md`, `build/integrated-prompt-unsafe.md`, `build/start-prompt.md`) plus the keyword-book artifacts (`build/keyword-book-safe.md` and `build/keyword-book-unsafe.md`, or unified `build/keyword-book.md`).
 - The two authoring sources are not treated as upload fields, and no separate system-prompt source exists.
 - Both integrated prompts include required system, character, reusable world/story, generation, and output rules and are independently 7,000 characters or fewer.
 - SAFE and UNSAFE are regenerated from one canon; their differences are limited to presentation intensity and content handling.
@@ -109,8 +109,8 @@ World systems, where the premise defines them:
 - The intake form is never emitted by the model; missing values trigger only a short request for those values.
 - Prologue provides lead-in without deciding player action; starting situation stops at the first player-controlled decision.
 - Prologue and starting situation connect without duplicating the same incident description.
-- The keyword-book registration sheet is the fifth artifact. Current conversation context is not a sixth artifact, and no dialogue-history/`Previous History` field or file is emitted.
-- `scripts/check_project_layout.py STORY_CHAT_DIR` passes and confirms exactly two authored Markdown sources plus the five required regular build files; no obsolete split prompt, system source, or extra build directory remains.
+- The keyword-book registration sheets (`build/keyword-book-safe.md` / `build/keyword-book-unsafe.md`, or `build/keyword-book.md`) provide conditional trigger modules. Current conversation context is not a prompt artifact, and no dialogue-history/`Previous History` field or file is emitted.
+- `scripts/check_project_layout.py STORY_CHAT_DIR` passes and confirms exactly two authored Markdown sources plus the valid build files (core 4 + valid keyword book set); no obsolete split prompt, system source, or extra build directory remains.
 - The working draft targets 6,200–6,500 characters unless the task requires otherwise.
 - Character count was measured on the actual final string, including whitespace and Markdown syntax.
 - The final check used `scripts/check_prompt_length.py --require-single` on prologue, SAFE integrated, UNSAFE integrated, and start prompt separately.
@@ -138,7 +138,7 @@ World systems, where the premise defines them:
 - Every entry declares which Crack setting is checked and which value/state permits activation.
 - Every entry has 1–5 total keywords, including aliases and spacing variants.
 - Every exact injected entry text is 400 characters or fewer, including whitespace and Markdown.
-- `build/keyword-book.md` contains registration fields and separately delimited entry texts; it is never pasted whole into either integrated prompt.
+- Each keyword book file (`build/keyword-book-safe.md`, `build/keyword-book-unsafe.md`, or `build/keyword-book.md`) contains registration fields and separately delimited entry texts; it is never pasted whole into either integrated prompt.
 - Every entry owns one coherent optional topic.
 - Trigger words are specific, include necessary aliases, and avoid common ambiguous words.
 - Trigger collisions and overlapping entries were tested.
@@ -154,11 +154,11 @@ World systems, where the premise defines them:
 - A needed next-turn entry has a story-natural cue in the preceding NPC/narration output; no cue exists solely to force-load or leak a secret.
 - Unknown Crack keyword-book fields beyond the confirmed three-entry cap are marked as unconfirmed rather than invented.
 - Entry IDs and aliases are unique across the entire keyword book; simultaneous activation load is reviewed against the three-entry cap.
-- Each entry block uses the field names the validator enforces — `activation_setting`, `activation_when`, and `keywords` — with `keywords` as the only bracketed list, and `scripts/check_keyword_book.py build/keyword-book.md` passes on every block.
-- The three-slot cap was checked by **simulation, not by inspection**: a list of realistic scenes, each with the words it would plausibly contain, run against every entry's keywords with `scripts/check_kb_slots.py`. Reviewing entries one at a time does not find collisions; only enumerating scenes does.
+- Each entry block uses the field names the parser expects (`## <Title>`, `- 키워드: ...`, `- 내용: ...`), and `crack-emu --project <build> lint` reports no `error` for any block in any keyword book artifact. It enforces 1..5 keywords, the 400-char ceiling with a 360-char target, duplicate keywords across entries, and keywords that only fire as a substring of a longer word (`라임` inside `슬라임`).
+- The three-slot cap was checked against **real turns, not a written scene list**: run a scenario with `crack-emu replay`, then `crack-emu report`. The report gives per-entry fire counts, which entries lost their slot on which turns (`slot_overflow`), match source (previous turn vs. this input), and entries that never fired. Inspecting entries one at a time finds none of this.
 - Where a simulated scene exceeds three entries, the fix is recorded: entries reordered so the losses fall across different factions or topics, or a keyword narrowed, or an entry merged. Registration order is part of the artifact, not an accident of authoring order.
 - When entry order or keywords changed after a prior registration, the handoff lists exactly which entries must be re-registered and states that the order changed. Crack registration is manual; a silent reorder desynchronizes the live product from the build.
-- Entries are classified by type and registered in that order — scene-deepening, then roster, then lookup, then filler. Any effectively-always-on entry sits at the bottom, there are at most two of them, and each one's body is expendable: a turn without it still works. `check_kb_slots.py` reports match rate per entry and fails when a high-match entry is registered high.
+- Entries are classified by type and registered in that order — scene-deepening, then roster, then lookup, then filler. Any effectively-always-on entry sits at the bottom, there are at most two of them, and each one's body is expendable: a turn without it still works. `lint` fails a priority module (19+, kiss, special-scene) registered outside the top three (`priority_module_low`) and a trigger that matches a fixed HUD label (`always_on_trigger`); `report` flags a high-match entry registered high (`high_match_entry_registered_high`).
 - Where a set of characters or factions can be named all at once and outnumbers the three slots, a thin roster entry carrying names and affiliations sits above the individual detail entries — or the names live in the integrated prompt. Otherwise the member that loses the slot race has no name loaded at all and gets invented.
 - **Reachability:** every proper noun the model is expected to *say* — an alias, an epithet, a place name, a term of art — appears inside loaded text, not only in the canon source. Entry titles, headings, IDs, and field names are registration metadata and are not injected; a name that exists only in a title is unreachable and the model will invent a substitute.
 

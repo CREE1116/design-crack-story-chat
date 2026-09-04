@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>crack-emu</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#161922; --panel2:#1c2029; --line:#272c38;
+  --fg:#e6e8ee; --dim:#9aa2b5; --faint:#6b7488;
+  --accent:#7aa2f7; --ok:#7dcfa0; --warn:#e0af68; --err:#f7768e; --crit:#ff5d7a;
+  --user:#2a3550;
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif;
+  background:var(--bg);color:var(--fg);height:100vh;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:300px 1fr 340px;height:100vh}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.col.left{background:var(--panel);border-right:1px solid var(--line)}
+.col.right{background:var(--panel);border-left:1px solid var(--line)}
+.hd{padding:10px 14px;border-bottom:1px solid var(--line);font-weight:600;font-size:13px;
+  display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.hd .sub{font-weight:400;color:var(--faint);font-size:12px}
+.scroll{overflow-y:auto;flex:1;min-height:0}
+.sec{padding:12px 14px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+label{display:block;font-size:11px;color:var(--dim);margin:8px 0 3px}
+input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);
+  border-radius:6px;padding:6px 8px;font-size:13px}
+textarea{resize:vertical;min-height:56px;line-height:1.5}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+  padding:7px 10px;cursor:pointer;font-size:12px}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);color:#0f1115;border-color:var(--accent);font-weight:600}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{display:inline-block;padding:2px 7px;border-radius:99px;background:var(--panel2);
+  border:1px solid var(--line);font-size:11px;color:var(--dim);margin:2px 3px 2px 0}
+.chip.on{border-color:var(--accent);color:var(--accent)}
+.chip{cursor:pointer}
+.chip .x{margin-left:6px;opacity:.5;font-weight:700}
+.chip .x:hover{opacity:1;color:var(--err)}
+
+/* chat */
+.chat{padding:20px 26px;display:flex;flex-direction:column;gap:18px}
+.msg{max-width:none}
+.msg.user{align-self:flex-end;background:var(--user);border:1px solid #3a4straight;
+  border-radius:12px 12px 2px 12px;padding:9px 13px;max-width:70%;white-space:pre-wrap}
+.msg.assistant{border-left:2px solid var(--line);padding-left:16px}
+.msg.assistant.bad{border-left-color:var(--err)}
+.msg .who{font-size:11px;color:var(--faint);margin-bottom:6px}
+.narr{color:#c8cee0;font-style:italic;margin:8px 0}
+.line{margin:6px 0}
+.line .nm{color:var(--accent);font-weight:600}
+.sfx{background:var(--panel2);border-radius:4px;padding:1px 5px;font-family:ui-monospace,monospace;font-size:12px}
+.hud{background:#12151d;border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  font-family:ui-monospace,SFMono-Regular,monospace;font-size:11.5px;line-height:1.55;
+  white-space:pre-wrap;color:#b9c0d4;margin-top:10px;overflow-x:auto}
+.msg img{max-width:210px;border-radius:8px;display:block;margin:8px 0 2px}
+.imgfail{font-size:11px;color:var(--faint);font-family:ui-monospace,monospace;
+  border:1px dashed var(--line);border-radius:6px;padding:4px 8px;display:inline-block;margin:6px 0}
+.turnbar{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:11px;color:var(--faint);flex-wrap:wrap}
+.turnbar button{padding:1px 8px;font-size:11px;border-radius:99px}
+.raw{background:#12151d;border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  font-family:ui-monospace,SFMono-Regular,monospace;font-size:11.5px;line-height:1.6;
+  white-space:pre-wrap;word-break:break-word;color:#b9c0d4;margin-top:10px}
+.pill{padding:1px 7px;border-radius:99px;border:1px solid var(--line)}
+.pill.ok{color:var(--ok);border-color:#2c4a3a}
+.pill.warn{color:var(--warn);border-color:#4a3c22}
+.pill.err{color:var(--err);border-color:#4d2632}
+
+/* composer */
+.composer{flex:0 0 auto;border-top:1px solid var(--line);padding:10px 14px;background:var(--panel)}
+.composer .shorts{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.composer .shorts button{padding:3px 9px;font-size:11px;border-radius:99px}
+.composer .box{display:flex;gap:8px;align-items:flex-end}
+.composer textarea{min-height:44px;max-height:150px}
+
+/* qa */
+.f{border-left:3px solid var(--line);padding:7px 10px;margin:6px 0;background:var(--panel2);
+  border-radius:0 6px 6px 0;font-size:12px}
+.f.critical{border-left-color:var(--crit)} .f.error{border-left-color:var(--err)}
+.f.warn{border-left-color:var(--warn)} .f.info{border-left-color:var(--faint)}
+.f .r{font-family:ui-monospace,monospace;font-size:11px;color:var(--dim)}
+.f .m{margin-top:2px}
+.f .e{margin-top:4px;font-family:ui-monospace,monospace;font-size:11px;color:var(--faint);
+  word-break:break-all}
+.slot{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:start;margin:6px 0}
+.slot .n{font-family:ui-monospace,monospace;font-size:11px;color:var(--faint);padding-top:8px}
+.slot textarea{min-height:44px}
+.memnote{font-size:11.5px;color:var(--faint);line-height:1.6;margin:2px 0 10px}
+.memgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:12px}
+.memstat{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.memstat b{display:block;font-size:17px;margin-bottom:2px}
+.memstat span{font-size:11px;color:var(--faint)}
+.evicted{background:#12151d;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+  font-size:11.5px;line-height:1.6;color:#9aa2b5;max-height:180px;overflow:auto}
+.empty{color:var(--faint);font-size:12px;padding:14px;text-align:center}
+.kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--dim)}
+.kv b{color:var(--fg);font-weight:600}
+dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:12px;
+  width:min(900px,92vw);height:min(80vh,760px);padding:0}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog .body{overflow:auto;height:calc(100% - 46px);padding:14px 18px}
+dialog pre{white-space:pre-wrap;word-break:break-word;font-size:11.5px;line-height:1.55;
+  font-family:ui-monospace,monospace;color:#b9c0d4;margin:0 0 18px}
+dialog h4{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.err-banner{background:#3a1f27;border:1px solid #6b2f3d;color:#ffb3c0;padding:8px 12px;
+  border-radius:6px;margin:10px 14px;font-size:12px;white-space:pre-wrap}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--line);
+  border-top-color:var(--accent);border-radius:50%;animation:s .7s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── left: session + settings ─────────────────────────── -->
+  <div class="col left">
+    <div class="hd">설정 <span class="sub" id="projName">…</span></div>
+    <div class="scroll">
+      <div class="sec">
+        <h3>세션</h3>
+        <label>세션 ID</label>
+        <input id="sid" value="my1">
+        <label>시작 세트 <span style="color:var(--faint)">프롤로그 + 첫 상황 한 쌍</span></label>
+        <select id="startSet"></select>
+        <div id="startSetInfo" style="font-size:10.5px;color:var(--faint);margin-top:4px"></div>
+        <div class="btns">
+          <button class="primary" id="btnStart">시작 / 불러오기</button>
+          <button id="btnReset">초기화</button>
+          <button id="btnDelete">삭제</button>
+        </div>
+        <div id="sessList" style="margin-top:8px"></div>
+      </div>
+
+      <div class="sec">
+        <h3>플레이어 프로필</h3>
+        <label>페르소나 이름</label>
+        <input id="pname" placeholder="{{user}}">
+        <label>페르소나 본문 — <span style="color:var(--faint)">프롬프트 최상단 <code>#&nbsp;… Information</code> 블록</span></label>
+        <textarea id="pbody" rows="5" placeholder="이름 / 나이 / 성격 / 배경 등"></textarea>
+        <label>유저노트 — <span style="color:var(--faint)">최하단 <code>&lt;system_note&gt;</code>, 최강 우선순위</span></label>
+        <textarea id="unote" rows="4" placeholder="매 턴 지켜야 할 지침"></textarea>
+        <label>주어진 목표</label>
+        <input id="goal" placeholder="예: 수습 통과">
+      </div>
+
+      <div class="sec">
+        <h3>런타임</h3>
+        <div class="row">
+          <div><label>변형</label><select id="variant"></select></div>
+          <div><label>충실도</label><select id="fidelity">
+            <option value="crack">crack</option><option value="extended">extended</option>
+          </select></div>
+        </div>
+        <div class="row">
+          <div><label>컨텍스트(턴)</label><input id="window_turns" type="number" min="0"></div>
+          <div><label>키워드 스캔(턴)</label><input id="scan_turns" type="number" min="0"></div>
+        </div>
+        <div class="row">
+          <div><label>회상 방식</label><select id="recall">
+            <option value="recent">recent</option><option value="lexical">lexical</option>
+            <option value="manual">manual</option>
+          </select></div>
+          <div><label>동시발동 상한</label><input id="max_entries" type="number" min="0" placeholder="무제한"></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>모델</h3>
+        <label>프로바이더</label><select id="provider"></select>
+        <label>모델 ID <span style="color:var(--faint)">(비우면 기본값)</span></label>
+        <input id="model" placeholder="">
+        <label>temperature</label><input id="temperature" type="number" step="0.05" min="0" max="2">
+        <label>API 키 <span id="keyState" style="color:var(--faint)"></span></label>
+        <input id="apikey" type="password" autocomplete="off" placeholder="이 프로바이더의 키">
+        <div class="btns">
+          <button id="btnKeySave">키 저장</button>
+          <button id="btnKeyClear">키 삭제</button>
+          <button id="btnHealth">연결 확인</button>
+        </div>
+        <div style="font-size:10.5px;color:var(--faint);margin-top:6px;line-height:1.5">
+          <span id="keyPersist"></span>
+          세션 파일에 저장되지 않고 브라우저로 되돌아가지 않습니다.
+          환경변수로 이미 넣었다면 비워 두세요.
+        </div>
+        <div id="health" style="margin-top:8px;font-size:11px;color:var(--faint)"></div>
+      </div>
+
+      <div class="sec">
+        <h3>빌드 점검</h3>
+        <div class="btns"><button id="btnLint">lint 실행</button></div>
+        <div id="lint"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── center: chat ─────────────────────────────────────── -->
+  <div class="col">
+    <div class="hd">
+      대화
+      <span class="sub" id="turnInfo"></span>
+      <span style="margin-left:auto;display:flex;gap:6px">
+        <button id="btnRawAll">원문 보기</button>
+        <button id="btnExport">.md 내보내기</button>
+        <button id="btnMemory">메모리</button>
+        <button id="btnPrompt">프롬프트 보기</button>
+      </span>
+    </div>
+    <div id="errBanner"></div>
+    <div class="scroll"><div class="chat" id="chat">
+      <div class="empty">왼쪽에서 세션을 시작하세요.</div>
+    </div></div>
+    <div class="composer">
+      <div class="shorts" id="shorts"></div>
+      <div class="box">
+        <textarea id="input" rows="1" placeholder="입력 후 Enter (Shift+Enter 줄바꿈)"></textarea>
+        <button class="primary" id="btnSend" style="height:44px;padding:0 18px">전송</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── right: QA ────────────────────────────────────────── -->
+  <div class="col right">
+    <div class="hd">QA 검증 <span class="sub" id="qaVerdict"></span></div>
+    <div class="scroll">
+      <div class="sec">
+        <h3>이번 턴 위반</h3>
+        <div id="findings"><div class="empty">아직 없음</div></div>
+      </div>
+      <div class="sec">
+        <h3>발동된 키워드북</h3>
+        <div id="acts"><div class="empty">아직 없음</div></div>
+      </div>
+      <div class="sec">
+        <h3>메모리 / 프롬프트 <span style="text-transform:none;letter-spacing:0;cursor:pointer;color:var(--accent)" onclick="openMemory().catch(e=>showErr(e.message))">열기</span></h3>
+        <div id="stats"><div class="empty">아직 없음</div></div>
+      </div>
+      <div class="sec">
+        <h3>세션 누적</h3>
+        <div id="cum"><div class="empty">아직 없음</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog id="memDlg">
+  <div class="hd">메모리 <span class="sub" id="memSub"></span>
+    <span style="margin-left:auto;display:flex;gap:6px">
+      <button id="btnMemRefresh">지금 갱신</button>
+      <button class="primary" id="btnMemSave">저장</button>
+      <button onclick="memDlg.close()">닫기</button>
+    </span>
+  </div>
+  <div class="body" id="memBody"></div>
+</dialog>
+
+<dialog id="dlg">
+  <div class="hd">조립된 프롬프트 <span style="margin-left:auto"><button onclick="dlg.close()">닫기</button></span></div>
+  <div class="body" id="dlgBody"></div>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = async (path, opts) => {
+  const r = await fetch(path, opts);
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j;
+};
+const post = (path, body) => api(path, {
+  method: 'POST', headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify(body)
+});
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => (
+  {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let PROJ = null, SID = null, KEYS = {}, CUM = {turns: 0, byRule: {}, counts: {}};
+
+function renderKeyState(keys) {
+  KEYS = keys || KEYS;
+  const st = (KEYS || {})[$('provider').value];
+  const el = $('keyState'), input = $('apikey');
+  if (!st) { el.textContent = ''; return; }
+  const pn = document.getElementById('keyPersist');
+  if (pn) pn.textContent = st.persistent
+    ? '키는 --key-file 에 저장되어 서버를 껐다 켜도 유지됩니다.'
+    : '키는 서버 프로세스 메모리에만 남아 서버를 끄면 사라집니다 (--key-file 로 유지 가능).';
+  input.value = '';
+  if (!st.required) {
+    el.innerHTML = '<span style="color:var(--ok)">· 키 불필요</span>';
+    input.disabled = true; input.placeholder = '이 프로바이더는 키가 필요 없습니다';
+  } else {
+    input.disabled = false;
+    input.placeholder = st.env_var + ' 또는 여기에 입력';
+    el.innerHTML = st.from_ui
+      ? '<span style="color:var(--ok)">· UI 에 저장됨</span>'
+      : (st.from_env
+          ? '<span style="color:var(--ok)">· ' + esc(st.env_var) + ' 환경변수 사용 중</span>'
+          : '<span style="color:var(--err)">· 키 없음</span>');
+  }
+}
+
+function settings() {
+  return {
+    fidelity: $('fidelity').value,
+    window_turns: +$('window_turns').value || 0,
+    scan_turns: +$('scan_turns').value,
+    max_entries: +$('max_entries').value || null,
+    recall: $('recall').value,
+    provider: $('provider').value,
+    model: $('model').value.trim(),
+    temperature: +$('temperature').value,
+  };
+}
+function persona() {
+  return {
+    persona_name: $('pname').value.trim() || '{{user}}',
+    persona_body: $('pbody').value,
+    user_note: $('unote').value,
+    goal: $('goal').value,
+  };
+}
+function payload(extra) {
+  return Object.assign({id: SID, variant: $('variant').value,
+                        start_set: $('startSet').value,
+                        settings: settings()}, persona(), extra || {});
+}
+function renderStartSets(sets, selected) {
+  const el = $('startSet');
+  el.innerHTML = (sets || []).map(x =>
+    `<option value="${esc(x.id)}"${x.id === selected ? ' selected' : ''}>${esc(x.title)}</option>`
+  ).join('');
+  showStartSetInfo();
+}
+function showStartSetInfo() {
+  const x = (PROJ.start_sets || []).find(s => s.id === $('startSet').value);
+  $('startSetInfo').textContent = x
+    ? `${x.source} · 프롤로그 ${x.prologue_chars}자 · 첫 상황 ${x.opening_chars}자`
+      + (x.description ? ` — ${x.description}` : '')
+    : '';
+}
+function showErr(msg) {
+  $('errBanner').innerHTML = msg ? `<div class="err-banner">${esc(msg)}</div>` : '';
+}
+
+// ── rendering a roleplay reply ───────────────────────────────────
+function renderReply(text) {
+  const out = [];
+  const parts = text.split(/```(\w*)\n([\s\S]*?)```/g);
+  for (let i = 0; i < parts.length; i += 3) {
+    if (parts[i]) out.push(renderProse(parts[i]));
+    if (parts[i + 2] !== undefined) {
+      out.push(`<div class="hud">${esc(parts[i + 2])}</div>`);
+    }
+  }
+  return out.join('');
+}
+function renderProse(text) {
+  return text.split('\n').map(raw => {
+    const s = raw.trim();
+    if (!s) return '';
+    let m = s.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (m) return `<img src="${esc(m[2])}" alt="${esc(m[1])}" loading="lazy"
+      onerror="this.outerHTML='<div class=&quot;imgfail&quot;>🖼 ${esc(m[2])}</div>'">`;
+    m = s.match(/^([^|]{1,40})\s*\|\s*[""](.*)[""]$/);
+    if (m) return `<div class="line"><span class="nm">${esc(m[1].trim())}</span> · ${inline(m[2])}</div>`;
+    if (/^\*.*\*$/.test(s)) return `<div class="narr">${inline(s.slice(1, -1))}</div>`;
+    return `<div class="line">${inline(s)}</div>`;
+  }).join('');
+}
+function inline(s) {
+  return esc(s).replace(/`([^`]+)`/g, '<span class="sfx">$1</span>')
+               .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+
+let RAW_ALL = false;
+
+function addMsg(role, content, res) {
+  const chat = $('chat');
+  if (chat.querySelector('.empty')) chat.innerHTML = '';
+  const d = document.createElement('div');
+  const bad = res && !res.qa.passed;
+  d.className = `msg ${role}${bad ? ' bad' : ''}`;
+  d.dataset.md = content;
+  d.dataset.role = role;
+  if (role === 'user') {
+    d.textContent = content;
+  } else {
+    d.innerHTML = `<div class="who">AI</div>`
+      + `<div class="rendered">${renderReply(content)}</div>`
+      + `<div class="raw" hidden>${esc(content)}</div>`;
+    if (res) d.insertAdjacentHTML('beforeend', turnBar(res));
+    applyRaw(d, RAW_ALL);
+  }
+  chat.appendChild(d);
+  d.scrollIntoView({behavior: 'smooth', block: 'end'});
+}
+function applyRaw(msgEl, raw) {
+  const r = msgEl.querySelector('.rendered'), w = msgEl.querySelector('.raw');
+  if (!r || !w) return;
+  r.hidden = raw; w.hidden = !raw;
+  const b = msgEl.querySelector('.rawtoggle');
+  if (b) b.textContent = raw ? '렌더' : '원문';
+}
+window.toggleRaw = (btn) => {
+  const msgEl = btn.closest('.msg');
+  applyRaw(msgEl, msgEl.querySelector('.rendered').hidden === false);
+};
+function turnBar(res) {
+  const c = res.qa.counts, bits = [];
+  if (res.qa.passed) bits.push('<span class="pill ok">계약 통과</span>');
+  if (c.critical) bits.push(`<span class="pill err">critical ${c.critical}</span>`);
+  if (c.error) bits.push(`<span class="pill err">error ${c.error}</span>`);
+  if (c.warn) bits.push(`<span class="pill warn">warn ${c.warn}</span>`);
+  bits.push(`<span class="pill">${res.reply.length}자</span>`);
+  bits.push(`<span class="pill">프롬프트 ${res.prompt_stats.total_chars}자</span>`);
+  if (res.shortcut) bits.push(`<span class="pill">${esc(res.shortcut)}</span>`);
+  bits.push('<button class="rawtoggle" onclick="toggleRaw(this)">원문</button>');
+  return `<div class="turnbar">${bits.join('')}</div>`;
+}
+
+function renderFindings(fs) {
+  $('findings').innerHTML = fs.length ? fs.map(f => `
+    <div class="f ${f.severity}">
+      <div class="r">${esc(f.severity)} · ${esc(f.rule)}${f.line ? ' · L' + f.line : ''}</div>
+      <div class="m">${esc(f.message)}</div>
+      ${f.evidence ? `<div class="e">${esc(f.evidence)}</div>` : ''}
+      ${f.clause ? `<div class="e">계약: ${esc(f.clause)}</div>` : ''}
+    </div>`).join('') : '<div class="empty">위반 없음</div>';
+}
+function renderActs(acts) {
+  $('acts').innerHTML = acts.length ? acts.map(a => `
+    <div class="f info">
+      <div class="m">${esc(a.title)}</div>
+      <div class="e">${esc(a.matched.join(', '))} · ${esc(a.where.join(', '))} · ${a.chars}자</div>
+    </div>`).join('') : '<div class="empty">발동 없음</div>';
+}
+function renderStats(res) {
+  const p = res.prompt_stats;
+  const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+  $('stats').innerHTML =
+    kv('충실도', p.fidelity) + kv('변형', p.variant) +
+    kv('컨텍스트 창', p.window_turns + '턴') +
+    kv('이력 메시지', p.history_messages) +
+    kv('system', p.system_chars + '자') +
+    kv('총 프롬프트', p.total_chars + '자') +
+    kv('요약메모리', res.summaries.length + '/4') +
+    kv('장기기억', res.recalled.length + '/3') +
+    (res.usage && res.usage.total_tokens ? kv('토큰', res.usage.total_tokens) : '');
+}
+function renderCum() {
+  const rules = Object.entries(CUM.byRule).sort((a, b) => b[1] - a[1]);
+  const kv = (k, v) => `<div class="kv"><span>${esc(k)}</span><b>${v}</b></div>`;
+  $('cum').innerHTML = CUM.turns
+    ? kv('턴', CUM.turns) +
+      Object.entries(CUM.counts).filter(([, n]) => n).map(([s, n]) => kv(s, n)).join('') +
+      (rules.length ? '<div style="margin-top:8px"></div>' +
+        rules.map(([r, n]) => kv(r, n)).join('') : '')
+    : '<div class="empty">아직 없음</div>';
+}
+
+// ── actions ──────────────────────────────────────────────────────
+async function boot() {
+  PROJ = await api('/api/project');
+  $('projName').textContent = PROJ.name;
+  document.title = `crack-emu · ${PROJ.name}`;
+  $('variant').innerHTML = PROJ.variants.map(v =>
+    `<option ${v === 'safe' ? 'selected' : ''}>${v}</option>`).join('');
+  $('provider').innerHTML = PROJ.providers.map(p =>
+    `<option ${p === PROJ.defaults.provider ? 'selected' : ''}>${p}</option>`).join('');
+  const d = PROJ.defaults;
+  $('fidelity').value = d.fidelity;
+  $('window_turns').value = d.window_turns ?? 20;
+  $('scan_turns').value = d.scan_turns ?? 1;
+  $('recall').value = d.recall ?? 'recent';
+  $('temperature').value = d.temperature ?? 0.9;
+  renderShorts();
+  $('variant').onchange = renderShorts;
+  renderStartSets(PROJ.start_sets, (PROJ.start_sets[0] || {}).id);
+  $('startSet').onchange = showStartSetInfo;
+  renderKeyState(PROJ.keys);
+  $('provider').onchange = () => renderKeyState(KEYS);
+  refreshSessions();
+}
+function renderShorts() {
+  const list = PROJ.shortcuts[$('variant').value] || [];
+  $('shorts').innerHTML = list.map(s =>
+    `<button title="${esc(s.description)}" onclick="send('${esc(s.name)}')">${esc(s.name)}</button>`
+  ).join('');
+}
+async function refreshSessions() {
+  const {sessions} = await api('/api/sessions');
+  $('sessList').innerHTML = sessions.length
+    ? sessions.map(s => `<span class="chip ${s === SID ? 'on' : ''}">`
+        + `<span onclick="loadSession('${esc(s)}')">${esc(s)}</span>`
+        + `<span class="x" title="삭제" onclick="deleteSession('${esc(s)}')">×</span>`
+        + `</span>`).join('')
+    : '<span style="font-size:11px;color:var(--faint)">저장된 세션 없음</span>';
+}
+window.deleteSession = async (id) => {
+  if (!confirm(`세션 '${id}' 과 그 발동 로그를 삭제합니다. 되돌릴 수 없습니다.`)) return;
+  try {
+    await post('/api/session/delete', {id});
+    if (id === SID) {
+      SID = null;
+      $('chat').innerHTML = '<div class="empty">세션을 시작하세요.</div>';
+      $('turnInfo').textContent = '';
+      renderFindings([]); renderActs([]);
+      CUM = {turns: 0, byRule: {}, counts: {}}; renderCum();
+    }
+    refreshSessions();
+  } catch (e) { showErr(e.message); }
+};
+window.loadSession = async (id) => {
+  $('sid').value = id;
+  await start(false);
+};
+
+async function start(overwrite, restart) {
+  showErr('');
+  SID = $('sid').value.trim();
+  if (!SID) return;
+  let s = await post('/api/session', payload({overwrite, restart}));
+  if (s.start_set_change_needs_restart) {
+    const ok = confirm(
+      `이 세션은 이미 진행 중입니다.\n시작 세트를 '${s.requested_start_set}' 로 바꾸면 `
+      + `프롤로그가 달라지므로 대화 기록을 지우고 처음부터 시작합니다.\n계속할까요?`);
+    if (!ok) {
+      $('startSet').value = s.start_set;
+      showStartSetInfo();
+      return;
+    }
+    s = await post('/api/session', payload({overwrite, restart: true}));
+  }
+  $('pname').value = s.persona_name === '{{user}}' ? '' : s.persona_name;
+  $('pbody').value = s.persona_body;
+  $('unote').value = s.user_note;
+  $('goal').value = s.goal;
+  $('variant').value = s.variant;
+  if (s.start_set) { $('startSet').value = s.start_set; showStartSetInfo(); }
+  CUM = {turns: 0, byRule: {}, counts: {}};
+  renderCum(); renderFindings([]); renderActs([]);
+  $('chat').innerHTML = '';
+  s.turns.forEach(t => addMsg(t.role, t.content, null));
+  if (!s.turns.length) $('chat').innerHTML = '<div class="empty">프롤로그 없음. 입력하세요.</div>';
+  $('turnInfo').textContent = `${s.id} · ${s.turns.length}턴`;
+  refreshSessions();
+}
+
+let SENDING = false;
+window.send = async (text) => {
+  if (SENDING) return;
+  if (!SID) { showErr('먼저 세션을 시작하세요.'); return; }
+  text = (text ?? $('input').value).trim();
+  if (!text) return;
+  SENDING = true;
+  $('input').value = '';
+  $('btnSend').disabled = true;
+  $('btnSend').innerHTML = '<span class="spin"></span>';
+  showErr('');
+  addMsg('user', text, null);
+  try {
+    const res = await post('/api/turn', payload({input: text}));
+    addMsg('assistant', res.reply, res);
+    renderFindings(res.findings);
+    renderActs(res.activations);
+    renderStats(res);
+    $('qaVerdict').textContent = res.qa.passed ? '통과' : '위반';
+    $('qaVerdict').style.color = res.qa.passed ? 'var(--ok)' : 'var(--err)';
+    CUM.turns++;
+    res.findings.forEach(f => {
+      CUM.byRule[f.rule] = (CUM.byRule[f.rule] || 0) + 1;
+      CUM.counts[f.severity] = (CUM.counts[f.severity] || 0) + 1;
+    });
+    renderCum();
+    $('turnInfo').textContent = `${SID} · ${res.turn_index + 1}턴`;
+  } catch (e) {
+    showErr(e.message);
+  } finally {
+    SENDING = false;
+    $('btnSend').disabled = false;
+    $('btnSend').textContent = '전송';
+  }
+};
+
+$('btnStart').onclick = () => start(false).catch(e => showErr(e.message));
+$('btnReset').onclick = () => {
+  if (confirm('이 세션의 대화 기록을 지우고 프롤로그부터 다시 시작합니다.'))
+    start(true).catch(e => showErr(e.message));
+};
+$('btnDelete').onclick = () => {
+  const id = $('sid').value.trim();
+  if (id) deleteSession(id);
+};
+$('btnSend').onclick = () => send();
+$('input').onkeydown = e => {
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  if (e.isComposing || e.keyCode === 229) return;  // IME still composing
+  e.preventDefault();
+  send();
+};
+async function saveKey(value) {
+  const provider = $('provider').value;
+  const r = await post('/api/keys', {provider, key: value});
+  $('apikey').value = '';
+  renderKeyState(r.keys);
+}
+$('btnKeySave').onclick = () => {
+  const v = $('apikey').value.trim();
+  if (!v) { showErr('키를 입력하세요.'); return; }
+  saveKey(v).catch(e => showErr(e.message));
+};
+$('btnKeyClear').onclick = () => saveKey('').catch(e => showErr(e.message));
+$('apikey').onkeydown = e => {
+  if (e.key === 'Enter') { e.preventDefault(); $('btnKeySave').click(); }
+};
+$('btnHealth').onclick = async () => {
+  $('health').innerHTML = '<span class="spin"></span>';
+  try {
+    const qs = new URLSearchParams({provider: $('provider').value});
+    if ($('model').value.trim()) qs.set('model', $('model').value.trim());
+    const {providers} = await api('/api/health?' + qs);
+    api('/api/keys').then(r => renderKeyState(r.keys)).catch(() => {});
+    $('health').innerHTML = providers.map(h => {
+      if (!h.ok) return `<span style="color:var(--err)">● ${esc(h.provider)}</span> `
+        + esc(h.missing_key ? h.missing_key + ' 필요' : h.error);
+      let out = `<span style="color:var(--ok)">● ${esc(h.provider)}</span> ${esc(h.model)}`;
+      if (h.model_available === false) {
+        const stem = h.model.split(/[-.]/)[0];
+        const near = (h.models || []).filter(m => m.includes(stem)).slice(0, 12);
+        out += `<br><span style="color:var(--err)">이 id 는 목록에 없습니다.</span>`
+          + (near.length ? `<br>비슷한 id:<br>` + near.map(esc).join('<br>')
+                         : `<br>사용 가능: ${(h.models || []).length}개`);
+      } else if (h.model_available === true) {
+        out += ` <span style="color:var(--ok)">· 사용 가능</span>`;
+      }
+      return out;
+    }).join('<br>');
+  } catch (e) { $('health').textContent = e.message; }
+};
+$('btnLint').onclick = async () => {
+  const {findings} = await api('/api/lint');
+  $('lint').innerHTML = findings.length ? findings.map(f => `
+    <div class="f ${f.severity}"><div class="r">${esc(f.rule)}</div>
+    <div class="m">${esc(f.message)}</div></div>`).join('')
+    : '<div class="empty">이상 없음</div>';
+};
+$('btnRawAll').onclick = () => {
+  RAW_ALL = !RAW_ALL;
+  $('btnRawAll').textContent = RAW_ALL ? '렌더 보기' : '원문 보기';
+  document.querySelectorAll('.msg.assistant').forEach(m => applyRaw(m, RAW_ALL));
+};
+$('btnExport').onclick = () => {
+  const parts = [...document.querySelectorAll('.msg')].map(m =>
+    m.dataset.role === 'user' ? `> ${m.dataset.md.replace(/\n/g, '\n> ')}` : m.dataset.md);
+  const md = `# ${PROJ ? PROJ.name : 'transcript'} · ${SID || ''}\n\n` + parts.join('\n\n---\n\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], {type: 'text/markdown;charset=utf-8'}));
+  a.download = `${SID || 'transcript'}.md`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+function slotRows(id, values, count, placeholder) {
+  let out = '';
+  for (let i = 0; i < count; i++) {
+    out += `<div class="slot"><div class="n">${i + 1}</div>`
+      + `<textarea data-group="${id}" data-i="${i}" placeholder="${esc(placeholder)}">`
+      + `${esc(values[i] || '')}</textarea></div>`;
+  }
+  return out;
+}
+function collect(group) {
+  return [...document.querySelectorAll(`textarea[data-group="${group}"]`)]
+    .map(t => t.value.trim());
+}
+function renderMemory(m) {
+  $('memSub').textContent = `${SID} · 총 ${m.turns_total}턴 `
+    + `(활성 ${m.turns_live} / 밀려남 ${m.turns_evicted})`;
+  const stat = (v, l) => `<div class="memstat"><b>${v}</b><span>${esc(l)}</span></div>`;
+  $('memBody').innerHTML =
+    `<div class="memgrid">`
+    + stat(`${m.summaries.length}/${m.summary_slots}`, '요약메모리')
+    + stat(`${m.relations.length}/${m.relation_slots}`, '캐릭터 관계도')
+    + stat(`${m.recalled_resolved.length}/${m.recalled_slots}`, '장기기억')
+    + stat(m.pending_turns, '요약 대기 턴')
+    + `</div>`
+
+    + `<h4>요약메모리 · [최근 사건 타임라인]</h4>`
+    + `<div class="memnote">밀려난 턴을 압축해 ${m.summary_slots}칸에 넣습니다. `
+    + `${m.summarize_every_turns}턴마다 자동 갱신되며, ${m.summarized_turns}턴까지 요약했습니다. `
+    + `직접 고쳐도 됩니다.</div>`
+    + slotRows('sum', m.summaries, m.summary_slots, '(빈 슬롯)')
+
+    + `<h4 style="margin-top:18px">캐릭터 관계도 · [캐릭터 관계도]</h4>`
+    + `<div class="memnote">형식: <code>이름 — 관계단계 / 최근 변화 근거</code></div>`
+    + slotRows('rel', m.relations, m.relation_slots, '(빈 슬롯)')
+
+    + `<h4 style="margin-top:18px">장기기억 · &lt;recalled_history&gt;</h4>`
+    + `<div class="memnote">현재 선정 방식 <b>${esc(m.recalled_selection)}</b>. `
+    + `크랙이 어떤 기준으로 3개를 고르는지는 <b>미확인</b>이라, 여기 보이는 것은 이 하네스의 `
+    + `대체 구현입니다. <code>recent</code>=밀려난 턴 중 최근 것, `
+    + `<code>lexical</code>=어휘 매칭(벡터 아님), <code>manual</code>=아래에 직접 적은 것만.</div>`
+    + (m.recalled_selection === 'manual'
+        ? slotRows('rec', m.recalled_manual, m.recalled_slots, '(직접 입력)')
+        : `<div class="evicted">` + (m.recalled_resolved.length
+            ? m.recalled_resolved.map((r, i) => `${i + 1}. ${esc(r)}`).join('<br>')
+            : '(밀려난 턴이 없어 비어 있습니다)') + `</div>`
+          + `<div class="memnote">직접 지정하려면 왼쪽 <b>회상 방식</b>을 `
+          + `<code>manual</code> 로 바꾸고 다시 여세요.</div>`)
+
+    + `<h4 style="margin-top:18px">윈도우 밖으로 밀려난 턴 (최근 12개)</h4>`
+    + `<div class="memnote">컨텍스트 ${m.window_turns}턴을 넘겨 프롬프트에서 빠진 것들입니다. `
+    + `요약과 장기기억이 이 자리를 대신합니다.</div>`
+    + `<div class="evicted">` + (m.evicted_preview.length
+        ? m.evicted_preview.map(t =>
+            `<b>${t.index} ${esc(t.role)}</b> ${esc(t.text)}…`).join('<br>')
+        : '(아직 밀려난 턴이 없습니다)') + `</div>`;
+}
+async function openMemory() {
+  if (!SID) { showErr('먼저 세션을 시작하세요.'); return; }
+  const qs = new URLSearchParams({id: SID, recall: $('recall').value,
+                                  window: $('window_turns').value || '0'});
+  renderMemory(await api('/api/memory?' + qs));
+  $('memDlg').showModal();
+}
+$('btnMemory').onclick = () => openMemory().catch(e => showErr(e.message));
+$('btnMemSave').onclick = async () => {
+  try {
+    const body = {id: SID, recall: $('recall').value, settings: settings(),
+                  summaries: collect('sum'), relations: collect('rel')};
+    if (document.querySelector('textarea[data-group="rec"]')) body.recalled = collect('rec');
+    renderMemory(await post('/api/memory', body));
+  } catch (e) { showErr(e.message); }
+};
+$('btnMemRefresh').onclick = async () => {
+  const b = $('btnMemRefresh');
+  b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+  try {
+    const r = await post('/api/memory/refresh', payload({recall: $('recall').value}));
+    renderMemory(r.snapshot);
+  } catch (e) { showErr(e.message); }
+  finally { b.disabled = false; b.textContent = '지금 갱신'; }
+};
+$('btnPrompt').onclick = async () => {
+  if (!SID) { showErr('먼저 세션을 시작하세요.'); return; }
+  try {
+    const p = await post('/api/prompt', payload({input: $('input').value}));
+    $('dlgBody').innerHTML =
+      `<h4>요약 · ${p.char_count}자 · 활성창 ${p.live}턴 / 밀려남 ${p.evicted}턴</h4>
+       <pre>${esc(p.activations.map(a => `발동: ${a.title} (${a.matched.join(',')} @ ${a.where.join(',')})`).join('\n') || '발동 없음')}</pre>
+       <h4>system</h4><pre>${esc(p.system)}</pre>` +
+      p.messages.map(m => `<h4>${esc(m.role)}</h4><pre>${esc(m.content)}</pre>`).join('');
+    $('dlg').showModal();
+  } catch (e) { showErr(e.message); }
+};
+
+boot().catch(e => showErr('초기화 실패: ' + e.message));
+</script>
+</body>
+</html>

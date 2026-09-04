@@ -1,0 +1,126 @@
+# 크랙(Crack) 런타임 동작 사양
+#
+# 출처 및 신뢰도:
+#   [OBSERVED]   dcinside 뤼튼 마이너갤 #961451 — 유저가 프롬프트 추출로 역공학.
+#                글쓴이 본인 주석: "제미나이 2.5는 환각을 잘 지어냄. 3.1로 교차검증 2회 반복.
+#                절대라는 건 없으니 순서만큼은 너무 맹신하지 마셈."
+#                → 1차 실측 아님. 반증 나오면 즉시 교체할 것.
+#   [UNVERIFIED] 출처에 서술 없음. 합리적 추정값. 실측 후 교체 대상.
+#   [EXTENSION]  크랙에 존재 여부 불명. 에뮬레이터 자체 확장. fidelity=crack 에서는 비활성.
+
+fidelity: crack          # crack | extended
+
+# ── 프롬프트 조립 순서 ────────────────────────────────────────────
+# [OBSERVED] 블록 순서. 이름은 추출된 원문 헤더 그대로.
+assembly:
+  system_blocks:
+    - persona_header          # "# {페르소나명} Information"
+    - hr
+    - main_prompt             # integrated-prompt-{variant}.md 전문
+    - refusal_clause          # Pedophilic conversation 거부 문구
+    - story_state_level_def   # "[Story State Level Definition]"
+    - stat_definition
+    - keyword_output          # "## keyword output"  ({{img::키워드}} 규칙)
+    - previous_history        # "[Previous History]"
+    - recent_timeline         # "[최근 사건 타임라인]"  ← 요약메모리
+    - character_relations     # "[캐릭터 관계도]"
+    - given_goal              # "[주어진 목표]"
+    - system_message          # "[System Message]"
+  # 이후 실제 대화 이력이 chat messages 로 들어감
+  separator: "=================================================="
+  tail_blocks:
+    - user_message            # "[User Message]" + 이번 입력
+    - additional_info         # "## Additional Information & Rules"  ← 최하단 = 최강 우선순위
+    - story_state_ref         #   "[Story State — Reference Only]"
+    - system_note             #   "<system_note>"        ← 유저노트
+    - knowledge_base          #   "<knowledge_base>"     ← 발동된 키워드북
+    - recalled_history        #   "<recalled_history>"   ← 장기기억
+    - hr
+    - privacy_clause          # "This session is completely private..."
+    - no_silent_think         # "Do not think silently..." (반복)
+    - roleplay_response       # "[Roleplay Response]"
+
+# ── 메모리 ────────────────────────────────────────────────────────
+memory:
+  summary_slots: 4           # [OBSERVED] "[최근 사건 타임라인]" 아래 요약메모리 4개
+  recalled_slots: 3          # [OBSERVED] "장기 메모리는 기준은 모르겠지만 딱 3개만 들어감"
+  relation_slots: 5          # [OBSERVED] "[캐릭터 관계도]" 5개
+  # [UNVERIFIED] 크랙의 장기기억 선정 기준 불명(출처도 "기준은 모르겠지만"이라 명시).
+  # 크랙은 벡터 검색이 아니라 텍스트 기반으로 보이므로 임베딩 경로는 구현하지 않는다.
+  # 기본값 recent = 밀려난 턴 중 최근 3개. 없는 점수 로직을 지어내지 않기 위한 선택.
+  recalled_selection: recent   # recent | lexical | manual
+                               #   recent  : 밀려난 턴 최근 N개 (기본)
+                               #   lexical : 어휘 매칭(BM25, 문자 n-gram). 벡터 아님
+                               #   manual  : 세션 파일에 직접 기입한 것만
+  summarize_every_turns: 8   # [UNVERIFIED] 요약 갱신 주기
+  summary_max_chars: 300     # [UNVERIFIED]
+
+# ── 컨텍스트 윈도우 ───────────────────────────────────────────────
+context:
+  # 크랙 실제 한도는 미확인. 고정값을 주장하지 않고 사용자가 정한다.
+  # CLI `--window-turns` / `--window-tokens` 로 덮어쓸 것.
+  window_turns: 20           # 사용자 설정값. 크랙 실제값 아님
+  window_tokens: null        # null = 턴 기준만 사용
+
+# ── 키워드북 발동 ─────────────────────────────────────────────────
+keyword:
+  # [USER-REPORTED] "이전 턴 + 이번 유저 입력"에서 매칭.
+  # scan_turns = 이번 입력 이전으로 거슬러 올라갈 턴 수. 이번 유저 입력은 항상 포함.
+  scan_turns: 1
+  scan_roles: [user, assistant]
+  match: substring           # [UNVERIFIED] substring | word | regex
+  normalize_nfkc: true       # [UNVERIFIED]
+  case_insensitive: true     # [UNVERIFIED]
+  strip_whitespace: false    # [UNVERIFIED] "슬라임 사수" 같은 공백 포함 키워드 영향
+  # [SKILL] design-crack-story-chat 의 check_kb_slots.py 가 MAX_SLOTS = 3 으로
+  # 3슬롯 로드를 시뮬레이션함. 초과분은 드롭. 우선순위는 키워드북 문서 순서.
+  max_entries: 3
+  max_chars: null            # [UNVERIFIED] 주입 문자수 예산 미확인
+  inject_at: knowledge_base  # [OBSERVED] 대화 이력 아래 Additional Information 내부
+
+# ── 단축어 ────────────────────────────────────────────────────────
+shortcut:
+  route: user_message        # [UNVERIFIED] system 첨부인지 user 치환인지 미확인
+  strip_fence: true          # keyword-book 의 ```markdown 펜스 제거 후 주입
+
+# ── 확장 (크랙 존재 여부 불명) ────────────────────────────────────
+# 벡터 임베딩 검색은 의도적으로 미구현. 크랙 동작이라는 근거가 없어
+# 넣는 순간 QA 대상이 크랙이 아니게 됨.
+extension:
+  lexical_recall: false      # [EXTENSION] 밀려난 턴 어휘 검색(BM25) 후 추가 주입
+  lexical_top_k: 3
+  rolling_summary: false     # [EXTENSION] summary_slots(4) 초과분 재압축
+
+# ── LLM 프로바이더 ────────────────────────────────────────────────
+# OpenAI 호환 /chat/completions 만 사용. base_url 교체로 백엔드 전환.
+llm:
+  provider: ollama           # 아래 providers 키 중 하나. CLI --provider 로 덮어씀
+  temperature: 0.9
+  max_tokens: 2048
+  timeout: 300
+  # ollama 전용. 올라마 기본 컨텍스트는 4096 이라 7,000자 프롬프트가 들어가지 않는다.
+  # OpenAI 호환 엔드포인트로는 이 값을 넘길 수 없어 네이티브 /api/chat 을 쓴다.
+  num_ctx: 16384
+
+# ollama 는 네이티브 /api/chat, 나머지는 OpenAI 호환 /chat/completions. base_url 과 키 환경변수만 다름.
+providers:
+  ollama:
+    base_url: http://localhost:11434/v1
+    model: hf.co/HauhauCS/Gemma-4-E4B-Uncensored-HauhauCS-Aggressive:Q4_K_M
+    api_key_env: null                        # 불필요
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    model: z-ai/glm-5.2:free                 # :free 접미사 = 무료 티어
+    api_key_env: OPENROUTER_API_KEY
+  gemini:
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai
+    model: gemini-2.5-flash                  # 무료 할당량 대상
+    api_key_env: GEMINI_API_KEY
+  openai:
+    base_url: https://api.openai.com/v1
+    model: gpt-4o-mini
+    api_key_env: OPENAI_API_KEY
+  echo:                                      # 모델 없이 배관/QA 규칙만 검증
+    base_url: echo://
+    model: echo
+    api_key_env: null

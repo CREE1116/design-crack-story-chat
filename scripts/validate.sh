@@ -4,7 +4,9 @@
 set -uo pipefail
 
 PROJ="${1:-examples/hunter}"
-S="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/skills/design-crack-story-chat/scripts"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+S="$ROOT/skills/design-crack-story-chat/scripts"
+EMU="$ROOT/tools/crack-emu"
 FAIL=0
 
 run() { echo; echo "── $1"; shift; "$@" || FAIL=1; }
@@ -12,15 +14,17 @@ run() { echo; echo "── $1"; shift; "$@" || FAIL=1; }
 run "원본 대비 신선도"  python3 "$S/check_freshness.py" "$PROJ"
 run "프로젝트 구조"     python3 "$S/check_project_layout.py" "$PROJ"
 run "이름 규칙"         python3 "$S/check_naming.py" "$PROJ"
-run "키워드북 형식"     python3 "$S/check_keyword_book.py" "$PROJ/build/keyword-book.md"
+run "키워드북 · 슬롯 배치" env PYTHONPATH="$EMU" python3 -m crack_emulator \
+      --project "$PROJ/build" lint
 run "기호 정의"         python3 "$S/check_symbols.py" \
       "$PROJ/build/integrated-prompt-safe.md" "$PROJ/build/integrated-prompt-unsafe.md"
 
-if [ -f "$PROJ/.assets/kb-scenes.txt" ]; then
-  echo; echo "── 3슬롯 시뮬레이션"
-  python3 "$S/check_kb_slots.py" "$PROJ/build/keyword-book.md" "$PROJ/.assets/kb-scenes.txt" || true
-  echo "   (슬롯 초과는 설계 판단이 필요한 경고입니다. 통과 조건에 넣지 않습니다.)"
-fi
+echo
+echo "── 3슬롯 실측"
+echo "   가상 씬 목록 시뮬레이션은 폐지했습니다. 실제 턴을 돌려서 측정하세요:"
+echo "     PYTHONPATH=$EMU python3 -m crack_emulator --project $PROJ/build \\"
+echo "       replay qa1 $EMU/scenarios/onboarding.txt"
+echo "     PYTHONPATH=$EMU python3 -m crack_emulator --project $PROJ/build report"
 
 echo
 [ "$FAIL" -eq 0 ] && echo "전체 통과" || echo "실패 있음"
