@@ -31,6 +31,7 @@ VALID_KB_SETS = [
 ]
 # 크랙에 붙이지 않는 파생 제작 입력이 들어가는 유일한 하위 디렉터리.
 DERIVED_DIR = "assets"
+DERIVED_DIRS = {DERIVED_DIR, "start-sets", "departments"}
 UNSAFE_BANNED = (
     "정책 무시",
     "정책 우회",
@@ -94,7 +95,7 @@ def validate(build: Path) -> bool:
     extra = sorted(names - all_known)
     
     non_files = sorted(entry.name for entry in entries
-                       if not entry.is_file() and entry.name != DERIVED_DIR)
+                       if not entry.is_file() and entry.name not in DERIVED_DIRS)
     ok = True
     if missing_core:
         print(f"FAIL {build}: missing core artifacts: {', '.join(missing_core)}")

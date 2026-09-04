@@ -124,3 +124,7 @@ providers:
     base_url: echo://
     model: echo
     api_key_env: null
+  agent:                                     # 외부 API 대신 에이전트/모델이 직접 생성한 응답 주입
+    base_url: agent://
+    model: agent-injected
+    api_key_env: null

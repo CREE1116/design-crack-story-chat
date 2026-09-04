@@ -192,6 +192,79 @@ def parse_keyword_book(text: str, source: str) -> tuple[list[KeywordEntry], list
     return entries, shortcuts
 
 
+def update_keyword_book_entry(text: str, title: str, keywords: list[str], content: str,
+                              new_title: str | None = None) -> tuple[str, bool]:
+    """Update or insert a keyword entry in keyword book text.
+
+    Returns (new_text, is_update).
+    """
+    sc = _SC_SECTION.search(text)
+    kb_part, sc_part = (text[:sc.start()], text[sc.start():]) if sc else (text, "")
+
+    entry_title = (new_title or title).strip()
+    kw_line = ", ".join(k.strip() for k in keywords if k.strip())
+    formatted = f"## {entry_title}\n- 키워드: {kw_line}\n- 내용:\n{content.strip()}\n\n"
+
+    heads = [m for m in _HEADING.finditer(kb_part)
+             if not _META_HEADING.match(m.group(2).strip())]
+
+    clean_target = _clean_title(title).lower()
+    match_idx = None
+    for i, m in enumerate(heads):
+        if _clean_title(m.group(2)).lower() == clean_target:
+            match_idx = i
+            break
+
+    if match_idx is not None:
+        start = heads[match_idx].start()
+        end = heads[match_idx + 1].start() if match_idx + 1 < len(heads) else len(kb_part)
+        new_kb = kb_part[:start] + formatted + kb_part[end:].lstrip("\r\n")
+        is_update = True
+    else:
+        new_kb = kb_part.rstrip() + "\n\n" + formatted
+        is_update = False
+
+    new_text = new_kb.rstrip()
+    if sc_part:
+        new_text += "\n\n" + sc_part.lstrip()
+    else:
+        new_text += "\n"
+    return new_text, is_update
+
+
+def delete_keyword_book_entry(text: str, title: str) -> tuple[str, bool]:
+    """Delete a keyword entry by title from keyword book text.
+
+    Returns (new_text, was_deleted).
+    """
+    sc = _SC_SECTION.search(text)
+    kb_part, sc_part = (text[:sc.start()], text[sc.start():]) if sc else (text, "")
+
+    heads = [m for m in _HEADING.finditer(kb_part)
+             if not _META_HEADING.match(m.group(2).strip())]
+
+    clean_target = _clean_title(title).lower()
+    match_idx = None
+    for i, m in enumerate(heads):
+        if _clean_title(m.group(2)).lower() == clean_target:
+            match_idx = i
+            break
+
+    if match_idx is None:
+        return text, False
+
+    start = heads[match_idx].start()
+    end = heads[match_idx + 1].start() if match_idx + 1 < len(heads) else len(kb_part)
+    new_kb = kb_part[:start] + kb_part[end:].lstrip("\r\n")
+
+    new_text = new_kb.rstrip()
+    if sc_part:
+        new_text += "\n\n" + sc_part.lstrip()
+    else:
+        new_text += "\n"
+    return new_text, True
+
+
 def parse_roster(main_prompt: str) -> list[Character]:
     out = []
     for m in _ROSTER.finditer(main_prompt):
@@ -300,12 +373,15 @@ def _set_meta(folder: pathlib_Path, index: int) -> dict:
 
 
 def load_start_sets(project_root: pathlib_Path) -> list[StartSet]:
-    """Discover selectable openings next to the build directory."""
+    """Discover selectable openings next to or inside the build directory."""
     out: list[StartSet] = []
     root = project_root.parent if project_root.name == "build" else project_root
+    build_dir = project_root if project_root.name == "build" else (project_root / "build")
     for dirname in START_SET_DIRS:
-        base = root / dirname
-        if not base.is_dir():
+        # 1) build/ 하위의 start-sets 탐색, 2) 프로젝트 루트의 start-sets 탐색
+        candidates = [build_dir / dirname, root / dirname]
+        base = next((c for c in candidates if c.is_dir()), None)
+        if base is None:
             continue
         for folder in sorted(p for p in base.iterdir() if p.is_dir()):
             prologue_p = folder / "prologue.md"

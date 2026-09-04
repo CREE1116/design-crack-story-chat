@@ -83,6 +83,11 @@ class State:
         # Never sent to a client, never logged.
         self.keys = KeyStore(key_file)
 
+    def reload(self) -> None:
+        with self.lock:
+            self.project = load_project(self.project_root)
+            self.base_cfg = Config.load(self.spec)
+
     def config(self, overrides: dict) -> Config:
         return self.base_cfg.override(overrides)
 
@@ -280,12 +285,12 @@ class Handler(BaseHTTPRequestHandler):
         }
 
     def _create_session(self, body: dict) -> dict:
-        variant = body.get("variant") or "safe"
-        eng = self.state.engine(_overrides(body), variant)
         sid = body["id"]
         if self.state.store.exists(sid) and body.get("overwrite"):
             self.state.store.delete(sid)
         if not self.state.store.exists(sid):
+            variant = body.get("variant") or "safe"
+            eng = self.state.engine(_overrides(body), variant)
             eng.start(sid,
                       persona_name=body.get("persona_name") or "{{user}}",
                       persona_body=body.get("persona_body") or "",
@@ -296,47 +301,31 @@ class Handler(BaseHTTPRequestHandler):
         else:
             s = self.state.store.load(sid)
             wanted = body.get("start_set")
-
-            # The prologue is turn 0, so a different start set means different
-            # history. Swap it silently while the session is still untouched;
-            # once the player has spoken, only an explicit restart is honest.
             if wanted and wanted != s.start_set:
                 spoken = any(t.role == "user" for t in s.turns)
                 if spoken and not body.get("restart"):
                     return {**self._session_payload(sid),
                             "start_set_change_needs_restart": True,
                             "requested_start_set": wanted}
-                if spoken:
+                if spoken and body.get("restart"):
+                    variant = body.get("variant") or s.variant
+                    eng = self.state.engine(_overrides(body), variant)
                     eng.store.delete(sid)
                     eng.start(sid,
-                              persona_name=body.get("persona_name") or "{{user}}",
-                              persona_body=body.get("persona_body") or "",
-                              user_note=body.get("user_note") or "",
-                              goal=body.get("goal") or "",
+                              persona_name=body.get("persona_name") or s.persona_name,
+                              persona_body=body.get("persona_body", s.persona_body),
+                              user_note=body.get("user_note", s.user_note),
+                              goal=body.get("goal", s.goal),
                               start_set=wanted)
                     return {**self._session_payload(sid), "restarted": True}
-                chosen = self.state.project.start_set(wanted)
-                s.start_set = chosen.id if chosen else s.start_set
-                prologue = (chosen.prologue if chosen else "").strip()
-                s.turns = ([Turn(index=0, role="assistant", content=prologue,
-                                 meta={"source": chosen.source if chosen else ""})]
-                           if prologue else [])
-                s.stats["_baseline_chars"] = len(prologue)
-
-            s.persona_name = body.get("persona_name") or s.persona_name
-            s.persona_body = body.get("persona_body", s.persona_body)
-            s.user_note = body.get("user_note", s.user_note)
-            s.goal = body.get("goal", s.goal)
-            s.variant = variant
-            self.state.store.save(s)
         return self._session_payload(sid)
 
     def _turn(self, body: dict) -> dict:
-        variant = body.get("variant") or "safe"
+        sid = body["id"]
         with self.state.lock:
+            session = self.state.store.load(sid)
+            variant = session.variant or body.get("variant") or "safe"
             eng = self.state.engine(_overrides(body), variant)
-            session = eng.load(body["id"])
-            # UI edits to persona / note apply to this turn onwards
             for field in ("persona_name", "persona_body", "user_note", "goal"):
                 if field in body and body[field] is not None:
                     setattr(session, field, body[field])
@@ -344,9 +333,10 @@ class Handler(BaseHTTPRequestHandler):
             return res.to_dict()
 
     def _prompt(self, body: dict) -> dict:
-        variant = body.get("variant") or "safe"
+        sid = body["id"]
+        session = self.state.store.load(sid)
+        variant = session.variant or body.get("variant") or "safe"
         eng = self.state.engine(_overrides(body), variant)
-        session = eng.load(body["id"])
         for field in ("persona_name", "persona_body", "user_note", "goal"):
             if field in body and body[field] is not None:
                 setattr(session, field, body[field])

@@ -10,8 +10,9 @@
 | `start-prompt.md` | 1,000자 | 도입부 | 첫 장면 상황 압력 및 부트스트랩 절차 |
 | `keyword-book-safe.md` | 항목당 400자 | 조건부 | 전연령/안전판 키워드북 등록표 (19+ 모듈 제외) |
 | `keyword-book-unsafe.md` | 항목당 400자 | 조건부 | 19+ 성애 모듈 최상단 탑재 성인판 키워드북 |
+| `start-sets/` | 항목당 1,000자 | 선택형 | 다중 시작 세트 (부서/루트별 `meta.md`, `prologue.md`, `start-prompt.md`) |
 
-*(※ 단일 배포 시 기존 `keyword-book.md` 단일 파일도 하위 호환됩니다.)*
+*(※ 단일 배포 시 기존 `keyword-book.md` 단일 파일도 하위 호환됩니다. `prologue.md`와 `start-prompt.md`는 다중 시작 세트 중 기본 세트(`default: true`)의 생성물 사본입니다.)*
 
 여기에 더해 `build/assets/`에 **파생 제작 입력**이 나옵니다. 크랙 프롬프트에 직접 넣는 것이 아니라, 발행 상세설명이나 첫 고정 댓글, 이미지 생성 도구에서 사용하는 파일들입니다.
 

@@ -234,6 +234,31 @@ def test_clean_response_passes():
     assert qa.summarize(findings)["passed"], [f.to_dict() for f in findings]
 
 
+def test_agent_self_response_mode():
+    """Engine.turn with injected reply must record the turn and run QA without external API."""
+    from crack_emulator.engine import Engine
+    from crack_emulator.llm import make_client
+    from crack_emulator.config import Config
+    from crack_emulator.session import Store
+    import tempfile
+    import shutil
+
+    p = _project()
+    cfg = Config.load()
+    client = make_client(cfg, provider="agent")
+    temp_dir = tempfile.mkdtemp()
+    try:
+        store = Store(temp_dir)
+        eng = Engine(p.root, cfg, client, store=store, variant="safe")
+        session = eng.start("test_agent_sess")
+        res = eng.turn(session, "안녕", reply='*테스트 지문*\n\n라임 | "안녕하세요"')
+        assert res.reply == '*테스트 지문*\n\n라임 | "안녕하세요"'
+        assert len(session.turns) == 3  # prologue + user + assistant
+        assert res.turn_index == 2
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 if __name__ == "__main__":
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

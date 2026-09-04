@@ -9,12 +9,18 @@ story-chat/
 ├── story.md
 ├── characters.md
 └── build/                         # generated; exact final files only
-    ├── prologue.md                # ≤1,000 chars
+    ├── prologue.md                # ≤1,000 chars (active default set copy)
     ├── integrated-prompt-safe.md  # ≤7,000 chars
     ├── integrated-prompt-unsafe.md # ≤7,000 chars
-    ├── start-prompt.md            # ≤1,000 chars
+    ├── start-prompt.md            # ≤1,000 chars (active default set copy)
     ├── keyword-book-safe.md       # safe registration sheet; entry text ≤400 chars (or unified keyword-book.md)
     ├── keyword-book-unsafe.md     # unsafe registration sheet with 19+ mature module on top (≤400 chars/entry)
+    ├── start-sets/                # optional; multi-opening directory (or project root start-sets/)
+    │   ├── 01_product/
+    │   │   ├── meta.md            # title, order, default flag
+    │   │   ├── prologue.md        # ≤1,000 chars
+    │   │   └── start-prompt.md    # ≤1,000 chars
+    │   └── 02_rd/ ...
     └── assets/                    # derived production inputs; never pasted into Crack
         ├── story-description.md   # story description for publish page (Markdown supported)
         ├── summary-comment.md     # plain-text listing/comment blurb (Markdown not supported)
@@ -25,9 +31,9 @@ story-chat/
 
 Do **not** create intermediate `manifest`, `world`, `player`, `prologue`, `story-design`, `generation-rules`, `content-profiles`, `output-contract`, `media-rules`, `runtime`, or `keyword-book` files/directories. Those splits can clarify a large software system, but they are needless authoring debris for this Crack workflow.
 
-`build/` is generated output, not a third source. It may be absent before the first compilation. After compilation its **files** are exactly the five above and nothing else.
+`build/` is generated output, not a third source. It may be absent before the first compilation. After compilation its core **files** are exactly the five above and nothing else.
 
-`build/assets/` is the one permitted subdirectory. It holds **derived production inputs** — material compiled from the two sources that is never pasted into a Crack prompt field and never reaches the model as instructions. Core types include: release showcase descriptions (`story-description.md`, `summary-comment.md`), prompt sheets, and design logs. Anything model-facing goes in the five artifacts; if something feels like it needs a sixth prompt file, it is a routing mistake, not a missing artifact.
+`build/assets/` and `build/start-sets/` are the permitted subdirectories. `assets/` holds **derived production inputs** — material compiled from the two sources that is never pasted into a Crack prompt field and never reaches the model as instructions. Core types include: release showcase descriptions (`story-description.md`, `summary-comment.md`), prompt sheets, and design logs. `start-sets/` holds multiple selectable openings (prologue & start prompt pairs). Anything model-facing goes in the five artifacts or start-sets; if something feels like it needs another prompt file, it is a routing mistake, not a missing artifact.
 
 Derived does not mean optional. These files are regenerated on every compile exactly like the five, and hand-editing one makes it a second source of truth for whatever it contains. An image prompt sheet takes its appearance text from `characters.md`; a summary blurb takes its claims from the compiled artifacts, not from memory.
 

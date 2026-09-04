@@ -127,44 +127,13 @@ API 키는 서버 프로세스의 환경변수에 머무르며 브라우저로 �
 | `gemini` | `GEMINI_API_KEY`. 무료 할당량 사용 가능 |
 | `openai` | `OPENAI_API_KEY` |
 | `echo` | 모델 없이 배관과 QA 규칙만 검증 |
+| `agent` | 외부 API 호출 없이 **모델(에이전트) 또는 사용자가 직접 생성한 응답 텍스트를 주입**해 세션 턴에 기록하고 출력 계약 QA 및 키워드북 활성화를 검증하는 자가 루프 모드 |
 
-## MCP
+### 모델 자가 응답 모드 (`agent`)
 
-에이전트가 직접 플레이하며 결함을 찾게 하려면 MCP 서버로 띄운다. SDK 의존성은
-없다 — stdio JSON-RPC를 직접 구현했다.
+외부 LLM API(OpenAI/Gemini 등)를 쓰지 않고, **에이전트(LLM 자신)가 직접 캐릭터로서 응답을 작성해 에뮬레이터에 검증받는 루프**입니다:
 
-```bash
-crack-emu --project <build> --store <dir> mcp --key-file <저장소_밖_경로>
-```
-
-Claude Code 에 등록:
-
-```bash
-claude mcp add crack-emu --env PYTHONPATH=<tools/crack-emu 경로> \
-  -- python3 -m crack_emulator --project <build> --store <dir> \
-     mcp --key-file <저장소_밖_경로>
-```
-
-`mcp.json.example` 에 설정 예시가 있다.
-
-도구 14개:
-
-| 도구 | 하는 일 |
-|---|---|
-| `describe_project` | 구조와 **이 빌드에서 유도한 계약** (먼저 부를 것) |
-| `lint_build` | 모델 없이 빌드 자체 검사 |
-| `list_start_sets` · `use_start_set` | 시작 세트 목록 / `build/` 반영 |
-| `start_session` | 프롤로그를 첫 턴으로 세션 생성 |
-| `play_turn` | 한 턴 진행 → **응답 + 계약 위반 + 발동/드롭된 항목**을 한 번에 |
-| `inspect_prompt` | 모델 호출 없이 실제 전송 내용 확인 |
-| `check_response` | 임의 텍스트를 계약에 대조 |
-| `get_memory` · `set_memory` | 요약·관계도·장기기억 슬롯 조회/수정 |
-| `activation_report` | 여러 턴 누적 — 슬롯 초과, 미발동, 상시발동 |
-| `get_session` · `list_sessions` · `delete_session` | 세션 관리 |
-
-핵심은 `play_turn` 이 응답과 그 응답의 위반을 **같은 호출에서** 돌려준다는 점이다.
-에이전트가 자기 입력의 결과를 바로 보고 다음 입력을 정할 수 있다.
-한 턴만 봐서는 안 보이는 문제는 여러 턴 뒤 `activation_report` 에서 나온다.
+- **CLI 사용 시**: `crack-emu turn <세션> --input "..." --reply "..."` 또는 `--reply-file "..."` 로 주입.
 
 ## 에이전트 연동
 

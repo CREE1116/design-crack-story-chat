@@ -204,6 +204,7 @@ dialog h4{margin:0 0 6px;font-size:11px;letter-spacing:.08em;text-transform:uppe
     <div class="hd">
       대화
       <span class="sub" id="turnInfo"></span>
+      <span id="liveBadge" class="pill ok" style="cursor:pointer;font-size:11px;padding:2px 8px;margin-left:4px" onclick="toggleLiveSync()" title="실시간 자동 동기화 (클릭하여 켜기/끄기)">● LIVE</span>
       <span style="margin-left:auto;display:flex;gap:6px">
         <button id="btnRawAll">원문 보기</button>
         <button id="btnExport">.md 내보내기</button>
@@ -384,7 +385,7 @@ function addMsg(role, content, res) {
   const chat = $('chat');
   if (chat.querySelector('.empty')) chat.innerHTML = '';
   const d = document.createElement('div');
-  const bad = res && !res.qa.passed;
+  const bad = res && res.qa && !res.qa.passed;
   d.className = `msg ${role}${bad ? ' bad' : ''}`;
   d.dataset.md = content;
   d.dataset.role = role;
@@ -394,7 +395,7 @@ function addMsg(role, content, res) {
     d.innerHTML = `<div class="who">AI</div>`
       + `<div class="rendered">${renderReply(content)}</div>`
       + `<div class="raw" hidden>${esc(content)}</div>`;
-    if (res) d.insertAdjacentHTML('beforeend', turnBar(res));
+    if (res && res.qa) d.insertAdjacentHTML('beforeend', turnBar(res));
     applyRaw(d, RAW_ALL);
   }
   chat.appendChild(d);
@@ -412,13 +413,16 @@ window.toggleRaw = (btn) => {
   applyRaw(msgEl, msgEl.querySelector('.rendered').hidden === false);
 };
 function turnBar(res) {
-  const c = res.qa.counts, bits = [];
+  if (!res || !res.qa) return '';
+  const c = res.qa.counts || {}, bits = [];
   if (res.qa.passed) bits.push('<span class="pill ok">계약 통과</span>');
   if (c.critical) bits.push(`<span class="pill err">critical ${c.critical}</span>`);
   if (c.error) bits.push(`<span class="pill err">error ${c.error}</span>`);
   if (c.warn) bits.push(`<span class="pill warn">warn ${c.warn}</span>`);
-  bits.push(`<span class="pill">${res.reply.length}자</span>`);
-  bits.push(`<span class="pill">프롬프트 ${res.prompt_stats.total_chars}자</span>`);
+  if (res.reply) bits.push(`<span class="pill">${res.reply.length}자</span>`);
+  if (res.prompt_stats && res.prompt_stats.total_chars) {
+    bits.push(`<span class="pill">프롬프트 ${res.prompt_stats.total_chars}자</span>`);
+  }
   if (res.shortcut) bits.push(`<span class="pill">${esc(res.shortcut)}</span>`);
   bits.push('<button class="rawtoggle" onclick="toggleRaw(this)">원문</button>');
   return `<div class="turnbar">${bits.join('')}</div>`;
@@ -516,9 +520,42 @@ window.deleteSession = async (id) => {
     refreshSessions();
   } catch (e) { showErr(e.message); }
 };
+
+let RENDERED_TURNS = 0;
+let LIVE_SYNC = true;
+
+window.toggleLiveSync = () => {
+  LIVE_SYNC = !LIVE_SYNC;
+  const badge = $('liveBadge');
+  if (badge) {
+    badge.className = LIVE_SYNC ? 'pill ok' : 'pill';
+    badge.textContent = LIVE_SYNC ? '● LIVE' : '○ PAUSED';
+    badge.style.opacity = LIVE_SYNC ? '1' : '0.5';
+  }
+};
+
 window.loadSession = async (id) => {
   $('sid').value = id;
-  await start(false);
+  SID = id;
+  showErr('');
+  try {
+    const s = await api(`/api/session?id=${encodeURIComponent(id)}`);
+    if (!s || s.error) throw new Error(s?.error || '세션 로딩 실패');
+    $('pname').value = s.persona_name === '{{user}}' ? '' : (s.persona_name || '');
+    $('pbody').value = s.persona_body || '';
+    $('unote').value = s.user_note || '';
+    $('goal').value = s.goal || '';
+    $('variant').value = s.variant || 'safe';
+    if (s.start_set) { $('startSet').value = s.start_set; showStartSetInfo(); }
+    CUM = {turns: 0, byRule: {}, counts: {}};
+    renderCum(); renderFindings([]); renderActs([]);
+    $('chat').innerHTML = '';
+    s.turns.forEach(t => addMsg(t.role, t.content, t.meta));
+    RENDERED_TURNS = s.turns.length;
+    if (!s.turns.length) $('chat').innerHTML = '<div class="empty">프롤로그 없음. 입력하세요.</div>';
+    $('turnInfo').textContent = `${s.id} · ${s.turns.length}턴 (${s.variant || 'safe'})`;
+    refreshSessions();
+  } catch (e) { showErr(e.message); }
 };
 
 async function start(overwrite, restart) {
@@ -546,9 +583,10 @@ async function start(overwrite, restart) {
   CUM = {turns: 0, byRule: {}, counts: {}};
   renderCum(); renderFindings([]); renderActs([]);
   $('chat').innerHTML = '';
-  s.turns.forEach(t => addMsg(t.role, t.content, null));
+  s.turns.forEach(t => addMsg(t.role, t.content, t.meta));
+  RENDERED_TURNS = s.turns.length;
   if (!s.turns.length) $('chat').innerHTML = '<div class="empty">프롤로그 없음. 입력하세요.</div>';
-  $('turnInfo').textContent = `${s.id} · ${s.turns.length}턴`;
+  $('turnInfo').textContent = `${s.id} · ${s.turns.length}턴 (${s.variant || 'safe'})`;
   refreshSessions();
 }
 
@@ -758,6 +796,29 @@ $('btnPrompt').onclick = async () => {
     $('dlg').showModal();
   } catch (e) { showErr(e.message); }
 };
+
+async function pollSync() {
+  if (!LIVE_SYNC || SENDING) return;
+  try {
+    if (SID) {
+      const s = await api(`/api/session?id=${encodeURIComponent(SID)}`);
+      if (s && Array.isArray(s.turns) && s.turns.length > RENDERED_TURNS) {
+        const newTurns = s.turns.slice(RENDERED_TURNS);
+        newTurns.forEach(t => {
+          addMsg(t.role, t.content, t.meta);
+        });
+        RENDERED_TURNS = s.turns.length;
+        $('turnInfo').textContent = `${s.id} · ${s.turns.length}턴 (${s.variant || 'safe'})`;
+        const lastA = [...newTurns].reverse().find(t => t.role === 'assistant');
+        if (lastA && lastA.meta) {
+          if (lastA.meta.findings) renderFindings(lastA.meta.findings);
+          if (lastA.meta.activated) renderActs(lastA.meta.activated);
+        }
+      }
+    }
+  } catch (e) {}
+}
+setInterval(pollSync, 1500);
 
 boot().catch(e => showErr('초기화 실패: ' + e.message));
 </script>

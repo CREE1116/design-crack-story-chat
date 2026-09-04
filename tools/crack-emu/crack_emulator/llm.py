@@ -234,11 +234,38 @@ class EchoClient(Client):
                 "model": "echo", "models": ["echo"], "model_available": True}
 
 
+class AgentClient(Client):
+    """Client for agent/manual self-response mode.
+    
+    Instead of calling an external LLM API, the agent or user directly crafts
+    the character/story response and submits it via turn(..., reply=...) or
+    play_turn(reply=...).
+    """
+
+    def __init__(self, cfg: Config, api_key: str | None = None):
+        super().__init__(cfg, provider="agent")
+        self.model = "agent-injected"
+
+    def complete(self, system: str, messages: list[dict], **kw) -> str:  # type: ignore[override]
+        raise LLMError(
+            "자가 응답 모드(agent)에서는 외부 API를 호출하지 않습니다. "
+            "모델 또는 에이전트가 직접 생성한 응답 텍스트를 'reply' 파라미터로 전달해야 합니다. "
+            "(예: CLI --reply '...' 또는 --reply-file '...')"
+        )
+
+    def health(self) -> dict:
+        return {"ok": True, "provider": "agent", "base_url": "agent://",
+                "model": "agent-injected", "models": ["agent-injected"],
+                "model_available": True}
+
+
 def make_client(cfg: Config, provider: str | None = None, canned: str = "",
                 api_key: str | None = None) -> Client:
     provider = provider or cfg.get("llm.provider", "ollama")
     if provider == "echo":
         return EchoClient(cfg, canned)
+    if provider in ("agent", "manual"):
+        return AgentClient(cfg, api_key)
     if provider == "ollama":
         return OllamaClient(cfg, provider, api_key)
     return Client(cfg, provider, api_key)

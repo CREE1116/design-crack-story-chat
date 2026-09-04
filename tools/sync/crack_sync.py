@@ -117,9 +117,11 @@ def parse_set_meta(folder: Path, index: int) -> dict:
 def load_start_sets(project_dir: Path) -> list[DepartmentStartSetting]:
     """프롤로그와 첫 상황을 한 쌍으로 묶은 시작 세트를 모두 읽는다."""
     out: list[tuple[int, DepartmentStartSetting]] = []
+    build_dir = project_dir if project_dir.name == "build" else (project_dir / "build")
     for dirname in START_SET_DIRS:
-        base = project_dir / dirname
-        if not base.is_dir():
+        candidates = [build_dir / dirname, project_dir / dirname]
+        base = next((c for c in candidates if c.is_dir()), None)
+        if base is None:
             continue
         for i, folder in enumerate(sorted(p for p in base.iterdir() if p.is_dir())):
             p_file, s_file = folder / "prologue.md", folder / "start-prompt.md"
@@ -567,11 +569,11 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
         time.sleep(1.5)
 
         if artifacts.departments:
-            print(f"\n🏢 [다중 시작 설정 주입 시작] (총 {len(artifacts.departments)}개 부서)")
+            print(f"\n🏢 [다중 시작 설정 주입 시작] (총 {len(artifacts.departments)}개 부서/시작세트)")
             for idx, dept in enumerate(artifacts.departments):
                 print(f"   [{idx+1}/{len(artifacts.departments)}] '{dept.title}' 주입 중...", end=" ", flush=True)
                 if idx > 0:
-                    add_btn = page.locator("button:visible:has-text('설정 추가')").first
+                    add_btn = page.locator("button:visible:has-text('설정 추가'), button:visible:has-text('+ 추가'), button:visible:has-text('시작 추가')").first
                     if add_btn.count() > 0:
                         add_btn.click()
                         time.sleep(1.5)
@@ -579,21 +581,21 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
                         print("⚠️ '설정 추가' 버튼 못 찾음", end=" ")
 
                 # 1. 설정 이름(제목) 입력 (placeholder='상황, 등장인물 등')
-                title_inputs = page.locator("input:visible[placeholder*='상황'], input:visible[placeholder*='등장인물']").all()
+                title_inputs = page.locator("input:visible[placeholder*='상황'], input:visible[placeholder*='등장인물'], input:visible[placeholder*='이름']").all()
                 if title_inputs:
                     fill_react_input(page, title_inputs[-1], dept.title)
 
-                # 2. 프롤로그 textarea (첫 번째 textarea)
-                tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
-                if len(tas) >= 1:
-                    fill_react_input(page, tas[0], dept.prologue)
-
-                # 3. 시작 상황 textarea (역할/세계관 placeholder 또는 두 번째)
-                situ_ta = page.locator("textarea:visible[placeholder*='역할'], textarea:visible[placeholder*='세계관']").all()
-                if situ_ta:
-                    fill_react_input(page, situ_ta[-1], dept.start_prompt)
-                elif len(tas) >= 2:
-                    fill_react_input(page, tas[1], dept.start_prompt)
+                # 2. 현재 활성화된 시작 설정 패널의 프롤로그 및 시작 상황 textarea 주입
+                # 현재 보이는 textarea들 중 마지막 2개(새로 추가된 세트) 또는 전용 placeholder 탐색
+                current_tas = page.locator("textarea:visible, div[contenteditable='true']:visible").all()
+                if len(current_tas) >= 2:
+                    # 마지막 2개가 현재 선택/추가된 시작 세트의 [프롤로그, 시작상황]
+                    target_prologue_ta = current_tas[-2]
+                    target_start_ta = current_tas[-1]
+                    fill_react_input(page, target_prologue_ta, dept.prologue)
+                    fill_react_input(page, target_start_ta, dept.start_prompt)
+                elif len(current_tas) == 1:
+                    fill_react_input(page, current_tas[0], dept.prologue)
 
                 print("완료!")
                 time.sleep(0.5)
@@ -613,6 +615,41 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
         print("   ⚠️ '시작 설정' 탭 못 찾음")
 
     return True
+
+
+def save_crack_draft(page: Any) -> bool:
+    """Safely click [임시저장 (Draft Save)] button and verify toast/save state.
+    
+    NEVER clicks [발행] (Publish) or final release buttons.
+    """
+    print("\n💾 [임시저장(Draft Save) 시도]...")
+    draft_selectors = [
+        "button:visible:has-text('임시저장')",
+        "button:visible:has-text('임시 저장')",
+        "div[role='button']:visible:has-text('임시저장')",
+        "div[role='button']:visible:has-text('임시 저장')",
+    ]
+    
+    btn = None
+    for sel in draft_selectors:
+        loc = page.locator(sel)
+        if loc.count() > 0 and loc.first.is_visible():
+            btn = loc.first
+            break
+            
+    if btn:
+        try:
+            btn.scroll_into_view_if_needed(timeout=3000)
+            btn.click(timeout=4000)
+            print("   ✅ [임시저장] 버튼 클릭 성공!")
+            time.sleep(1.5)
+            return True
+        except Exception as e:
+            print(f"   ⚠️ [임시저장] 버튼 클릭 실패: {e}")
+            return False
+    else:
+        print("   ℹ️ 화면에서 '임시저장' 버튼을 찾지 못했습니다. (자동 저장이거나 에디터 헤더에 위치)")
+        return False
 
 
 def clear_existing_keywords(page: Any) -> int:
@@ -687,7 +724,7 @@ def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
       4. ✏️ 연필 버튼 클릭 → input에 제목 입력 → Enter로 확정
       5. ∨ chevron down 버튼 클릭하여 아코디언 확장
       6. 정보(본문) textarea에 content 입력
-      7. 키워드 input에 tag 입력 후 Enter
+      7. 키워드 input에 tag 입력 후 Enter (기존 태그 정리 및 React 호환)
       8. ^ chevron up 버튼 클릭하여 아코디언 접기
     """
     print(f"\n📚 [키워드북 주입 시작] (총 {len(artifacts.keyword_entries)}개 항목)")
@@ -743,12 +780,24 @@ def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
             fill_react_input(page, info_ta, entry.content)
             time.sleep(0.3)
 
-            # 5) 키워드 태그 input 입력
+            # 5) 키워드 태그 input 입력 (각 태그별 focus, fill, Enter 후 잔류 텍스트 방지)
             kw_inp = page.locator("input[placeholder*='단어 입력 후 엔터'], input[placeholder*='엔터'], input:visible").last
             for kw in entry.keywords:
-                kw_inp.fill(kw)
-                kw_inp.press("Enter")
-                time.sleep(0.08)
+                kw_str = str(kw).strip()
+                if not kw_str:
+                    continue
+                try:
+                    kw_inp.click(timeout=2000)
+                    time.sleep(0.05)
+                    kw_inp.fill(kw_str)
+                    time.sleep(0.05)
+                    kw_inp.press("Enter")
+                    time.sleep(0.12)
+                except Exception:
+                    # Fallback fill
+                    fill_react_input(page, kw_inp, kw_str)
+                    kw_inp.press("Enter")
+                    time.sleep(0.12)
             time.sleep(0.3)
 
             # 6) 아코디언 접기
@@ -1112,6 +1161,9 @@ def run_sync(
             print("\n⚡ [--auto 플래그 감지] 즉시 전체 자동 주입을 실행합니다...")
             time.sleep(1.5)
             auto_navigate_and_inject_all(page, artifacts)
+            if auto_submit:
+                time.sleep(1.5)
+                save_crack_draft(page)
 
         # -------------------------------------------------------------
         # 상호작용 상주 루프 (Interactive Session Loop / Hot-Reload)
@@ -1121,9 +1173,10 @@ def run_sync(
         print("💡 크랙 브라우저가 열렸습니다! 원하는 에디터 페이지로 이동한 뒤 아래 명령을 입력하세요.")
         print("===========================================================================")
         print("  [a] 전체 일괄 자동 주입 (기본정보 ➡️ 프롬프트 ➡️ 키워드북 ➡️ 단축어)")
+        print("  [w] 임시저장(Draft Save) 실행")
         print("  [p] 현재 화면에 프롬프트 3종(프롤로그·시작·시스템) 주입")
-        print("  [k] 키워드북 19개 일괄 주입")
-        print("  [s] 단축어 3개 일괄 주입")
+        print("  [k] 키워드북 일괄 주입")
+        print("  [s] 단축어 일괄 주입")
         print("  [i] 기본 정보(제목·상세소개) 주입")
         print("  [d] 현재 페이지의 버튼/입력창 DOM 목록 분석 (디버깅)")
         print("  [v] SAFE ↔ UNSAFE 프롬프트 버전 전환")
@@ -1134,12 +1187,15 @@ def run_sync(
         if not headed:
             if not auto_inject:
                 auto_navigate_and_inject_all(page, artifacts)
+            if auto_submit:
+                time.sleep(1.5)
+                save_crack_draft(page)
             context.close()
             return 0
 
         while True:
             try:
-                cmd = input("\n👉 명령을 입력하세요 [a(전체주입) / p(프롬프트) / k(키워드북) / s(단축어) / d(DOM분석) / q(종료)]: ").strip().lower()
+                cmd = input("\n👉 명령을 입력하세요 [a(전체주입) / w(임시저장) / p(프롬프트) / k(키워드북) / s(단축어) / d(DOM분석) / q(종료)]: ").strip().lower()
             except (KeyboardInterrupt, EOFError):
                 print("\n👋 세션을 종료합니다.")
                 break
@@ -1147,9 +1203,14 @@ def run_sync(
             if cmd in ("q", "quit", "exit"):
                 print("👋 브라우저를 닫고 프로그램을 종료합니다.")
                 break
+            elif cmd in ("w", "save", "draft"):
+                save_crack_draft(page)
             elif cmd in ("a", "all", "sync"):
                 artifacts = load_project_artifacts(project_dir, variant=current_variant)
                 auto_navigate_and_inject_all(page, artifacts)
+                if auto_submit:
+                    time.sleep(1.5)
+                    save_crack_draft(page)
             elif cmd in ("p", "prompt", "prompts"):
                 artifacts = load_project_artifacts(project_dir, variant=current_variant)
                 inject_prompts(page, artifacts)
@@ -1177,7 +1238,7 @@ def run_sync(
             elif not cmd:
                 continue
             else:
-                print(f"⚠️ 알 수 없는 명령입니다: {cmd} (a, p, k, s, i, d, v, r, q 중 선택)")
+                print(f"⚠️ 알 수 없는 명령입니다: {cmd} (a, w, p, k, s, i, d, v, r, q 중 선택)")
 
         context.close()
 

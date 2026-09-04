@@ -30,25 +30,25 @@
 <project>/
   story.md
   characters.md
-  start-sets/                     ← 정본. 시작 세트가 여기 산다
-    01_product/
-      meta.md                     # 선택. 제목·설명·순서·기본세트
-      prologue.md                 # 필수
-      start-prompt.md             # 필수
-    02_rd/
-    03_sales/
-    04_executive/
   build/
     integrated-prompt-safe.md
     integrated-prompt-unsafe.md
     keyword-book*.md
     prologue.md                   ← 생성물. 기본 세트의 사본
     start-prompt.md               ← 생성물. 같은 세트의 사본
+    start-sets/                   ← 시작 세트 디렉토리 (build/ 내부 또는 프로젝트 루트)
+      01_product/
+        meta.md                   # 선택. 제목·설명·순서·기본세트
+        prologue.md               # 필수
+        start-prompt.md           # 필수
+      02_rd/
+      03_sales/
+      04_executive/
 ```
 
 - 폴더 이름이 곧 세트 `id` 입니다. 숫자 접두사(`01_`)는 정렬용이며 제목에서 자동으로 떨어집니다.
 - 세트를 추가하려면 폴더를 만들면 됩니다. 어디에도 목록을 등록하지 않습니다.
-- `departments/` 라는 이름도 계속 읽습니다(구버전 호환). 새 프로젝트는 `start-sets/` 를 씁니다.
+- `build/start-sets/`와 프로젝트 루트의 `start-sets/` 모두 정본으로 지원하며, `departments/` 라는 이름도 계속 읽습니다(구버전 호환).
 - 세트가 하나뿐인 스토리는 `start-sets/` 없이 `build/` 의 두 파일만 두어도 됩니다.
 
 ---

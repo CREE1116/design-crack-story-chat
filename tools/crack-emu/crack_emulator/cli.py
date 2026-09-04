@@ -157,7 +157,10 @@ def cmd_turn(args) -> int:
                   goal=args.goal or "", start_set=args.start_set)
     session = eng.load(args.session)
     text = args.input if args.input is not None else sys.stdin.read()
-    res = eng.turn(session, text, run_qa=not args.no_qa)
+    reply = getattr(args, "reply", None)
+    if not reply and getattr(args, "reply_file", None):
+        reply = Path(args.reply_file).read_text(encoding="utf-8")
+    res = eng.turn(session, text, reply=reply, run_qa=not args.no_qa)
     out = res.to_dict()
 
     def human(o):
@@ -330,13 +333,6 @@ def cmd_sets(args) -> int:
     return EXIT_OK
 
 
-def cmd_mcp(args) -> int:
-    from .mcp_server import main as mcp_main
-    return mcp_main(args.project, store=args.store, spec=args.spec,
-                    provider=args.provider, variant=args.variant,
-                    key_file=args.key_file)
-
-
 def cmd_serve(args) -> int:
     from .webui import serve
     serve(args.project, host=args.host, port=args.port, spec=args.spec,
@@ -382,7 +378,7 @@ def _add_global_flags(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--project", help="path to a Crack build/ directory")
     ap.add_argument("--variant", help="safe | unsafe | default (default: safe)")
     ap.add_argument("--store", help="session store directory")
-    ap.add_argument("--provider", help="ollama | openrouter | gemini | openai | echo")
+    ap.add_argument("--provider", help="ollama | openrouter | gemini | openai | echo | agent")
     ap.add_argument("--model", help="override the provider's model id")
     ap.add_argument("--base-url", help="override the provider's base url")
     ap.add_argument("--temperature", type=float)
@@ -440,6 +436,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = add("turn", "run one turn and validate the reply")
     p.add_argument("session")
     p.add_argument("--input", help="user input; reads stdin when omitted")
+    p.add_argument("--reply", help="inject agent/manual reply without calling model API")
+    p.add_argument("--reply-file", help="read injected reply from file")
     p.add_argument("--no-qa", action="store_true")
     p.set_defaults(fn=cmd_turn)
 
@@ -467,10 +465,6 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--migrate", nargs="?", const="plan", choices=["plan", "apply"],
                    help="move departments/ to start-sets/ and scaffold meta.md")
     p.set_defaults(fn=cmd_sets)
-
-    p = add("mcp", "run as an MCP server over stdio")
-    p.add_argument("--key-file", help="provider API keys (mode 600), outside the repo")
-    p.set_defaults(fn=cmd_mcp)
 
     p = add("serve", "start the local web UI")
     p.add_argument("--host", default="127.0.0.1")

@@ -72,23 +72,27 @@ class Engine:
 
     # ── one turn ──────────────────────────────────────────────────
     def build_prompt(self, session: Session, user_input: str) -> AssembledPrompt:
+        variant = session.variant or self.variant
         window = int(self.cfg.get("context.window_turns", 20))
-        shortcut, _rest = match_shortcut(user_input, self.project.shortcut_list(self.variant))
+        shortcut, _rest = match_shortcut(user_input, self.project.shortcut_list(variant))
         acts, dropped = activate_detail(
-            self.project.entries(self.variant), session.turns, user_input, self.cfg)
+            self.project.entries(variant), session.turns, user_input, self.cfg)
         recalled = memory.select_recalled(session, self.cfg, window, user_input)
         history = memory.live_turns(session, window)
-        prompt = assemble(self.project, session, self.cfg, self.variant,
+        prompt = assemble(self.project, session, self.cfg, variant,
                           user_input, history, acts, recalled, shortcut)
         prompt.dropped = dropped
         return prompt
 
-    def turn(self, session: Session, user_input: str, *, run_qa: bool = True,
-             update_memory: bool = True) -> TurnResult:
+    def turn(self, session: Session, user_input: str, *, reply: str | None = None,
+             run_qa: bool = True, update_memory: bool = True) -> TurnResult:
         window = int(self.cfg.get("context.window_turns", 20))
         prompt = self.build_prompt(session, user_input)
 
-        reply = self.client.complete(prompt.system, prompt.messages).strip()
+        if reply is None:
+            reply = self.client.complete(prompt.system, prompt.messages).strip()
+        else:
+            reply = reply.strip()
 
         prev = next((t.content for t in reversed(session.turns) if t.role == "assistant"), None)
         idx = len(session.turns)
@@ -109,8 +113,11 @@ class Engine:
             )
 
         if update_memory and memory.should_summarize(session, self.cfg, window):
-            memory.update_summaries(session, self.cfg, window, self.client)
-            memory.update_relations(session, self.cfg, window, self.client)
+            try:
+                memory.update_summaries(session, self.cfg, window, self.client)
+                memory.update_relations(session, self.cfg, window, self.client)
+            except Exception:
+                pass
 
         self.store.save(session)
 
