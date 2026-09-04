@@ -330,6 +330,13 @@ def cmd_sets(args) -> int:
     return EXIT_OK
 
 
+def cmd_mcp(args) -> int:
+    from .mcp_server import main as mcp_main
+    return mcp_main(args.project, store=args.store, spec=args.spec,
+                    provider=args.provider, variant=args.variant,
+                    key_file=args.key_file)
+
+
 def cmd_serve(args) -> int:
     from .webui import serve
     serve(args.project, host=args.host, port=args.port, spec=args.spec,
@@ -460,6 +467,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--migrate", nargs="?", const="plan", choices=["plan", "apply"],
                    help="move departments/ to start-sets/ and scaffold meta.md")
     p.set_defaults(fn=cmd_sets)
+
+    p = add("mcp", "run as an MCP server over stdio")
+    p.add_argument("--key-file", help="provider API keys (mode 600), outside the repo")
+    p.set_defaults(fn=cmd_mcp)
 
     p = add("serve", "start the local web UI")
     p.add_argument("--host", default="127.0.0.1")
