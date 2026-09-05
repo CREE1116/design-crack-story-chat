@@ -968,7 +968,7 @@ def ensure_required_basics(page: Any, artifacts: "ProjectArtifacts") -> None:
         else:
             print("   ⛔ [대표 이미지] 가 비어 있습니다 — 크랙은 이게 없으면 저장을 거부합니다.")
             print("      CRACK_SYNC_THUMBNAIL=<이미지경로> 로 지정하거나 브라우저에서 직접 올리세요.")
-            print("      규격: 1,080 x 1,620px · 5MB 이하")
+            print("      규격: 1,080 x 1,620px 세로 비율 · 5MB 이하 · GIF 가능(움짤 표지)")
 
     checks = (
         ("스토리의 이름", "input", artifacts.title, "제목"),
