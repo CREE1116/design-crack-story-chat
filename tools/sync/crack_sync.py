@@ -51,13 +51,6 @@ class ShortcutEntry:
 
 
 @dataclass
-class ImageHintEntry:
-    name: str
-    description: str
-    image_path: str = ""
-
-
-@dataclass
 class DepartmentStartSetting:
     dept_id: str
     title: str
@@ -77,7 +70,6 @@ class ProjectArtifacts:
     keyword_entries: list[KeywordEntry] = field(default_factory=list)
     shortcuts: list[ShortcutEntry] = field(default_factory=list)
     departments: list[DepartmentStartSetting] = field(default_factory=list)
-    image_hints: list[ImageHintEntry] = field(default_factory=list)
     summary_comment: str = ""
     story_description: str = ""
     short_summary: str = ""
@@ -101,15 +93,6 @@ ENTRY_MAX = 400
 SHORTCUT_MAX = 400
 PLAY_GUIDE_MAX = 500
 REPLY_MAX_COUNT = 3
-IMAGE_HINT_NAME_MAX = 20
-IMAGE_HINT_DESC_MAX = 50
-
-# 1x1 투명 픽셀 PNG (더미 이미지 자동 생성용 67바이트 바이너리)
-DUMMY_PNG_BYTES = (
-    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
-    b"\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00"
-    b"\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
-)
 
 # UNSAFE 판을 같은 계정에 별도 작품으로 올릴 때 제목을 구분하기 위한 접미사.
 # 핫리로드 경로가 여러 개라 로더 한 곳에서 붙인다.
@@ -353,56 +336,6 @@ def parse_keyword_book(kb_text: str) -> tuple[list[KeywordEntry], list[ShortcutE
     return keyword_entries, shortcuts
 
 
-def parse_image_hints(text: str) -> list[ImageHintEntry]:
-    """Parse image hints from markdown list, YAML-like block, or table format."""
-    hints: list[ImageHintEntry] = []
-    lines = text.splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if not line or line.startswith("#"):
-            i += 1
-            continue
-
-        # 1. YAML-style: - name: ... \n desc: ...
-        m_name = re.match(r"^-\s*(?:name|이름|title):\s*(.+)$", line, re.IGNORECASE)
-        if m_name:
-            name = m_name.group(1).strip()
-            desc = ""
-            if i + 1 < len(lines):
-                next_line = lines[i + 1].strip()
-                m_desc = re.match(r"^(?:-\s*)?(?:desc|description|설명):\s*(.+)$", next_line, re.IGNORECASE)
-                if m_desc:
-                    desc = m_desc.group(1).strip()
-                    i += 1
-            hints.append(ImageHintEntry(name=name, description=desc))
-            i += 1
-            continue
-
-        # 2. Markdown table: | name | desc |
-        if line.startswith("|") and line.endswith("|"):
-            parts = [p.strip() for p in line.split("|")[1:-1]]
-            if len(parts) >= 2 and not any(p.startswith("---") for p in parts) and parts[0] not in ("이름", "name", "Name"):
-                hints.append(ImageHintEntry(name=parts[0], description=parts[1]))
-            i += 1
-            continue
-
-        # 3. Bullet line: - name: desc or - name | desc
-        if line.startswith("-") or line.startswith("*"):
-            body = line.lstrip("-* ").strip()
-            if ":" in body:
-                n, d = body.split(":", 1)
-                hints.append(ImageHintEntry(name=n.strip(), description=d.strip()))
-            elif "|" in body:
-                n, d = body.split("|", 1)
-                hints.append(ImageHintEntry(name=n.strip(), description=d.strip()))
-            i += 1
-            continue
-
-        i += 1
-    return hints
-
-
 def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectArtifacts:
     build_dir = project_dir / "build"
     if not build_dir.exists():
@@ -418,12 +351,6 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     play_guide_path = build_dir / "assets" / "play-guide.md"
     replies_path = build_dir / "assets" / "recommended-replies.md"
     story_path = project_dir / "story.md"
-
-    hints_path = build_dir / "assets" / "image-hints.md"
-    if not hints_path.exists():
-        hints_path = build_dir / "image-hints.md"
-    hints_text = hints_path.read_text(encoding="utf-8").strip() if hints_path.exists() else ""
-    image_hints = parse_image_hints(hints_text) if hints_text else []
 
     prologue = prologue_path.read_text(encoding="utf-8").strip() if prologue_path.exists() else ""
     start_prompt = start_prompt_path.read_text(encoding="utf-8").strip() if start_prompt_path.exists() else ""
@@ -486,7 +413,6 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
         keyword_entries=keyword_entries,
         shortcuts=shortcuts,
         departments=departments,
-        image_hints=image_hints,
         summary_comment=summary_comment,
         story_description=story_description,
         short_summary=short_summary,
@@ -579,14 +505,6 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
     for i, r in enumerate(artifacts.replies, 1):
         head = r.splitlines()[0][:38]
         print(f"   [{i}] {head}… ({len(r)}자)")
-    if artifacts.image_hints:
-        print(f"10. 🖼️ 이미지 힌트 (Image Hints)       : 총 {len(artifacts.image_hints)}개 등록 예정 (필요 더미 이미지: {len(artifacts.image_hints)}장)")
-        for i, h in enumerate(artifacts.image_hints, 1):
-            n_len = crack_len(h.name)
-            d_len = crack_len(h.description)
-            n_flag = "" if n_len <= IMAGE_HINT_NAME_MAX else f"  ⚠️ {IMAGE_HINT_NAME_MAX}자 초과"
-            d_flag = "" if d_len <= IMAGE_HINT_DESC_MAX else f"  ⚠️ {IMAGE_HINT_DESC_MAX}자 초과"
-            print(f"   [{i:02d}] 이름({n_len}자): {h.name:<20}{n_flag} | 설명({d_len}자): {h.description[:28]}…{d_flag}")
     print("=" * 75)
 
     # 한도를 출력만 하고 통과를 선언하면 검사기가 아니라 인쇄기다. 실제로 센다.
@@ -611,9 +529,6 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
             violations.append(f"키워드북 '{e.title}': 키워드 {len(e.keywords)}개 (1~5개만 허용)")
     for sc in artifacts.shortcuts:
         check(f"단축어 '{sc.name}' 프롬프트", sc.prompt, SHORTCUT_MAX)
-    for h in artifacts.image_hints:
-        check(f"이미지 힌트 '{h.name}' 이름", h.name, IMAGE_HINT_NAME_MAX)
-        check(f"이미지 힌트 '{h.name}' 설명", h.description, IMAGE_HINT_DESC_MAX)
     if len(artifacts.replies) > REPLY_MAX_COUNT:
         violations.append(f"추천 답변 {len(artifacts.replies)}개 (최대 {REPLY_MAX_COUNT}개)")
     if len(artifacts.departments) > MAX_START_SETS:
@@ -1453,117 +1368,6 @@ def inject_shortcuts(page: Any, artifacts: ProjectArtifacts) -> bool:
     return True
 
 
-def ensure_dummy_image(custom_path: str = "") -> Path:
-    """Ensure a dummy PNG file exists on disk for uploading."""
-    if custom_path and Path(custom_path).is_file():
-        return Path(custom_path)
-    dummy_dir = Path.home() / ".crack"
-    dummy_dir.mkdir(parents=True, exist_ok=True)
-    dummy_file = dummy_dir / "dummy_pixel.png"
-    if not dummy_file.exists() or dummy_file.stat().st_size == 0:
-        dummy_file.write_bytes(DUMMY_PNG_BYTES)
-    return dummy_file
-
-
-def inject_image_hints(page: Any, artifacts: ProjectArtifacts) -> bool:
-    """Inject image hint entries into [이미지 힌트] tab with dummy image uploads."""
-    if not artifacts.image_hints:
-        print("\n🖼️ 주입할 이미지 힌트 항목이 없습니다 (build/assets/image-hints.md 없음).")
-        return True
-
-    print(f"\n🖼️ [이미지 힌트 주입 시작] (총 {len(artifacts.image_hints)}개 항목 / 필요 더미 이미지: {len(artifacts.image_hints)}장)")
-
-    # 1. '이미지 힌트' 탭 클릭
-    img_tab = page.locator(
-        "button:visible:has-text('이미지 힌트'), div[role='tab']:visible:has-text('이미지 힌트'), "
-        "a:visible:has-text('이미지 힌트'), button:visible:has-text('이미지')"
-    ).first
-    if img_tab.count() > 0:
-        img_tab.click()
-        time.sleep(1.5)
-    else:
-        print("   ⚠️ '이미지 힌트' 탭을 찾지 못했습니다.")
-        dump_fields(page, "이미지 힌트 탭 탐색 실패")
-        return False
-
-    dummy_path = ensure_dummy_image()
-    print(f"   🖼️ 더미 이미지 준비 완료: {dummy_path} ({dummy_path.stat().st_size} bytes)")
-
-    for i, hint in enumerate(artifacts.image_hints, 1):
-        print(
-            f"   [{i:02d}/{len(artifacts.image_hints):02d}] '{hint.name}' ({len(hint.name)}자) / "
-            f"'{hint.description[:15]}…' ({len(hint.description)}자)...",
-            end=" ", flush=True,
-        )
-        try:
-            # 1) '+ 추가' 또는 '+ 이미지 추가' 버튼 탐색
-            add_btn = page.locator(
-                "button:visible:has-text('이미지 추가'), button:visible:has-text('+ 이미지 추가'), "
-                "button:visible:has-text('+ 추가'), button:visible:has-text('추가'), div[role='button']:visible:has-text('추가')"
-            ).first
-            if add_btn.count() > 0:
-                add_btn.scroll_into_view_if_needed(timeout=2000)
-                add_btn.click(timeout=4000)
-                time.sleep(1.0)
-
-            # 2) 파일 업로드 (기기에서 가져오기 모달 또는 input[type='file'])
-            uploaded = False
-            pick = page.locator(
-                ":text('기기에서 가져오기'), :text('내 기기'), button:visible:has-text('기기')"
-            ).first
-            if pick.count() > 0 and pick.is_visible():
-                with page.expect_file_chooser(timeout=5000) as fc:
-                    pick.click()
-                fc.value.set_files(str(dummy_path))
-                uploaded = True
-            else:
-                file_inps = page.locator("input[type='file']")
-                if file_inps.count() > 0:
-                    file_inps.last.set_input_files(str(dummy_path))
-                    uploaded = True
-
-            time.sleep(1.5)
-            # 자르기 / 적용 모달 처리
-            crop = page.locator(
-                "button:visible:has-text('자르기'), button:visible:has-text('적용'), "
-                "button:visible:has-text('확인'), button:visible:has-text('완료')"
-            ).first
-            if crop.count() > 0 and crop.is_visible():
-                crop.click(timeout=3000)
-                time.sleep(1.5)
-
-            # 3) 이미지 이름(20자) 입력
-            name_inp = page.locator(
-                "input:visible[placeholder*='이름'], input:visible[placeholder*='키워드'], input:visible"
-            ).last
-            if name_inp.count() > 0:
-                fill_react_input(page, name_inp, hint.name)
-                time.sleep(0.2)
-
-            # 4) 이미지 설명(50자) 입력
-            desc_ta = page.locator(
-                "textarea:visible[placeholder*='설명'], input:visible[placeholder*='설명'], textarea:visible"
-            ).last
-            if desc_ta.count() > 0:
-                fill_react_input(page, desc_ta, hint.description)
-                time.sleep(0.2)
-
-            # 5) 등록 / 완료 버튼이 있으면 클릭
-            save_btn = page.locator(
-                "button:visible:has-text('등록'), button:visible:has-text('확인'), button:visible:has-text('저장')"
-            ).last
-            if save_btn.count() > 0 and save_btn.is_visible():
-                save_btn.click(timeout=2000)
-                time.sleep(0.5)
-
-            print("완료")
-        except Exception as ex:
-            print(f"실패 ({ex})")
-
-    print(f"   ✅ 이미지 힌트 {len(artifacts.image_hints)}개 주입 완료!")
-    return True
-
-
 def inject_basic_info(page: Any, artifacts: ProjectArtifacts) -> bool:
     """Inject title and short summary into 프로필 tab."""
     print("\n📝 [기본 정보 (프로필) 주입 시작]")
@@ -1739,11 +1543,6 @@ def auto_navigate_and_inject_all(page: Any, artifacts: ProjectArtifacts) -> None
     inject_shortcuts(page, artifacts)
     time.sleep(0.5)
 
-    # 5.5 이미지 힌트 주입 (더미 이미지 자동 생성 & 업로드)
-    if artifacts.image_hints:
-        inject_image_hints(page, artifacts)
-        time.sleep(0.5)
-
     # 6. 등록 상세 설명 주입
     inject_publish_info(page, artifacts)
     time.sleep(0.5)
@@ -1883,7 +1682,6 @@ def run_sync(
         print("  [p] 현재 화면에 프롬프트 3종(프롤로그·시작·시스템) 주입")
         print("  [k] 키워드북 일괄 주입")
         print("  [s] 단축어 일괄 주입")
-        print("  [m] 이미지 힌트 일괄 주입 (더미 이미지 자동 업로드)")
         print("  [i] 기본 정보(제목·상세소개) 주입")
         print("  [d] 현재 페이지의 버튼/입력창 DOM 목록 분석 (디버깅)")
         print("  [v] SAFE ↔ UNSAFE 프롬프트 버전 전환")
@@ -1902,7 +1700,7 @@ def run_sync(
 
         while True:
             try:
-                cmd = input("\n👉 명령을 입력하세요 [a(전체주입) / w(임시저장) / p(프롬프트) / k(키워드북) / s(단축어) / m(이미지힌트) / d(DOM분석) / q(종료)]: ").strip().lower()
+                cmd = input("\n👉 명령을 입력하세요 [a(전체주입) / w(임시저장) / p(프롬프트) / k(키워드북) / s(단축어) / d(DOM분석) / q(종료)]: ").strip().lower()
             except (KeyboardInterrupt, EOFError):
                 print("\n👋 세션을 종료합니다.")
                 break
@@ -1927,9 +1725,6 @@ def run_sync(
             elif cmd in ("s", "shortcut", "shortcuts", "sc"):
                 artifacts = load_project_artifacts(project_dir, variant=current_variant)
                 inject_shortcuts(page, artifacts)
-            elif cmd in ("m", "media", "image", "hints", "hint", "img"):
-                artifacts = load_project_artifacts(project_dir, variant=current_variant)
-                inject_image_hints(page, artifacts)
             elif cmd in ("i", "info", "basic"):
                 artifacts = load_project_artifacts(project_dir, variant=current_variant)
                 inject_basic_info(page, artifacts)

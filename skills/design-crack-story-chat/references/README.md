@@ -31,7 +31,7 @@
 | 6중 잠금·능동성·부정편향·앵커링·나레이터 **문구** | `crack-prompt-rules.md` |
 | 위 항목들의 **원리와 효과** | `production-patterns.md` |
 | 장르별 완성 프리셋, 7,000자 예산 배분 | `system-prompt-presets.md` |
-| 규칙 작성법, 네 경로 배치, 3단 계층 | `prompt-writing.md` |
+| 규칙 작성법, 네 경로 배치, 3단 계층, **역발상 5단계 파이프라인, 30대 보편 원칙** | `prompt-writing.md` |
 | **압축 루프 4단계, 전역 기호표, 산출물별 글자 수 타겟** | `semantic-compression.md` |
 | **크랙 런타임 주입 파이프라인, 상단/하단 주입 위치** | `crack-internal-runtime.md` |
 | **키워드북 3슬롯, 트리거 설계, 상시 강화 항목** | `keyword-book.md` |
