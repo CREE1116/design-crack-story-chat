@@ -28,10 +28,51 @@ python3 compose_character.py --parse-md <작품>/characters.md
 
 ---
 
-## 1. 표준 디렉터리 스캐폴딩 및 웹 쇼케이스 생성
+## 0.2. 배경 및 환경 프롬프트 컴파일러 (`compose_scene.py`)
+
+풍경화형 단독 배경(Pure Scenery CG, 5대 앵커: no humans 락, 공간/건축, 조명/시간, 대기/날씨, 소품/랜드마크, 카메라)과 인물이 결합되는 결속용 배경(Staged Environment: 환경 바인딩, 지지대/가구, 인물 조명, 심도)을 자동 린팅하고 `scene-design.md`, NovelAI 일괄 생성 프리셋(`preset-backgrounds.json`), `prompts.json`을 생성합니다:
 
 ```bash
-# prompts.json 설정을 기반으로 인물 번호화 디렉터리 및 웹 템플릿 자동 생성
+# 데모 실행 및 5대 앵커 린팅 테스트
+python3 tools/images/compose_scene.py --demo
+
+# story.md 기반 배경 장소 자동 파싱 및 명세서 생성
+python3 tools/images/compose_scene.py --parse-story <작품>/story.md --output-md <작품>/build/assets/scene-design.md
+
+# NovelAI / WebUI 일괄 생성용 프리셋 JSON 내보내기
+python3 tools/images/compose_scene.py --parse-story <작품>/story.md --output-preset <작품>/build/assets/preset-backgrounds.json
+
+# 단일 씬 즉시 컴파일
+python3 tools/images/compose_scene.py --name "마왕성 로비" --category indoor --arch "grand corporate lobby" --props "speed gate turnstiles" --lighting "volumetric ceiling lights"
+```
+
+---
+
+## 0.3. 배경 이미지 크롭 및 순서 리네이밍 도구 (`crop_backgrounds.py`)
+
+NovelAI 등에서 생성된 원본 이미지(1216x832, 1920x1080 등)를 크랙 스토리챗 상단 배경 표준 와이드 규격(`1024x400`, 2.56:1 비율)으로 Center Crop 및 고품질 Lanczos 리사이즈하고, 마크다운 배치표(`에셋_배치표.md`)나 프리셋 순서에 맞춰 넘버링(`bg01_장소명.webp` 또는 `a01.webp`)을 자동 부여합니다:
+
+```bash
+# 마크다운 배치표 기반으로 1024x400 크롭 및 bg01~bg25 네이밍 후 WebP 변환
+python3 tools/images/crop_backgrounds.py \
+  --src image-배경_원본 \
+  --out image/배경 \
+  --table image/에셋_배치표.md \
+  --format webp
+
+# 미리보기 (dry-run)
+python3 tools/images/crop_backgrounds.py --src image-배경_원본 --out image/배경 --table image/에셋_배치표.md --dry-run
+
+# preset-backgrounds.json 기반으로 순서 매핑
+python3 tools/images/crop_backgrounds.py --src image-배경_원본 --out image/배경 --preset build/assets/preset-backgrounds.json
+
+# 크랙 표준 scene/a01 스타일 및 PNG+WebP 동시 저장
+python3 tools/images/crop_backgrounds.py --src image-배경_원본 --out deploy/scene --table image/에셋_배치표.md --style scene --format both
+```
+
+---
+
+## 1. 표준 디렉터리 스캐폴딩 및 웹 쇼케이스 생성
 python3 deploy.py --scaffold --config <작품>/build/assets/prompts.json --root ~/내이미지폴더
 ```
 

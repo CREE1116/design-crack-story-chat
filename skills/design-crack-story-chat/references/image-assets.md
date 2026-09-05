@@ -61,15 +61,25 @@ my-story-assets/
 
 ---
 
-## WebP 일괄 변환 파이프라인
+## WebP 일괄 변환 및 배경 크롭 파이프라인
 
 모든 이미지는 용량 절감(PNG 대비 70~80% 감소)과 모바일 0초대 로딩을 위해 **반드시 WebP 포맷으로 변환**하여 업로드합니다.
 
+### 1. 배경 이미지 자동 크롭 및 넘버링 네이밍 (`crop_backgrounds.py`)
+생성된 원본 배경(1216x832 등)을 크랙 상단 배경 표준 해상도(`1024x400`, 2.56:1)로 중앙 크롭하고, 배치표에 맞추어 `bg01~bg25` 또는 `scene/a01`로 변환하여 WebP로 내보냅니다:
+
 ```bash
-# cwebp CLI를 사용한 일괄 변환 예시
-for f in *.png *.jpg; do
-  [ -f "$f" ] && cwebp -q 85 "$f" -o "${f%.*}.webp" && rm "$f"
-done
+# 배치표 기반 배경 자동 크롭 & 리네이밍 & WebP 변환
+python3 tools/images/crop_backgrounds.py \
+  --src image-배경_원본 \
+  --out image/배경 \
+  --table image/에셋_배치표.md \
+  --format webp
+```
+
+### 2. 일반 이미지 일괄 변환 (`deploy.py`)
+```bash
+python3 tools/images/deploy.py --convert-webp --root ~/내이미지폴더
 ```
 
 ---

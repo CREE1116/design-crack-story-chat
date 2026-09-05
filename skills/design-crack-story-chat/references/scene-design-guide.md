@@ -73,7 +73,15 @@
 
 ## 5. 공식 빌드 산출물: `build/assets/scene-design.md`
 
-컴파일러 도구를 통해 프로젝트 빌드 시 `build/assets/scene-design.md`가 자동 생성됩니다.
+컴파일러 도구(`tools/images/compose_scene.py`)를 통해 프로젝트 빌드 시 `build/assets/scene-design.md`가 자동 생성됩니다.
+
+```bash
+# story.md 기반 배경 장소 자동 파싱 및 공식 명세서 컴파일
+python3 tools/images/compose_scene.py --parse-story <작품>/story.md --output-md <작품>/build/assets/scene-design.md
+
+# NovelAI / WebUI 일괄 생성용 프리셋 동시 출력
+python3 tools/images/compose_scene.py --parse-story <작품>/story.md --output-preset <작품>/build/assets/preset-backgrounds.json
+```
 
 * **포함 내용**:
   * 📋 전체 씬/장소 로스터 요약표
