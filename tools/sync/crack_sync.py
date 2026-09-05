@@ -177,6 +177,13 @@ def load_start_sets(project_dir: Path) -> list[DepartmentStartSetting]:
             s_text = s_file.read_text(encoding="utf-8").strip() if s_file.exists() else ""
             if not (p_text or s_text):
                 continue
+            # 세트마다 추천 답변을 다르게 줄 수 있다. 없으면 프로젝트 공통을 쓴다.
+            r_file = folder / "recommended-replies.md"
+            r_list: list[str] = []
+            if r_file.exists():
+                raw = r_file.read_text(encoding="utf-8").strip()
+                r_list = [b.strip() for b in re.split(r"^---+$", raw, flags=re.MULTILINE) if b.strip()]
+                r_list = r_list[:REPLY_MAX_COUNT]
             meta = parse_set_meta(folder, i)
             if not meta["enabled"]:
                 print(f"   ⏸️ 시작 세트 '{meta['title']}' 는 meta.md 에서 보류 상태입니다 (enabled: false)")
@@ -186,6 +193,7 @@ def load_start_sets(project_dir: Path) -> list[DepartmentStartSetting]:
                 title=meta["title"],
                 prologue=p_text,
                 start_prompt=s_text,
+                replies=r_list,
             )))
         if out:
             break
@@ -617,6 +625,45 @@ def placeholder_selector(needle: str) -> str:
     )
 
 
+def inject_replies(page: Any, replies: list, label: str = "") -> None:
+    """현재 열려 있는 시작 세트 패널에 추천 답변을 넣는다.
+
+    추천 답변은 **시작 세트마다 따로**다. 세트 루프가 끝난 뒤에 한 번만 넣으면
+    그때 열려 있던 마지막 세트에만 들어가고, 기본 세트에는 아무것도 없다.
+    실제로 그래서 "추천 답변이 안 들어갔다" 는 상태가 됐다.
+
+    칸은 [추천 답변 추가] 를 눌러야 생긴다(`placeholder='추천 답변 N'`).
+    채운 뒤 값 길이를 다시 읽어, 실제로 들어간 것만 성공이라고 말한다.
+    """
+    if not replies:
+        return
+    where = f" — {label}" if label else ""
+    print(f"      📌 추천 답변 {len(replies)}개{where}")
+    for i, reply in enumerate(replies[:REPLY_MAX_COUNT]):
+        target = page.locator(f"textarea:visible[placeholder*='추천 답변 {i + 1}']").first
+        if target.count() == 0:
+            add_btn = page.locator(
+                "button:visible:has-text('추천 답변 추가'), button:visible:has-text('추천답변 추가')"
+            ).first
+            if add_btn.count() > 0:
+                add_btn.click()
+                time.sleep(1.2)
+                target = page.locator(f"textarea:visible[placeholder*='추천 답변 {i + 1}']").first
+        if target.count() == 0:
+            print(f"         ⚠️ 추천 답변 {i + 1} 칸을 만들지 못했습니다 — 건너뜁니다")
+            continue
+        fill_react_input(page, target, reply)
+        time.sleep(0.4)
+        try:
+            got = len(target.input_value() or "")
+        except Exception:
+            got = -1
+        if got == len(reply):
+            print(f"         ✅ 추천 답변 {i + 1} ({got:,}자)")
+        else:
+            print(f"         ⚠️ 추천 답변 {i + 1} 넣은 뒤 {got}자 — 기대 {len(reply)}자")
+
+
 def find_start_field(page: Any, field: str, index: int = 0) -> Any:
     """[시작 설정] 탭의 칸을 placeholder 문구로 찾는다.
 
@@ -863,29 +910,15 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
                         continue
                     fill_react_input(page, loc, value)
                     print(f"      ✅ [{label}] {len(value):,}자")
+                inject_replies(page, dept.replies or artifacts.replies, dept.title)
                 time.sleep(0.5)
             print(f"   ✅ 시작 세트 주입 완료")
         else:
             fill_start_field(page, "prologue", "프롤로그", artifacts.prologue)
             fill_start_field(page, "start_prompt", "시작 상황 (시작 프롬프트)", artifacts.start_prompt)
             fill_start_field(page, "play_guide", "플레이 가이드", artifacts.play_guide)
+            inject_replies(page, artifacts.replies)
 
-        # ── 추천 답변 (최대 3개) ──
-        if artifacts.replies:
-            print(f"   📌 추천 답변 {len(artifacts.replies)}개 주입...")
-            for i, reply in enumerate(artifacts.replies[:REPLY_MAX_COUNT]):
-                target = find_start_field(page, "reply", i)
-                if target is None:
-                    add_btn = page.locator("button:visible:has-text('추천 답변'), button:visible:has-text('추천답변')").first
-                    if add_btn.count() > 0:
-                        add_btn.click()
-                        time.sleep(1.0)
-                        target = find_start_field(page, "reply", i)
-                if target is None:
-                    print(f"      ⚠️ 추천 답변 {i+1} 칸 못 찾음 — 건너뜁니다")
-                    continue
-                fill_react_input(page, target, reply)
-                print(f"      ✅ 추천 답변 {i+1} ({len(reply):,}자)")
     else:
         print("   ⚠️ '시작 설정' 탭 못 찾음")
 
