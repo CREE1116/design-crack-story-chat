@@ -568,7 +568,17 @@ def dump_fields(page: Any, tag: str = "") -> None:
         document.querySelectorAll("button").forEach(el => {
             if (!vis(el)) return;
             const t = (el.innerText || "").trim();
-            if (t) out.push({kind: "button", text: t.slice(0, 30)});
+            if (t) out.push({
+                kind: "button",
+                text: t.slice(0, 30),
+                disabled: el.disabled || el.getAttribute("aria-disabled") === "true",
+            });
+        });
+        // 저장을 막는 것은 대개 화면 어딘가의 빨간 문구다. 그것도 같이 찍는다.
+        document.querySelectorAll("[role='alert'], [class*='error'], [class*='Error'], [class*='invalid']").forEach(el => {
+            if (!vis(el)) return;
+            const t = (el.innerText || "").trim();
+            if (t && t.length < 200) out.push({kind: "alert", text: t});
         });
         return out;
     }""")
@@ -580,8 +590,11 @@ def dump_fields(page: Any, tag: str = "") -> None:
                 if r[k]
             )
             print(f"   [{i:02d}] <{r['tag']}> 내용{r['len']}자  {hints or '(식별 속성 없음)'}")
+        elif r["kind"] == "alert":
+            print(f"   [{i:02d}] ⛔ 화면 오류 문구: {r['text']!r}")
         else:
-            print(f"   [{i:02d}] <button> {r['text']!r}")
+            flag = "  (비활성)" if r.get("disabled") else ""
+            print(f"   [{i:02d}] <button> {r['text']!r}{flag}")
     print(f"   — 총 {len(rows)}개\n")
 
 
@@ -879,12 +892,109 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
     return True
 
 
-def save_crack_draft(page: Any) -> bool:
+def ensure_required_basics(page: Any, artifacts: "ProjectArtifacts") -> None:
+    """저장 전 필수 항목(제목·한 줄 소개)이 비어 있으면 채운다.
+
+    크랙은 이 둘이 비면 [임시저장] 을 눌러도 조용히 거부한다. 화면에는
+    "이름 * 2~30자 이내로 입력해 주세요" 같은 문구만 뜨고 버튼은 눌린 것처럼
+    보이므로, 채워 넣지 않으면 저장한 줄 알고 작업을 잃는다.
+    """
+    # 대표 이미지가 비면 크랙이 저장을 거부한다. 화면에는 "이미지를 필수로
+    # 등록해주세요" 만 뜨고 버튼은 눌린 것처럼 보이므로, 없으면 여기서 말한다.
+    thumb = os.environ.get("CRACK_SYNC_THUMBNAIL", "").strip()
+    img_missing = page.locator(":text('이미지를 필수로 등록')")
+    if img_missing.count() > 0:
+        if thumb and Path(thumb).is_file():
+            # 숨은 input 에 직접 넣으면 미디어 탭 같은 엉뚱한 input 을 집을 수
+            # 있다. [업로드] 를 눌러 뜨는 파일 선택창을 가로채는 편이 확실하다.
+            # [업로드] 를 누르면 바로 파일창이 뜨지 않는다. "기기에서 가져오기 /
+            # 라이브러리에서 가져오기" 를 고르는 모달이 한 단계 끼어 있고, 그걸
+            # 안 넘기면 모달이 화면에 남아 [임시저장] 버튼까지 가린다.
+            done = False
+            try:
+                up = page.locator("button:visible:has-text('업로드')").first
+                if up.count() > 0:
+                    up.click()
+                    time.sleep(1.2)
+                    pick = page.locator(
+                        ":text('기기에서 가져오기'), :text('내 기기'), button:visible:has-text('기기')"
+                    ).first
+                    if pick.count() > 0:
+                        with page.expect_file_chooser(timeout=6000) as fc:
+                            pick.click()
+                        fc.value.set_files(thumb)
+                        # 파일을 고르면 크롭 모달이 뜬다. [자르기] 를 눌러야
+                        # 확정되고, 안 누르면 모달이 남아 저장 버튼을 가린다.
+                        time.sleep(2.0)
+                        crop = page.locator(
+                            "button:visible:has-text('자르기'), button:visible:has-text('적용'), "
+                            "button:visible:has-text('확인'), button:visible:has-text('완료')"
+                        ).first
+                        if crop.count() > 0:
+                            crop.click()
+                            time.sleep(2.5)
+                        done = True
+                    else:
+                        # 모달을 못 넘겼으면 반드시 닫는다. 열린 채 두면 이후
+                        # 클릭이 전부 막힌다.
+                        cancel = page.locator("button:visible:has-text('취소')").first
+                        if cancel.count() > 0:
+                            cancel.click()
+                            time.sleep(0.6)
+            except Exception:
+                done = False
+                try:
+                    cancel = page.locator("button:visible:has-text('취소')").first
+                    if cancel.count() > 0:
+                        cancel.click()
+                        time.sleep(0.6)
+                except Exception:
+                    pass
+            if not done:
+                file_inputs = page.locator("input[type='file']")
+                if file_inputs.count() > 0:
+                    try:
+                        file_inputs.first.set_input_files(thumb)
+                        done = True
+                    except Exception as e:
+                        print(f"   ⚠️ 대표 이미지 업로드 실패: {e}")
+            if done:
+                time.sleep(2.0)
+                # "이미지를 필수로 등록해주세요" 는 안내문이라 등록 후에도 남는다.
+                # 등록 여부는 저장 뒤 새로고침 검증으로 판정한다.
+                print(f"   ↩️ 저장 전 [대표 이미지] 를 올렸습니다: {Path(thumb).name}")
+            else:
+                print("   ⚠️ 대표 이미지 업로드 경로를 찾지 못했습니다.")
+        else:
+            print("   ⛔ [대표 이미지] 가 비어 있습니다 — 크랙은 이게 없으면 저장을 거부합니다.")
+            print("      CRACK_SYNC_THUMBNAIL=<이미지경로> 로 지정하거나 브라우저에서 직접 올리세요.")
+            print("      규격: 1,080 x 1,620px · 5MB 이하")
+
+    checks = (
+        ("스토리의 이름", "input", artifacts.title, "제목"),
+        ("간단한 소개", "textarea", artifacts.short_summary or artifacts.title, "한 줄 소개"),
+    )
+    for needle, tag, value, label in checks:
+        loc = page.locator(f"{tag}:visible[placeholder*='{needle}']")
+        if loc.count() == 0 or not value:
+            continue
+        try:
+            if (loc.first.input_value() or "").strip():
+                continue
+        except Exception:
+            continue
+        fill_react_input(page, loc.first, value)
+        print(f"   ↩️ 저장 전 [{label}] 이 비어 있어 채웠습니다 ({len(value)}자)")
+
+
+def save_crack_draft(page: Any, artifacts: Any = None) -> bool:
     """Safely click [임시저장 (Draft Save)] button and verify toast/save state.
     
     NEVER clicks [발행] (Publish) or final release buttons.
     """
     print("\n💾 [임시저장(Draft Save) 시도]...")
+    if artifacts is not None:
+        ensure_required_basics(page, artifacts)
     draft_selectors = [
         "button:visible:has-text('임시저장')",
         "button:visible:has-text('임시 저장')",
@@ -903,23 +1013,65 @@ def save_crack_draft(page: Any) -> bool:
         try:
             btn.scroll_into_view_if_needed(timeout=3000)
             btn.click(timeout=4000)
-            time.sleep(2.0)
+            # 토스트는 몇 초 만에 사라진다. 한 번만 보면 나타났다 사라진 사이를
+            # 놓치고 실패로 오판한다. 짧은 간격으로 여러 번 본다.
             # 클릭했다는 사실은 저장됐다는 뜻이 아니다. 버튼이 눌려도 폼 검증에
             # 걸려 조용히 무시되는 경우가 있어, 저장 표시를 실제로 찾은 뒤에만
             # 성공이라고 말한다. 못 찾으면 미확인이라고 말하고 화면을 찍는다.
-            toast = page.locator(
-                ":text('저장되었'), :text('저장 완료'), :text('임시저장되었'), "
-                ":text('임시 저장되었'), [role='alert']:visible, [role='status']:visible"
-            )
-            if toast.count() > 0:
-                print("   ✅ [임시저장] 완료 확인")
+            # 근거는 '저장됐다고 쓰인 문구' 뿐이다. role=alert/status 는 관계없는
+            # 라이브 영역에도 붙어 있어서, 그걸 근거로 삼으면 예전처럼 거짓 성공을
+            # 낸다. 무엇을 보고 성공이라 판단했는지 함께 출력한다.
+            hit = ""
+            deadline = time.time() + 8.0
+            while time.time() < deadline and not hit:
+                for needle in ("저장되었", "저장 완료", "임시저장되었", "임시 저장되었", "저장했"):
+                    loc = page.locator(f":text('{needle}')")
+                    if loc.count() > 0:
+                        try:
+                            hit = loc.first.inner_text(timeout=1000).strip()[:60]
+                        except Exception:
+                            hit = needle
+                        break
+                if not hit:
+                    time.sleep(0.4)
+            if hit:
+                print(f"   ✅ [임시저장] 완료 확인 — 화면 문구: {hit!r}")
                 return True
+            # 크랙이 토스트를 안 띄우는 경우가 있다. 그때는 새로고침해서 값이
+            # 남아 있는지 보는 것이 유일하게 믿을 수 있는 근거다.
+            try:
+                page.reload(wait_until="domcontentloaded", timeout=20000)
+                time.sleep(3.0)
+                name_inp = page.locator("input:visible[placeholder*='스토리의 이름']").first
+                saved = ""
+                if name_inp.count() > 0:
+                    saved = (name_inp.input_value() or "").strip()
+                if saved:
+                    print(f"   ✅ [임시저장] 완료 확인 — 새로고침 후에도 제목이 남아 있음: {saved!r}")
+                    return True
+                print("   ⚠️ 새로고침하니 제목이 비어 있습니다 — 저장되지 않았습니다.")
+            except Exception as e:
+                print(f"   ⚠️ 새로고침 검증 실패: {e}")
             print("   ⚠️ [임시저장] 버튼은 눌렀지만 저장 표시를 확인하지 못했습니다.")
+            shot = os.environ.get("CRACK_SYNC_SHOT")
+            if shot:
+                try:
+                    page.screenshot(path=shot, full_page=True)
+                    print(f"      화면을 저장했습니다: {shot}")
+                except Exception as e:
+                    print(f"      화면 저장 실패: {e}")
             print("      크랙이 필수 항목 미입력 등으로 저장을 거부했을 수 있습니다. 브라우저 화면을 확인하세요.")
             dump_fields(page, "임시저장 확인 실패")
             return False
         except Exception as e:
             print(f"   ⚠️ [임시저장] 버튼 클릭 실패: {e}")
+            shot = os.environ.get("CRACK_SYNC_SHOT")
+            if shot:
+                try:
+                    page.screenshot(path=shot, full_page=True)
+                    print(f"      화면을 저장했습니다: {shot}")
+                except Exception:
+                    pass
             return False
     else:
         print("   ℹ️ 화면에서 '임시저장' 버튼을 찾지 못했습니다. (자동 저장이거나 에디터 헤더에 위치)")
@@ -1300,6 +1452,33 @@ def navigate_to_create_story(page: Any) -> bool:
     return True
 
 
+def complete_profile_step(page: Any, artifacts: "ProjectArtifacts") -> bool:
+    """프로필 단계를 채우고 [다음] 을 눌러 storyId 를 발급받는다.
+
+    이 단계를 건너뛰면 작품 레코드가 생기지 않는다. 값만 채워 넣고 [임시저장]
+    을 눌러도 저장할 대상이 없어 조용히 실패하며, 화면상으로는 눌린 것처럼
+    보인다. 실제로 이 누락 때문에 주입한 작업이 통째로 사라졌다.
+    """
+    print("\n🧾 [프로필 단계 — storyId 발급]")
+    ensure_required_basics(page, artifacts)
+    nxt = page.locator("button:visible:has-text('다음')").first
+    if nxt.count() == 0:
+        print("   ℹ️ [다음] 버튼이 없습니다. 이미 발급된 편집 화면으로 봅니다.")
+        return True
+    try:
+        nxt.click()
+        time.sleep(4.0)
+    except Exception as e:
+        print(f"   ⚠️ [다음] 클릭 실패: {e}")
+        return False
+    if "storyId=" in page.url:
+        print(f"   ✅ storyId 발급됨 — {page.url}")
+        return True
+    print("   ⚠️ [다음] 을 눌렀지만 storyId 가 생기지 않았습니다.")
+    dump_fields(page, "storyId 발급 실패")
+    return False
+
+
 def auto_navigate_and_inject_all(page: Any, artifacts: ProjectArtifacts) -> None:
     """Detect page state, enter editor via '내 작품' -> '작품 만들기', and inject all tabs."""
     print("\n===========================================================================")
@@ -1308,6 +1487,11 @@ def auto_navigate_and_inject_all(page: Any, artifacts: ProjectArtifacts) -> None
 
     # 1. 내 작품 -> 작품 만들기 진입
     navigate_to_create_story(page)
+    time.sleep(1)
+
+    # 1.5 프로필 단계를 끝내야 storyId 가 나온다. 이게 없으면 이후 주입은
+    # 저장되지 않는 세션에 쌓이고, 새로고침하는 순간 전부 사라진다.
+    complete_profile_step(page, artifacts)
     time.sleep(1)
 
     # 2. 기본 정보 주입
@@ -1447,9 +1631,11 @@ def run_sync(
             print("\n⚡ [--auto 플래그 감지] 즉시 전체 자동 주입을 실행합니다...")
             time.sleep(1.5)
             auto_navigate_and_inject_all(page, artifacts)
-            if auto_submit:
-                time.sleep(1.5)
-                save_crack_draft(page)
+        # --auto-submit 은 --auto 없이도 동작해야 한다. 저장만 다시 시도하고
+        # 싶을 때가 있고, 가둬 두면 플래그를 줬는데 아무 일도 안 일어난다.
+        if auto_submit:
+            time.sleep(1.5)
+            save_crack_draft(page, artifacts)
 
         # -------------------------------------------------------------
         # 상호작용 상주 루프 (Interactive Session Loop / Hot-Reload)
@@ -1475,7 +1661,7 @@ def run_sync(
                 auto_navigate_and_inject_all(page, artifacts)
             if auto_submit:
                 time.sleep(1.5)
-                save_crack_draft(page)
+                save_crack_draft(page, artifacts)
             context.close()
             return 0
 
@@ -1490,13 +1676,13 @@ def run_sync(
                 print("👋 브라우저를 닫고 프로그램을 종료합니다.")
                 break
             elif cmd in ("w", "save", "draft"):
-                save_crack_draft(page)
+                save_crack_draft(page, artifacts)
             elif cmd in ("a", "all", "sync"):
                 artifacts = load_project_artifacts(project_dir, variant=current_variant)
                 auto_navigate_and_inject_all(page, artifacts)
                 if auto_submit:
                     time.sleep(1.5)
-                    save_crack_draft(page)
+                    save_crack_draft(page, artifacts)
             elif cmd in ("p", "prompt", "prompts"):
                 artifacts = load_project_artifacts(project_dir, variant=current_variant)
                 inject_prompts(page, artifacts)

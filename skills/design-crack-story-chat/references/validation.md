@@ -175,6 +175,12 @@ World systems, where the premise defines them:
 - No shortcut re-prints something the response already carries every turn. A `상태창` shortcut is the standard example: the HUD is already appended by the output contract, so calling it spends the player's quota to see what was just on screen.
 - Every registered shortcut produces a dense response. A shortcut that ends in three lines costs the player the same as one that fills its budget.
 
+## Publishing to Crack
+
+- The story was **saved and verified by reloading**, not by trusting a success message. Crack shows no reliable toast; a click that appears to work can leave nothing behind. If the title field is empty after a reload, nothing was saved.
+- The profile step was completed and a `storyId` exists in the URL **before** any other tab was filled. Crack creates the story record only when [다음] is pressed on the profile step; anything typed earlier lives in a session that vanishes on reload.
+- A cover image is registered. Crack refuses to save without one, and its notice stays on screen even after a successful upload — so the notice cannot be used as evidence either way. The image is 1,080 × 1,620px portrait and under 5MB; a landscape banner is rejected.
+
 ## Prompt behavior
 
 - Where the work spans phases, each phase names the **closed cast that may appear**, and a rule forbids characters from acting on knowledge of later phases.
