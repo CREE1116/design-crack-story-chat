@@ -51,7 +51,7 @@ Say which kind each marker is. Without it a history marker gets overwritten the 
 
 ### A state field can gate a rule
 
-The strongest use: let a field be the visible precondition for something the model may otherwise attempt too early.
+A project may deliberately use a visible field to summarize specific entry conditions. This is an optional project mechanic, not a universal intimacy threshold. Do not import these example gates to delay player-led advances; narrative-control.md governs pacing.
 
 ```text
 🔞=성적 장면 진입 가능, [상황] 신호등 뒤에. 조건=관계 친밀 이상+사적 공간+둘만+상호 의사가 본문에 드러남.
@@ -93,6 +93,10 @@ A rule worth stating explicitly, because its absence produces a specific tangle:
 ```
 
 Three things happen here. NPC speech is demoted from narration to **a claim by that character**, which can be mistaken. Contradictions get an in-fiction repair path — the character misspoke or misunderstood — rather than a retcon. And the repair is fenced: the model may not resolve its own inconsistency by attributing words to the player. Without that last clause the correction mechanism becomes an agency violation.
+
+## Narrative control
+
+Use [narrative-control.md](narrative-control.md) for stagnation, initiative, relationship transitions, and cooldown. Quiet interaction is not automatically stagnation. Missing context must not be invented to satisfy a transition gate. Character persistence belongs to [character-generation.md](character-generation.md); no additional memory artifact is required.
 
 ## Long conversations and tests
 

@@ -45,17 +45,21 @@ Run this checklist before handing off a story-chat design or prompt revision.
 - External and relationship or internal conflict can each generate scenes.
 - Every major scene changes information, relationship, position, resources, risk, or choices.
 - Each major scene passes the compact `goal→conflict→outcome→reaction→dilemma→decision` causality check, with a reasonable omission for quiet or fast scenes.
-- Quiet scenes are not repeated without new pressure or information.
+- Quiet scenes preserve requested rest and meaningful interaction; only actual stagnation triggers intervention.
 - Presented choices have materially different consequences and do not block free input.
 - Failure produces a consequence or new route instead of ending progression by default.
 - Major reveals use evidence and conditions rather than arbitrary exposition.
+
+## Narrative control
+
+For changes to pacing, initiative, relationships, or persona persistence, use the behavioral probes and comparison protocol in [narrative-control.md](narrative-control.md). Static checks below do not measure narrative quality.
 
 ## Characters and knowledge
 
 - Important traits have observable behaviors and varied dialogue examples.
 - Character detail matches the format: compact for ensembles, richer for 1:1 character focus.
-- Personality codes and archetypes are optional, non-redundant compression hints mapped to observable behavior.
-- Each important character has World Truth, Initial Mental State, and Observable Behavior separated; Mental State includes Temperament, Belief, Desire, Self, Memory, Relationship, State, and Trait.
+- Known personality, speech-register, prose, and genre anchors are used without redundant definitions; only needed local deviations are explained. Anchor familiarity never substitutes for unknown project canon.
+- Character design distinguishes fact, mental interpretation, and behavior where relevant; the analysis slots are not mandatory main-prompt fields. The main roster uses shared headers and compact knowledge anchors; character-specific detail goes to keyword books.
 - Character behavior is generated through perception→appraisal→competing desires→emotion→intention→behavior→experience→memory→reflection→update, not a fixed event-to-reaction table.
 - Unknown is preserved for unexperienced preferences, values, relationship meanings, and self-definitions; Reflection is gated by repetition, intensity, or explicit contradiction.
 - Core desire, fear, contradiction, and pressure behavior remain clear without relying only on type codes.
@@ -144,7 +148,7 @@ World systems, where the premise defines them:
 - **The compiled `Info` block was cross-checked against every registered keyword.** Every string the HUD prints each turn is compared to the whole keyword list. Three failures this pass: a `[상황]` state phrase, a `[관계]` stage emoji (`💋` — once the stage is reached it never unsets, so the entry latches for the rest of the session), and a `🔞` pre-arm marker whose entry body had no instruction to lower it at scene end. Latching values (relationship stage, acquired status) are never triggers; passing values (a date, a location) are.
 - Where an entry reuses an output-contract token as its trigger (`**이름**|` rather than the bare name), the always-on roster carries a one-line seed for that character, because the trigger only fires on the turn **after** the character first speaks.
 - Trigger collisions and overlapping entries were tested.
-- Entry text does not duplicate the always-on story payload. Age, species, rank, appearance, MBTI and base speech pattern live in the always-on roster; an entry that restates them is waste no amount of compression fixes. Entries carry only the delta — stage-gated staging directives, weaknesses and secrets, the chemistry between the paired two, post-arrival cues.
+- Entry text does not duplicate the always-on story payload. Check which facts actually appear in the compact roster; do not assume appearance, rank, abilities, or backstory are always-on. Details absent from the main prompt belong in entries. Entries carry only the delta — stage-gated staging directives, weaknesses and secrets, the chemistry between the paired two, post-arrival cues.
 - **Deduplication ran before compression.** For each artifact, every fact was checked against the always-on layer *before* any sentence was shortened. Skipping this produces a well-compressed duplicate and the false conclusion that the character cap is too small.
 - Any figure the HUD prints every turn (conquest rate, funds, affinity) has its **update rule, per-turn change ceiling, and no-evidence default in the integrated prompt, not the keyword book**. A rule loaded only on trigger while its output is emitted every turn makes the model invent numbers on untriggered turns.
 - Current scene facts, agency rules, output syntax, and currently required ability limits remain outside the keyword book.

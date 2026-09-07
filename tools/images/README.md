@@ -127,3 +127,17 @@ python3 deploy.py --check --root ~/내이미지폴더
    ```markdown
    ![]({IMG}/01/a01.webp)
    ```
+
+
+## 배경 크롭·장소명 배지
+
+`crop_backgrounds.py`는 임의 크기 크롭, 장소명 배지, 이름 매칭 및 PNG/WebP 변환을 지원한다. Pillow 필요.
+
+```bash
+python3 tools/images/crop_backgrounds.py --src originals --out banners --size 1600x600 --anchor top --dry-run
+python3 tools/images/crop_backgrounds.py --help
+```
+
+기본 배지를 빼려면 `--no-badge`, 글꼴 지정은 `--font`, 출력명 지정은 `--naming '{code}_{name}'`. `--preset`에는 `[{"code":"lobby","name":"로비","source":"original.png"}]` 형태의 JSON을 준다. 기존 출력은 `--overwrite` 없이는 변경하지 않는다. 원본 매칭이 모호하면 실패하며 명시적 `source`로 해결한다.
+
+검증: `python3 -m unittest discover -s tools/images/tests -v`.

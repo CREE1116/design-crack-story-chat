@@ -66,7 +66,7 @@ my-story-assets/
 모든 이미지는 용량 절감(PNG 대비 70~80% 감소)과 모바일 0초대 로딩을 위해 **반드시 WebP 포맷으로 변환**하여 업로드합니다.
 
 ### 1. 배경 이미지 자동 크롭 및 넘버링 네이밍 (`crop_backgrounds.py`)
-생성된 원본 배경(1216x832 등)을 크랙 상단 배경 표준 해상도(`1024x400`, 2.56:1)로 중앙 크롭하고, 배치표에 맞추어 `bg01~bg25` 또는 `scene/a01`로 변환하여 WebP로 내보냅니다:
+기존 이미지를 지정 비율로 크롭·리사이즈하고 선택적으로 장소명 배지를 합성합니다. 기본 `1024x400`은 변경 가능한 작업 기본값입니다. `--size`, `--anchor center/top/bottom/left/right`, `--font`, `--font-size`, `--no-badge`로 조정합니다. 생성형 이미지 모델을 호출하는 도구는 아닙니다.
 
 ```bash
 # 배치표 기반 배경 자동 크롭 & 리네이밍 & WebP 변환
@@ -76,6 +76,24 @@ python3 tools/images/crop_backgrounds.py \
   --table image/에셋_배치표.md \
   --format webp
 ```
+
+`--dry-run`으로 먼저 매칭·출력명을 확인합니다. 기본 배지는 좌하단이며 한글 글꼴을 자동 탐색하거나 `--font`로 지정합니다. 이름이 길어 배지가 넘치면 글꼴 크기를 줄입니다. 원본은 변경하지 않고 기존 출력은 `--overwrite`일 때만 덮어씁니다.
+
+명확한 파일 연결이 필요하면 `--table` 대신 `--preset` JSON을 사용합니다. 배열 또는 `backgrounds`/`scenes`/`poses` 배열을 지원합니다:
+
+```json
+[{"code":"lobby","name":"본관 로비","source":"원본01.png"}]
+```
+
+`source`는 원본 디렉터리 바로 아래 파일명입니다. 생략 시 코드·이름으로 매칭하며 없거나 동률이면 실패합니다. Markdown 표는 첫 두 열을 코드·이름으로 사용합니다. `--table`과 `--preset`은 동시에 지정하지 않습니다.
+
+```bash
+python3 tools/images/crop_backgrounds.py --src originals --out banners \
+  --preset backgrounds.json --size 1600x600 --anchor top \
+  --naming '{code}_{name}' --format both --dry-run
+```
+
+`--naming`은 확장자 없는 파일명 템플릿이며 `{index:02d}`, `{code}`, `{name}`, `{stem}`을 지원합니다. 지정하지 않으면 기존 `--style bg/scene/clean`을 사용합니다. 품질은 `--quality 1~100`. Pillow가 필요하며 출력 충돌·미매칭·변환 실패는 비정상 종료 코드로 반환합니다.
 
 ### 2. 일반 이미지 일괄 변환 (`deploy.py`)
 ```bash

@@ -3,6 +3,7 @@
 ## Table of contents
 
 - [Model the experience before the lore](#model-the-experience-before-the-lore)
+- [Define world canon](#define-world-canon)
 - [Distinguish story units](#distinguish-story-units)
 - [Model world systems](#model-world-systems)
 - [Gate the cast by arc phase](#gate-the-cast-by-arc-phase)
@@ -24,6 +25,19 @@ Define these first:
 - **Freedom boundary:** what is authored, what is simulated, and what the player controls.
 
 World detail that does not affect a decision, consequence, character, or reveal is optional.
+
+## Define world canon
+
+The world section describes what is normally true and how people live, not a mandatory conflict or secret. Use a familiar era/genre anchor, then specify only this world's differences:
+
+- Setting: era, region, and departures from the familiar baseline.
+- Society: relevant institutions, customs, and daily routines.
+- Factions: roles, authority, and relationships, if relevant.
+- Geography: useful places, connections, and access.
+- Rules: what technology, magic, or species can do and under which conditions.
+- Daily activity: work, trade, travel, or communication needed for play.
+
+These are optional categories, not quotas. Rules include possibilities, not only costs and prohibitions. Keep the shared baseline and essential index in the main prompt; put contextual detail in keyword books. Put the opening incident in the start prompt. Secrets need separate knowledge ownership; loading a fact does not reveal it to characters. A quiet setting need not acquire factions or danger just to fill a template.
 
 ## Distinguish story units
 
