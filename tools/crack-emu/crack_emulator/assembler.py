@@ -64,10 +64,6 @@ def build_system_blocks(project: Project, session: Session, cfg: Config,
         if project.hud_example else "",
     )
     b["stat_definition"] = ""
-    b["keyword_output"] = _block(
-        "## keyword output",
-        "이미지 출력은 메인 프롬프트의 이미지 규칙을 따른다.",
-    )
     b["previous_history"] = _block("[Previous History]", "")
     b["recent_timeline"] = _block(
         "[최근 사건 타임라인]",

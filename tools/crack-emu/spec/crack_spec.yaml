@@ -20,7 +20,6 @@ assembly:
     - refusal_clause          # Pedophilic conversation 거부 문구
     - story_state_level_def   # "[Story State Level Definition]"
     - stat_definition
-    - keyword_output          # "## keyword output"  ({{img::키워드}} 규칙)
     - previous_history        # "[Previous History]"
     - recent_timeline         # "[최근 사건 타임라인]"  ← 요약메모리
     - character_relations     # "[캐릭터 관계도]"

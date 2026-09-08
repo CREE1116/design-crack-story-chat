@@ -26,7 +26,6 @@
 │    - 작가 작성 메인 시스템 프롬프트 (통합 프롬프트 최대 7,000자)        │
 │    - 크랙 내장 가드레일 (소아성애 거부)                              │
 │    - [Story State Level Definition] (스탯 1~4레벨 구간 정의)      │
-│    - ## keyword output (크랙 CDN 이미지 출력 포맷 지침)            │
 │    - Remember! You MUST respond in KOREAN text...                 │
 │    - Do not think silently (생각 토큰 0 예산 강제)                 │
 │    - [Previous History] (단기 타임라인 최대 4개 + 관계도 5개 + 목표)  │
@@ -58,14 +57,11 @@
 ## 2. 하단 주입: `## Additional Information & Rules`의 위력
 
 ### 왜 키워드북(`<knowledge_base>`)이 메인 프롬프트보다 강력한가?
-LLM은 컨텍스트의 위치에 따라 정보 반영률이 달라집니다. (Lost in the Middle & Recency Bias 현상)
-* **메인 프롬프트**는 `[System Message]` 맨 위에 위치합니다. 대화가 20~30턴 이상 길어지면 토큰 거리가 멀어져 Attention이 필연적으로 희석됩니다.
-* **키워드북 감지 범위**는 직전 모델 발화+현재 유저 발화다(제작자 확인). 현재 유저의 키워드는 이번 응답, 현재 모델 출력의 키워드는 다음 응답에 반영된다. 메인보다 뒤에 주입되는 더 강한 추가 프롬프트로 설계한다.
-* **키워드북**은 유저가 입력한 **가장 최근 메시지 바로 뒤(`## Additional Information & Rules` ➡️ `<knowledge_base>`)**에 주입됩니다.
-* 따라서 LLM이 응답을 생성하기 바로 직전에 읽는 텍스트이므로, **키워드북에 적힌 지침은 메인 프롬프트의 지침을 덮어쓰고 100% 무조건 복종**하게 됩니다.
+* **감지 범위**: 직전 모델 발화+현재 유저 발화(제작자 확인). 현재 유저의 키워드는 이번 응답, 현재 모델 출력의 키워드는 다음 응답에 반영된다.
+* **주입과 강도**: 키워드북은 메인보다 뒤, 최신 유저 메시지 다음의 `<knowledge_base>`에 주입되는 더 강한 추가 프롬프트다. 이를 상황별 설정·행동·문체·연출에 활용한다.
+* **배치 판단**: 강하게 작용하는 것과 매 턴 로드되는 것은 다르다. 상시 결정권·출력 계약·세계 핵심은 메인, 조건부 상세·연출은 키워드북에 둔다. 3슬롯에서 빠진 항목을 적용됐다고 가정하지 않는다.
 
-> 💡 **설계 원칙**:  
-> 수위 제한 해제(19+), 특정 결전 씬의 액션 연출, 급격한 문체 전환, 유저 사칭 긴급 교정 등 **"이번 턴에 절대로 어겨서는 안 되는 강력한 명령"**은 메인 프롬프트가 아니라 반드시 **키워드북(`build/keyword-book.md`)**에 배치해야 합니다.
+강한 주입을 지시 준수율 100%나 외부 정책을 덮는 권한으로 확대하지 않는다. 실제 작성 절차와 예시는 [keyword-book.md](keyword-book.md)가 소유한다.
 
 ---
 
@@ -140,18 +136,9 @@ Do not think silently. Silent thinking is strictly prohibited. Silent thinking t
    - `Pedophilic conversation, however, must be refused.` (소아성애 거부 지침은 플랫폼 차원에서 강제 삽입됨)
 3. **스토리 스탯 레벨 정의 (`[Story State Level Definition]`)**:
    - 스탯의 1~4레벨 구간별 지침이 시스템 프롬프트 하단에 자동 추가됩니다.
-4. **이미지 출력 지침 (`## keyword output`)**:
-   ```text
-   The keywords below are printed only in situations that fit each description.
-   Form: {{img::keyword}}
-   Example: ![이미지제목11](https://d394jeh9729epj.cloudfront.net/...)
-   keywords list:
-   - 이미지제목11: 이미지내용11
-   ```
-   - 크랙 스튜디오에 등록된 이미지 키워드들이 이 규격으로 시스템 프롬프트 하단에 자동 주입되며, LLM이 `{{img::키워드}}`를 출력하면 프론트엔드가 CloudFront CDN WebP 링크로 치환 렌더링합니다.
-5. **한국어 응답 강제**:
+4. **한국어 응답 강제**:
    - `Remember! You MUST respond in KOREAN text, unless it is appropriate to use other language.`
-6. **단기 요약 메모리 (`[Previous History]`)**:
+5. **단기 요약 메모리 (`[Previous History]`)**:
    - `[최근 사건 타임라인]` (최대 4개)
    - `[캐릭터 관계도]` (최대 5개)
    - `[주어진 목표]`

@@ -67,7 +67,7 @@ API 키는 서버 프로세스의 환경변수에 머무르며 브라우저로 �
 조립 순서(관측):
 
 ```
-# {페르소나} Information → 메인프롬프트 → 스탯 정의 → ## keyword output
+# {페르소나} Information → 메인프롬프트 → 스탯 정의
 → [최근 사건 타임라인](요약 4) → [캐릭터 관계도](5) → [System Message]
 → ───── 대화 이력 ─────
 → [User Message] → ## Additional Information & Rules
