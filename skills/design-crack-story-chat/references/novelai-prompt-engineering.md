@@ -1,5 +1,7 @@
 # NovelAI 정밀 프롬프트 엔지니어링 및 POV 지오메트리 가이드 (NovelAI Prompt Engineering & POV Geometry)
 
+> 이미지 프롬프트 작성·수정은 [image-prompt-authoring.md](image-prompt-authoring.md)를 먼저 적용한다. 감정은 얼굴이 크게 보이는 구도에서 눈썹·눈매·입의 반응을 중심으로 작성하고 행동은 보조로 둔다. 아래 기존 표의 영어 표현은 모두 검증된 공식 태그 목록이 아니므로 중요한 태그는 개별 확인한다. 강한 가중치와 완전한 일관성 보장을 기본 규칙으로 사용하지 않는다.
+
 본 문서는 `novel-ai-image-skill`의 핵심 엔진인 **정밀 POV 카메라 지오메트리, NovelAI V4/V5 가중치 문법, 및 S/A 코드 단부루 공식 태그 사전**을 크랙 스토리챗 파이프라인에 전면 흡수·통합한 기술 명세서입니다.
 
 ---
@@ -21,13 +23,13 @@ NovelAI 최신 모델(V4, V5)은 소괄호 `((tag))` 대신 **숫자 기반 가�
 | 계층 | 가중치 범위 | 적용 대상 | 구체적 예시 |
 |---|---|---|---|
 | **코어 두상/포즈** | `1.35 ~ 1.50` | 캐릭터 얼굴/헤어 지문, 결정적 포즈 | `1.5::light green hair, bob cut straight hair, tsurime::` |
-| **표정 오버라이드** | `1.50 ~ 1.80` | 베이스 눈매를 덮어쓰는 특수 표정 | `1.8::closed eyes::`, `1.5::smile, open mouth::` |
+| **표정 오버라이드** | `1.10 ~ 1.30` | 베이스 눈매를 덮어쓰는 특수 표정 | `1.2::closed eyes::`, `1.2::smile, open mouth::` |
 | **보조 디테일/소품** | `1.10 ~ 1.25` | 시그니처 장신구, 비대칭 소품 | `1.2::single silver hoop earring::` |
 | **일반 묘사 태그** | `1.00` | 의상, 배경, 일반 신체 지표 | `small breasts`, `thigh gap`, `white vest` |
 | **억제/약화 태그** | `-1.20 ~ -1.50` | 출력 확률을 낮추고 싶은 요소 | `-1.3::loose hair::` |
 
 > [!WARNING]
-> 지나치게 많은 태그에 가중치를 남발하거나 `2.0`을 초과하면 이미지 왜곡(Deep fried)이 발생합니다. 코어 두상(1.5)과 충돌 표정(1.8)에만 선별 적용합니다.
+> 지나치게 많은 태그에 가중치를 남발하거나 `2.0`을 초과하면 이미지 왜곡(Deep fried)이 발생합니다. 충돌 태그를 먼저 제거하고 필요한 요소만 소폭 강조합니다. 수치는 실무 제안이며 공식 최적값이 아닙니다.
 
 ---
 
@@ -47,8 +49,8 @@ NovelAI 최신 모델(V4, V5)은 소괄호 `((tag))` 대신 **숫자 기반 가�
    - 플레이어 카메라를 정면 응시: `looking at viewer`
    - 서로 마주봄 (2인 이상): `eye contact`
    - 접촉점/신체 부위를 내려다봄: `looking down, looking at another`
-   - 부끄러워 시선 회피: `looking away, averted eyes`
-   - 눈 감음: `closed eyes` (가중치 1.8 권장)
+   - 부끄러워 시선 회피: `averting eyes`
+   - 눈 감음: `closed eyes` (정면 응시 태그와 동시에 사용하지 않음)
 5. **POV 증거물 (POV Evidence)**:
    - 플레이어의 손이 화면에 등장: `pov hands`
    - 플레이어의 다리/하반신 등장: `pov legs`, `pov crotch`
@@ -125,7 +127,7 @@ $$\text{Final Prompt} = \mathbf{Layer\ 1 (Base\ Character)} + \mathbf{Layer\ 2 (
 3. **Layer 3: 씬 및 환경 조명 (Scene & Lighting)**
    - `modern clinic room, soft indoor lighting, bed, cozy atmosphere, high quality`
 
-이 3단 구조를 통해 캐릭터의 고유 외형을 100% 보존하면서 상황에 맞는 수백 장의 바리에이션 이미지를 완벽하게 일관되게 생성할 수 있습니다.
+외형·의상·감정/행동·장면을 분리하면 수정 범위를 관리하기 쉽습니다. 텍스트만으로 고유 외형이나 포즈의 완전한 일관성을 보장하지 않습니다.
 
 ---
 

@@ -56,7 +56,7 @@ description: Design, compile, or audit Crack interactive story chats from story.
 | HUD·공개 상태 표시 | [status-window-guide.md](references/status-window-guide.md) |
 | 복수 시작 설정·단축어 | [start-sets.md](references/start-sets.md), [shortcuts-guide.md](references/shortcuts-guide.md) |
 | 외형·장면 이미지 설계 | [character-appearance-guide.md](references/character-appearance-guide.md), [scene-design-guide.md](references/scene-design-guide.md) |
-| NovelAI 프롬프트 | [novelai-prompt-engineering.md](references/novelai-prompt-engineering.md) |
+| 이미지 프롬프트·감정 프리셋·NovelAI | [image-prompt-authoring.md](references/image-prompt-authoring.md)를 먼저 읽는다. 감정은 얼굴 클로즈업, 행동은 보조. POV 상세는 [novelai-prompt-engineering.md](references/novelai-prompt-engineering.md). |
 | 배경 크롭·장소명 배지·일괄 리네이밍 | [image-assets.md](references/image-assets.md) 배경 크롭 파이프라인 → `tools/images/crop_backgrounds.py` (`--help`로 옵션 확인) |
 | 이미지 자산·호스팅·쇼케이스 | [image-assets.md](references/image-assets.md), [image-output-rules.md](references/image-output-rules.md) |
 | 소개문·플레이 안내 | [story-description-guide.md](references/story-description-guide.md), [play-guide.md](references/play-guide.md) |
