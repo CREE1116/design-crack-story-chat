@@ -13,8 +13,8 @@
 에셋 목록을 프롬프트에 길게 나열하지 않고, 카테고리와 번호의 조합으로 주소를 만듭니다.
 
 ```markdown
-{IMG}/scene/a01.webp
-{IMG}/01/a01.webp
+{IMG}/scene/bg01.webp
+{IMG}/01/s01.webp
 {IMG}/mob/a31.webp
 ```
 
