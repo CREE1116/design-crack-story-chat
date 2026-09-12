@@ -193,11 +193,11 @@ def compose(foreground: Image.Image, background: Image.Image,
                              method=Image.Resampling.LANCZOS)
     backdrop = backdrop.filter(ImageFilter.GaussianBlur(blur)).convert("RGBA")
     if border:
-        # 가닥마다 따라가면 외곽선이 톱니처럼 끊긴다. 닫기와 구멍 채우기로
-        # 실루엣을 잡아 한 줄로 두르고, 머리카락 틈 안쪽에는 선을 넣지 않는다.
+        # 가닥마다 따라가면 외곽선이 톱니처럼 끊기지만, 구멍까지 메우면 실루엣이
+        # 성긴 머리카락 밖으로 부풀어 가닥 사이가 흰 덩어리로 메워진다. 1픽셀
+        # 요철만 없앨 만큼 약하게 닫고 알파를 그대로 따라간다.
         solid = np.asarray(foreground.getchannel("A")) > 96
-        solid = ndimage.binary_closing(solid, structure=np.ones((5, 5)))
-        solid = ndimage.binary_fill_holes(solid)
+        solid = ndimage.binary_closing(solid, structure=np.ones((3, 3)))
         outside = ndimage.distance_transform_edt(~solid)
         outline = np.clip(border + 0.5 - outside, 0, 1)
         outline = np.clip(ndimage.gaussian_filter(outline, max(border * .4, .6)) * 1.7, 0, 1)
