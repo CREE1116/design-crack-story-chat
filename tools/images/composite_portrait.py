@@ -18,6 +18,162 @@ from PIL import Image, ImageColor, ImageFilter, ImageOps
 from scipy import ndimage
 
 
+def alpha_is_cutout(alpha: "Image.Image") -> bool:
+    """Does this alpha channel actually carry a cutout?
+
+    Generators such as NovelAI write RGBA PNGs whose alpha is opaque
+    everywhere except for a few anti-aliased pixels. Testing only the minimum
+    value mistakes that for a real cutout, so segmentation is skipped and the
+    composite comes out identical to the input, green screen and all. Require
+    a real share of transparent pixels instead.
+    """
+    counts = alpha.histogram()
+    total = sum(counts)
+    if not total:
+        return False
+    return sum(counts[:128]) >= total * 0.01
+
+
+def shrink_mask(mask: Image.Image, pixels: float) -> Image.Image:
+    """Pull the cutout edge inwards by a pixel or two.
+
+    The outermost boundary pixels are a blend of subject and chroma screen, so
+    recolouring them only turns green into olive and the rim stays visible.
+    Dropping that sliver removes the fringe; a hair's width is a cheap trade.
+    """
+    step = int(round(pixels))
+    if step <= 0:
+        return mask
+    values = np.asarray(mask.convert("L"))
+    size = 2 * step + 1
+    return Image.fromarray(ndimage.grey_erosion(values, size=(size, size)))
+
+
+def smooth_alpha(mask: Image.Image, radius: float) -> Image.Image:
+    """Round off pixel stair-steps so the outline reads as a drawn line.
+
+    A colour key follows the pixel grid exactly, and the border is traced from
+    that alpha, so every jagged pixel becomes a visible notch in the outline.
+    Blur then re-steepen: the edge stays crisp, only the staircase goes.
+    """
+    if radius <= 0:
+        return mask
+    blurred = mask.convert("L").filter(ImageFilter.GaussianBlur(radius))
+    values = np.asarray(blurred).astype(np.float32)
+    return Image.fromarray(np.clip((values - 128) * 2.2 + 128, 0, 255).astype("uint8"))
+
+
+def despill(image: Image.Image, alpha: Image.Image, band: float) -> Image.Image:
+    """Pull chroma-key colour out of the cutout edge.
+
+    A green or blue screen bleeds into semi-transparent hair and cloth, so the
+    cutout keeps a coloured rim that is obvious against a new background. Only
+    the pixels within `band` of the alpha boundary are touched, and only where
+    one channel genuinely overshoots the other two, so green eyes or blue cloth
+    inside the subject survive.
+    """
+    if band <= 0:
+        return image
+    data = np.asarray(image.convert("RGBA")).astype(np.int16)
+    # 경계의 반투명 픽셀이 색이 가장 심하게 물리는 자리다. alpha>127 로 잡으면
+    # 그 구간이 빠져 머리카락 끝의 초록 테가 그대로 남는다.
+    kept = np.asarray(alpha) > 0
+    rim = kept & (ndimage.distance_transform_edt(kept) <= band)
+    if not rim.any():
+        return image
+    for channel in (1, 2):  # green screen, then blue
+        others = [data[..., c] for c in (0, 1, 2) if c != channel]
+        limit = np.maximum(others[0], others[1])
+        hit = rim & ((data[..., channel] - limit) > 4)
+        data[..., channel] = np.where(hit, limit, data[..., channel])
+    return Image.fromarray(np.clip(data, 0, 255).astype("uint8"), "RGBA")
+
+
+def channel_excess(image: Image.Image, index: int) -> "np.ndarray":
+    """How far one channel overshoots the brighter of the other two."""
+    rgb = np.asarray(image.convert("RGB")).astype(np.float32)
+    rest = [rgb[..., c] for c in range(3) if c != index]
+    return rgb[..., index] - np.maximum(rest[0], rest[1])
+
+
+def screen_level(image: Image.Image, index: int) -> float | None:
+    """How strongly the screen colour reads, or None if there is no screen.
+
+    A fixed cutoff does not survive real batches: the same green backdrop comes
+    out vivid in one run and muted in the next, and a cutoff tuned to the vivid
+    one silently rejects the muted one. Read the level off the image and
+    require a clear gap between screen and subject instead.
+    """
+    excess = channel_excess(image, index)
+    high = float(np.percentile(excess, 90))
+    base = float(np.percentile(excess, 40))
+    if high < 15 or high - base < 12:
+        return None
+    return high
+
+
+def screen_channel(image: Image.Image) -> str | None:
+    """Is this shot on a chroma screen, and which one?
+
+    Judged over the whole frame, not the border ring: in a close-up the hair
+    and shoulders run off the edge, so the ring is subject, not backdrop.
+    """
+    for name, index in (("green", 1), ("blue", 2)):
+        if screen_level(image, index) is not None:
+            return name
+    return None
+
+
+def chroma_mask(image: Image.Image, channel: str) -> Image.Image:
+    """Key the screen out by colour instead of segmenting the subject.
+
+    A segmentation model treats the subject as one solid shape, so the gaps
+    between hair strands come out filled and the screen shows through nowhere.
+    Those gaps are literally screen-coloured, so keying on colour keeps them
+    open and follows fine strands that no mask predictor resolves.
+    """
+    index = 1 if channel == "green" else 2
+    excess = channel_excess(image, index)
+    level = screen_level(image, index)
+    if level is None:
+        raise ValueError("Chroma screen too weak to key")
+    # 손가락 사이나 머리 틈의 스크린은 그림자가 얹혀 색이 흐려진다. 경사 구간이
+    # 높으면 그 자리가 반투명 초록으로 남아 새 배경 위에서 그대로 보인다.
+    low, high = level * .15, level * .45
+    keep = np.clip((high - excess) / (high - low), 0, 1)
+    return Image.fromarray((keep * 255).astype("uint8"))
+
+
+def screen_colour(image: Image.Image, index: int) -> "np.ndarray":
+    """Average colour of the chroma screen itself."""
+    excess = channel_excess(image, index)
+    level = screen_level(image, index)
+    rgb = np.asarray(image.convert("RGB")).astype(np.float32)
+    pick = excess >= (level or 0) * .8
+    if not pick.any():
+        pick = excess >= np.percentile(excess, 95)
+    return np.median(rgb[pick], axis=0)
+
+
+def unmix(image: Image.Image, alpha: Image.Image, screen: "np.ndarray") -> Image.Image:
+    """Subtract the screen out of partly transparent pixels.
+
+    A soft hair edge is subject and screen mixed in one pixel, so pressing the
+    green channel down only shifts the fringe to olive. Solving the mix for the
+    subject removes it: colour = subject*a + screen*(1-a), so divide it back
+    out. Fully opaque pixels are untouched.
+    """
+    rgb = np.asarray(image.convert("RGB")).astype(np.float32)
+    a = (np.asarray(alpha).astype(np.float32) / 255.0)[..., None]
+    safe = np.clip(a, .12, 1.0)
+    recovered = (rgb - screen[None, None, :] * (1.0 - a)) / safe
+    blended = np.where(a >= .999, rgb, recovered)
+    out = np.clip(blended, 0, 255).astype("uint8")
+    result = Image.fromarray(out, "RGB").convert("RGBA")
+    result.putalpha(alpha)
+    return result
+
+
 def clean_mask(mask: Image.Image) -> Image.Image:
     values = np.asarray(mask.convert("L")).copy()
     labels, count = ndimage.label(values > 127)
@@ -37,9 +193,14 @@ def compose(foreground: Image.Image, background: Image.Image,
                              method=Image.Resampling.LANCZOS)
     backdrop = backdrop.filter(ImageFilter.GaussianBlur(blur)).convert("RGBA")
     if border:
-        alpha = np.asarray(foreground.getchannel("A")) > 127
-        outside = ndimage.distance_transform_edt(~alpha)
+        # 가닥마다 따라가면 외곽선이 톱니처럼 끊긴다. 닫기와 구멍 채우기로
+        # 실루엣을 잡아 한 줄로 두르고, 머리카락 틈 안쪽에는 선을 넣지 않는다.
+        solid = np.asarray(foreground.getchannel("A")) > 96
+        solid = ndimage.binary_closing(solid, structure=np.ones((5, 5)))
+        solid = ndimage.binary_fill_holes(solid)
+        outside = ndimage.distance_transform_edt(~solid)
         outline = np.clip(border + 0.5 - outside, 0, 1)
+        outline = np.clip(ndimage.gaussian_filter(outline, max(border * .4, .6)) * 1.7, 0, 1)
         layer = Image.new("RGBA", foreground.size, ImageColor.getrgb(color) + (255,))
         layer.putalpha(Image.fromarray((outline * 255).astype("uint8")))
         backdrop = Image.alpha_composite(backdrop, layer)
@@ -56,6 +217,10 @@ def main() -> None:
     parser.add_argument("--border", type=int, help="Pixels; default 0.8%% of short side; 0 disables")
     parser.add_argument("--border-color", default="#fff8ec")
     parser.add_argument("--blur", type=float, help="Gaussian radius in pixels; default 0.6%% of short side")
+    parser.add_argument("--despill", type=float, default=None, help="Edge band in pixels to pull chroma-key colour from; default 1.2%% of short side, 0 disables")
+    parser.add_argument("--shrink", type=float, default=2, help="Pixels to pull the cutout edge inwards before despill; 0 disables")
+    parser.add_argument("--key", default="auto", choices=["auto", "chroma", "model"], help="auto: key a detected chroma screen by colour, else segment")
+    parser.add_argument("--smooth", type=float, default=None, help="Alpha smoothing radius in pixels; default 0.2%% of short side, 0 disables")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     output = args.out or args.character.with_name(args.character.stem + "-composite.png")
@@ -78,20 +243,40 @@ def main() -> None:
         parser.error("Border and blur must be finite and nonnegative")
     ImageColor.getrgb(args.border_color)
     original_alpha = foreground.getchannel("A")
+    keyed = None
     if args.mask:
         with Image.open(args.mask) as source:
             mask = source.convert("L")
         if mask.size != foreground.size:
             parser.error("Mask must match character dimensions")
-    elif original_alpha.getextrema()[0] < 255:
+    elif alpha_is_cutout(original_alpha):
         mask = original_alpha
     else:
-        from rembg import new_session, remove
-        print(f"Removing background locally ({args.model})…", flush=True)
-        session = new_session(args.model, providers=["CPUExecutionProvider"])
-        mask = remove(foreground, session=session, only_mask=True)
+        channel = screen_channel(foreground) if args.key != "model" else None
+        keyed = channel
+        if args.key == "chroma" and not channel:
+            parser.error("No chroma screen detected; use --key auto or --key model")
+        if channel:
+            print(f"Keying {channel} screen by colour…", flush=True)
+            mask = chroma_mask(foreground, channel)
+        else:
+            from rembg import new_session, remove
+            print(f"Removing background locally ({args.model})…", flush=True)
+            session = new_session(args.model, providers=["CPUExecutionProvider"])
+            mask = remove(foreground, session=session, only_mask=True)
     mask = clean_mask(mask)
-    foreground.putalpha(Image.fromarray(np.minimum(np.asarray(mask), np.asarray(original_alpha))))
+    smooth = args.smooth if args.smooth is not None else min(foreground.size) * .002
+    mask = smooth_alpha(mask, smooth)
+    mask = shrink_mask(mask, args.shrink)
+    merged = Image.fromarray(np.minimum(np.asarray(mask), np.asarray(original_alpha)))
+    foreground.putalpha(merged)
+    if keyed:
+        index = 1 if keyed == "green" else 2
+        foreground = unmix(foreground, merged, screen_colour(foreground, index))
+    else:
+        spill = args.despill if args.despill is not None else min(foreground.size) * .012
+        foreground = despill(foreground, merged, spill)
+        foreground.putalpha(merged)
     result = compose(foreground, background, border, args.border_color, blur)
     output.parent.mkdir(parents=True, exist_ok=True)
     foreground.save(cutout_path)
