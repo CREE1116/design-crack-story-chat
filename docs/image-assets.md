@@ -2,7 +2,7 @@
 
 스토리챗은 외부 호스팅 이미지를 조합 주소(`{IMG}/카테고리/번호.png`)로 부를 수 있습니다. 이 문서는 **Cloudflare Pages를 통해 이미지를 호스팅하고 웹 쇼케이스 갤러리를 구축하는 방법**입니다. 프롬프트에서 어떻게 부르는지는 [image-output-rules.md](../skills/design-crack-story-chat/references/image-output-rules.md)에 있습니다.
 
-> **이 저장소는 이미지를 직접 생성하지 않습니다.** 어떤 도구로 그릴지는 제작자가 정합니다. 여기서 책임지는 것은 **폴더 구조의 무결성, 깨진 링크 방지, Cloudflare Pages 호스팅 및 웹 갤러리 배포**입니다.
+> 어떤 도구로 그릴지는 제작자가 정합니다. 누끼·배경 합성·보케는 [이미지 합성 지침](../skills/design-crack-story-chat/references/image-compositing.md)에 따라 로컬 Python 누끼·합성 도구로 수행합니다. 누끼 모델은 첫 실행에 다운로드합니다. 이 문서는 **폴더 구조의 무결성, 깨진 링크 방지, Cloudflare Pages 호스팅 및 웹 갤러리 배포**를 다룹니다.
 >
 > 이미지는 항상 선택 사항입니다. **한 장도 없어도 텍스트만으로 플레이가 성립해야 합니다.** 이 조건을 못 지키면 자산 제작이 출시를 막습니다.
 

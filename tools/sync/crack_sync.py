@@ -819,10 +819,12 @@ def dump_dom_summary(page: Any) -> None:
 def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
     """Inject prologue, start prompt, and system prompt into editor."""
     print("\n🧠 [프롬프트 주입 시작] (" + artifacts.variant.upper() + ")")
+    if not require_editor_tabs(page, "프롬프트"):
+        return False
 
     # ── [스토리 설정] 탭 → 제작자 커스텀 선택 → 메인 시스템 프롬프트 주입 ──
     print("   📌 [스토리 설정] 탭 클릭...")
-    story_tab = page.locator("button:has-text('스토리 설정')").first
+    story_tab = page.locator("a:visible:has-text('스토리 설정'), button:visible:has-text('스토리 설정'), div[role='tab']:visible:has-text('스토리 설정'), li:visible:has-text('스토리 설정')").first
     if story_tab.count() > 0:
         story_tab.click()
         time.sleep(1.5)
@@ -852,7 +854,7 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
 
     # ── [시작 설정] 탭 → [0] 프롤로그 + [1] 시작 상황 (세계관/역할) 주입 ──
     print("   📌 [시작 설정] 탭 클릭...")
-    start_tab = page.locator("button:has-text('시작 설정')").first
+    start_tab = page.locator("a:visible:has-text('시작 설정'), button:visible:has-text('시작 설정'), div[role='tab']:visible:has-text('시작 설정'), li:visible:has-text('시작 설정')").first
     if start_tab.count() > 0:
         start_tab.click()
         time.sleep(1.5)
@@ -925,6 +927,45 @@ def inject_prompts(page: Any, artifacts: ProjectArtifacts) -> bool:
     return True
 
 
+def cover_slot_empty(page: Any) -> bool:
+    """대표 이미지 칸이 비었는지 본다.
+
+    "이미지를 필수로 등록해주세요" 는 저장을 한 번 시도해야 뜬다. 그 문구만
+    보고 판단하면 첫 주입에서 표지를 통째로 건너뛰고, 그러면 [다음] 이
+    비활성이라 storyId 가 발급되지 않는다. 실제로 이 순서 때문에 신규 생성이
+    매번 프로필 단계에서 멎었다.
+    """
+    if os.environ.get("CRACK_SYNC_THUMBNAIL_FORCE", "").strip() == "1":
+        return True
+    try:
+        if page.locator(":text('이미지를 필수로 등록')").count() > 0:
+            return True
+    except Exception:
+        pass
+    try:
+        if page.locator("button:visible:has-text('업로드')").count() == 0:
+            return False  # 업로드 칸 자체가 없는 화면이면 대상이 아니다
+        preview = page.locator(
+            "img[src^='blob:'], img[src^='data:image'], img[src*='wrtn.ai'], "
+            "img[alt*='대표'], img[alt*='커버'], img[alt*='썸네일']"
+        )
+        return preview.count() == 0
+    except Exception:
+        return False
+
+
+def require_editor_tabs(page: Any, what: str) -> bool:
+    """storyId 가 없으면 탭이 열리지 않는다. 주입을 시도해도 전부 허공에 쌓인다."""
+    try:
+        url = page.url
+    except Exception:
+        return False
+    if "storyId=" not in url:
+        print(f"   ⛔ storyId 가 없어 [{what}] 주입을 건너뜁니다 — 프로필 단계가 끝나지 않았습니다.")
+        return False
+    return True
+
+
 def ensure_required_basics(page: Any, artifacts: "ProjectArtifacts") -> None:
     """저장 전 필수 항목(제목·한 줄 소개)이 비어 있으면 채운다.
 
@@ -935,8 +976,7 @@ def ensure_required_basics(page: Any, artifacts: "ProjectArtifacts") -> None:
     # 대표 이미지가 비면 크랙이 저장을 거부한다. 화면에는 "이미지를 필수로
     # 등록해주세요" 만 뜨고 버튼은 눌린 것처럼 보이므로, 없으면 여기서 말한다.
     thumb = os.environ.get("CRACK_SYNC_THUMBNAIL", "").strip()
-    img_missing = page.locator(":text('이미지를 필수로 등록')")
-    if img_missing.count() > 0:
+    if cover_slot_empty(page):
         if thumb and Path(thumb).is_file():
             # 숨은 input 에 직접 넣으면 미디어 탭 같은 엉뚱한 input 을 집을 수
             # 있다. [업로드] 를 눌러 뜨는 파일 선택창을 가로채는 편이 확실하다.
@@ -1073,8 +1113,12 @@ def save_crack_draft(page: Any, artifacts: Any = None) -> bool:
             # 크랙이 토스트를 안 띄우는 경우가 있다. 그때는 새로고침해서 값이
             # 남아 있는지 보는 것이 유일하게 믿을 수 있는 근거다.
             try:
-                page.reload(wait_until="domcontentloaded", timeout=20000)
-                time.sleep(3.0)
+                # 주입이 끝나면 화면은 step=ending 에 있다. 거기서 새로고침하면
+                # 제목 칸이 아예 없어 "저장 안 됨" 으로 잘못 판정한다. 제목이
+                # 있는 프로필 단계로 되돌린 뒤에 확인한다.
+                verify_url = page.url.split("&step=")[0]
+                page.goto(verify_url, wait_until="domcontentloaded", timeout=20000)
+                time.sleep(3.5)
                 name_inp = page.locator("input:visible[placeholder*='스토리의 이름']").first
                 saved = ""
                 if name_inp.count() > 0:
@@ -1114,7 +1158,12 @@ def save_crack_draft(page: Any, artifacts: Any = None) -> bool:
 def clear_existing_keywords(page: Any) -> int:
     """Delete all existing keyword notes on the keyword book tab to prevent duplicate stacking."""
     print("   🧹 기존 키워드북 항목 정리(초기화) 중...")
+    # 실측: 키워드 행마다 [펼치기 m5.64…][연필 M16.05…][휴지통 M15.44…] 세 버튼이
+    # 반복된다. 예전 목록에는 휴지통 path 가 하나도 없어 삭제가 0개로 끝났고,
+    # 그 상태로 다시 싱크하면 이미 20개가 차 있어 [키워드 노트 추가] 가
+    # disabled 라 한 건도 못 넣는다.
     del_btn_selector = (
+        "button:visible:has(path[d^='M15.44']), "
         "button:visible:has(path[d*='M6 19']), "
         "button:visible:has(path[d*='19 7']), "
         "button:visible:has(path[d*='M16 9']), "
@@ -1173,6 +1222,9 @@ def clear_existing_keywords(page: Any) -> int:
     return deleted
 
 
+KEYWORD_ENTRY_CAP = 20  # 실측: 21번째부터 [키워드 노트 추가] 가 disabled 로 바뀐다
+
+
 def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
     """Inject keyword entries into keyword book tab.
 
@@ -1186,16 +1238,30 @@ def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
       7. 키워드 input에 tag 입력 후 Enter (기존 태그 정리 및 React 호환)
       8. ^ chevron up 버튼 클릭하여 아코디언 접기
     """
-    print(f"\n📚 [키워드북 주입 시작] (총 {len(artifacts.keyword_entries)}개 항목)")
+    total = len(artifacts.keyword_entries)
+    print(f"\n📚 [키워드북 주입 시작] (총 {total}개 항목)")
+    if total > KEYWORD_ENTRY_CAP:
+        print(f"   ⚠️ 크랙 키워드북 상한은 {KEYWORD_ENTRY_CAP}개입니다 — 뒤의 {total - KEYWORD_ENTRY_CAP}개는 등록되지 않습니다.")
+        print("      항목을 합치거나 덜 쓰이는 것을 빼고 다시 실행하세요.")
 
     # 키워드북 탭
-    page.locator("button:has-text('키워드북')").first.click()
+    if not require_editor_tabs(page, "키워드북"):
+        return False
+    if not switch_tab(page, ["키워드북"]):
+        # 예전에는 여기서 30초 타임아웃 예외가 그대로 터져 나와 세션이 통째로
+        # 죽었다. 못 찾으면 화면을 덤프하고 조용히 물러난다.
+        print("   ⛔ '키워드북' 탭을 찾지 못했습니다.")
+        dump_fields(page, "키워드북 탭 없음")
+        return False
     time.sleep(1.5)
 
     # 기존 항목 전수 삭제 (중복 누적 방지)
     clear_existing_keywords(page)
     time.sleep(0.8)
 
+    added = 0
+    failed: list[str] = []
+    capped = False
     for i, entry in enumerate(artifacts.keyword_entries, 1):
         print(
             f"   [{i:02d}/{len(artifacts.keyword_entries):02d}] '{entry.title}' "
@@ -1209,6 +1275,12 @@ def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
             ).first
             if add_btn.count() > 0:
                 add_btn.scroll_into_view_if_needed(timeout=3000)
+                if not add_btn.is_enabled():
+                    # 상한에 걸리면 버튼이 disabled 로 바뀐다. 그대로 클릭하면
+                    # 5초 타임아웃이 항목마다 반복되며 원인도 드러나지 않는다.
+                    print(f"상한 도달 — [키워드 노트 추가] 비활성 (등록 {added}개에서 멈춤)")
+                    capped = True
+                    break
                 add_btn.click(timeout=5000)
             time.sleep(1.0)
 
@@ -1266,10 +1338,23 @@ def inject_keywords(page: Any, artifacts: ProjectArtifacts) -> bool:
                 time.sleep(0.4)
 
             print("완료")
+            added += 1
         except Exception as ex:
+            failed.append(entry.title)
             print(f"실패 ({ex})")
 
-    print(f"   ✅ 키워드북 {len(artifacts.keyword_entries)}개 완료!")
+    # 예전에는 시도한 개수를 그대로 "완료" 로 찍어서, 상한에 걸려 빠진 항목이
+    # 있어도 성공으로 보고했다. 실제로 들어간 것만 센다.
+    if capped:
+        print(f"   ⛔ 키워드북 상한({KEYWORD_ENTRY_CAP}개)에 걸려 {added}개만 등록됐습니다.")
+        remaining = [e.title for e in artifacts.keyword_entries[added:]]
+        if remaining:
+            print(f"      누락: {', '.join(remaining)}")
+        return False
+    if failed:
+        print(f"   ⚠️ 키워드북 {added}/{len(artifacts.keyword_entries)}개 등록 — 실패: {', '.join(failed)}")
+        return False
+    print(f"   ✅ 키워드북 {added}개 완료!")
     return True
 
 
@@ -1319,7 +1404,7 @@ def inject_shortcuts(page: Any, artifacts: ProjectArtifacts) -> bool:
     print(f"\n⚡ [단축어 주입 시작] (총 {len(artifacts.shortcuts)}개 항목)")
 
     # 단축어 탭
-    page.locator("button:has-text('단축어')").first.click()
+    page.locator("a:visible:has-text('단축어'), button:visible:has-text('단축어'), div[role='tab']:visible:has-text('단축어'), li:visible:has-text('단축어')").first.click()
     time.sleep(1.2)
 
     # 기존 단축어 정리
@@ -1371,9 +1456,11 @@ def inject_shortcuts(page: Any, artifacts: ProjectArtifacts) -> bool:
 def inject_basic_info(page: Any, artifacts: ProjectArtifacts) -> bool:
     """Inject title and short summary into 프로필 tab."""
     print("\n📝 [기본 정보 (프로필) 주입 시작]")
+    if not require_editor_tabs(page, "기본 정보"):
+        return False
 
     # 프로필 탭 클릭
-    prof_tab = page.locator("button:has-text('프로필')").first
+    prof_tab = page.locator("a:visible:has-text('프로필'), button:visible:has-text('프로필'), div[role='tab']:visible:has-text('프로필'), li:visible:has-text('프로필')").first
     if prof_tab.count() > 0:
         prof_tab.click()
         time.sleep(1.0)
@@ -1401,7 +1488,7 @@ def inject_publish_info(page: Any, artifacts: ProjectArtifacts) -> bool:
     print("\n📋 [발행 상세 설명 주입 시작]")
 
     # 1. 반드시 엔딩 설정 탭 클릭 후 -> 하단 다음 버튼 클릭
-    ending_tab = page.locator("button:has-text('엔딩 설정')").first
+    ending_tab = page.locator("a:visible:has-text('엔딩 설정'), button:visible:has-text('엔딩 설정'), div[role='tab']:visible:has-text('엔딩 설정'), li:visible:has-text('엔딩 설정')").first
     if ending_tab.count() > 0:
         ending_tab.click()
         time.sleep(1.0)
@@ -1494,20 +1581,27 @@ def complete_profile_step(page: Any, artifacts: "ProjectArtifacts") -> bool:
     """
     print("\n🧾 [프로필 단계 — storyId 발급]")
     ensure_required_basics(page, artifacts)
+    if "storyId=" in page.url:
+        print(f"   ✅ storyId 이미 발급됨 — {page.url}")
+        return True
     nxt = page.locator("button:visible:has-text('다음')").first
     if nxt.count() == 0:
-        print("   ℹ️ [다음] 버튼이 없습니다. 이미 발급된 편집 화면으로 봅니다.")
-        return True
-    try:
-        nxt.click()
-        time.sleep(4.0)
-    except Exception as e:
-        print(f"   ⚠️ [다음] 클릭 실패: {e}")
+        # 예전에는 여기서 True 를 돌려주고 계속 진행했다. 그러면 탭이 없는
+        # 화면에 주입을 시작해 '탭 못 찾음' 경고만 쌓다가 키워드북에서
+        # 타임아웃으로 죽었다. 없으면 없다고 말하고 멈춘다.
+        print("   ⛔ [다음] 버튼도 없고 storyId 도 없습니다 — 프로필 단계가 끝나지 않았습니다.")
+        dump_fields(page, "프로필 미완료")
         return False
-    if "storyId=" in page.url:
-        print(f"   ✅ storyId 발급됨 — {page.url}")
-        return True
-    print("   ⚠️ [다음] 을 눌렀지만 storyId 가 생기지 않았습니다.")
+    for attempt in (1, 2):
+        try:
+            nxt.click()
+        except Exception as e:
+            print(f"   ⚠️ [다음] 클릭 실패 ({attempt}회): {e}")
+        time.sleep(4.0)
+        if "storyId=" in page.url:
+            print(f"   ✅ storyId 발급됨 — {page.url}")
+            return True
+    print("   ⛔ [다음] 을 눌렀지만 storyId 가 생기지 않았습니다.")
     dump_fields(page, "storyId 발급 실패")
     return False
 
@@ -1524,7 +1618,12 @@ def auto_navigate_and_inject_all(page: Any, artifacts: ProjectArtifacts) -> None
 
     # 1.5 프로필 단계를 끝내야 storyId 가 나온다. 이게 없으면 이후 주입은
     # 저장되지 않는 세션에 쌓이고, 새로고침하는 순간 전부 사라진다.
-    complete_profile_step(page, artifacts)
+    if not complete_profile_step(page, artifacts):
+        print("\n⛔ 프로필 단계가 끝나지 않아 이후 주입을 중단합니다.")
+        print("   스토리 설정·시작 설정·키워드북 탭은 storyId 가 발급돼야 열립니다.")
+        print("   제목·한 줄 소개·대표 이미지를 채우고 [다음] 을 누른 뒤 다시 실행하세요.")
+        print("   대표 이미지는 CRACK_SYNC_THUMBNAIL=<1080x1620 이미지> 로 지정할 수 있습니다.")
+        return
     time.sleep(1)
 
     # 2. 기본 정보 주입
