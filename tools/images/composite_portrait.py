@@ -187,20 +187,44 @@ def clean_mask(mask: Image.Image) -> Image.Image:
     return Image.fromarray(values)
 
 
+def silhouette(alpha: Image.Image, radius: float) -> "np.ndarray":
+    """Round the outline into a drawn line instead of a torn edge.
+
+    Tracing the alpha exactly makes the border spike out along every hair
+    strand, which reads as torn paper. Blurring the binary shape and cutting it
+    again at half limits how sharply the contour can turn, so corners round off
+    while gaps wider than the radius stay open — unlike filling holes, which
+    swallows the gaps between strands and leaves a white slab.
+    """
+    solid = np.asarray(alpha) > 96
+    if radius > 0:
+        solid = ndimage.gaussian_filter(solid.astype(np.float32), radius) > .5
+    labels, count = ndimage.label(solid)
+    if count:
+        areas = np.bincount(labels.ravel())
+        areas[0] = 0
+        keep = areas >= max(64, areas.max() * .002)
+        solid = keep[labels]  # 잡티에까지 테를 두르지 않는다
+    return solid
+
+
 def compose(foreground: Image.Image, background: Image.Image,
             border: int, color: str, blur: float) -> Image.Image:
     backdrop = ImageOps.fit(background.convert("RGB"), foreground.size,
                              method=Image.Resampling.LANCZOS)
     backdrop = backdrop.filter(ImageFilter.GaussianBlur(blur)).convert("RGBA")
     if border:
-        # 가닥마다 따라가면 외곽선이 톱니처럼 끊기지만, 구멍까지 메우면 실루엣이
-        # 성긴 머리카락 밖으로 부풀어 가닥 사이가 흰 덩어리로 메워진다. 1픽셀
-        # 요철만 없앨 만큼 약하게 닫고 알파를 그대로 따라간다.
-        solid = np.asarray(foreground.getchannel("A")) > 96
-        solid = ndimage.binary_closing(solid, structure=np.ones((3, 3)))
+        channel = foreground.getchannel("A")
+        solid = silhouette(channel, max(border * 1.1, 1.5))
         outside = ndimage.distance_transform_edt(~solid)
         outline = np.clip(border + 0.5 - outside, 0, 1)
-        outline = np.clip(ndimage.gaussian_filter(outline, max(border * .4, .6)) * 1.7, 0, 1)
+        # 가닥 간격이 흐림 반경보다 넓으면 선이 가닥마다 따라붙어 찢긴 종이처럼
+        # 보인다. 반경을 더 키우면 틈이 메워져 흰 덩어리가 된다. 그래서 국소
+        # 밀도를 재어 단단한 경계에만 선을 두르고 성긴 머리카락에서는 뺀다.
+        packed = np.asarray(channel).astype(np.float32) / 255.0
+        density = ndimage.gaussian_filter(packed, max(border * 2.5, 4.0))
+        outline *= np.clip((density - .28) / .12, 0, 1)
+        outline = np.clip(ndimage.gaussian_filter(outline, .6) * 1.4, 0, 1)
         layer = Image.new("RGBA", foreground.size, ImageColor.getrgb(color) + (255,))
         layer.putalpha(Image.fromarray((outline * 255).astype("uint8")))
         backdrop = Image.alpha_composite(backdrop, layer)
