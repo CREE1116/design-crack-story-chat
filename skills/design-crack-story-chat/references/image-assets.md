@@ -20,7 +20,7 @@
 - **[image-assets.md](image-assets.md) (본 문서)**: 이미지를 **WebP로 변환하고, 번호화된 디렉터리에 배치하며, Cloudflare Pages와 쇼케이스 웹페이지로 호스팅하는 방법 (호스팅 & 웹 배포)**
 
 > [!IMPORTANT]
-> **이 스킬은 AI 이미지를 직접 생성하지 않습니다.** 그림을 그리는 도구(Midjourney, NAI, SD, 외주 등)는 제작자가 자유롭게 선택합니다. 스킬이 책임지는 것은 **WebP 변환, 디렉터리 무결성 검사, Cloudflare Pages 호스팅 및 반응형 웹 갤러리 배포**입니다.
+> 그림을 그리는 도구(Midjourney, NAI, SD, 외주 등)는 제작자가 자유롭게 선택합니다. 누끼·배경 교체·보케 요청은 [image-compositing.md](image-compositing.md)에 따라 로컬 Python 누끼·합성 도구로 수행합니다. 이 문서는 **WebP 변환, 디렉터리 무결성 검사, Cloudflare Pages 호스팅 및 반응형 웹 갤러리 배포**를 담당하며, 누끼 모델은 첫 실행에 다운로드하며 그림을 다시 생성하지 않습니다.
 > 
 > 이미지는 항상 선택 사항입니다. **단 한 장의 이미지가 없어도 텍스트만으로 완벽히 플레이가 성립**해야 합니다.
 

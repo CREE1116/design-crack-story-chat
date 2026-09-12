@@ -44,6 +44,7 @@
 | 다중 시작 세트 디렉토리 규약 | `start-sets.md` |
 | 대화 연속성, 첫 입력 프로필 파싱 | `conversation-continuity.md` |
 | 이미지 에셋 구조, WebP, Cloudflare, 쇼케이스 | `image-assets.md` |
+| 캐릭터 누끼, 배경 합성·보케, 배경 품질 일관성 | `image-compositing.md` |
 | 프롬프트 내 이미지 출력 규칙, 성인 이미지 이관 | `image-output-rules.md` |
 | 상세설명란·댓글 코멘트 작성 규격 | `story-description-guide.md` |
 | **플레이 가이드, 추천 답변 3개** | `play-guide.md` |
