@@ -209,21 +209,16 @@ def silhouette(alpha: Image.Image, radius: float) -> "np.ndarray":
 
 
 def compose(foreground: Image.Image, background: Image.Image,
-            border: int, color: str, blur: float) -> Image.Image:
+            border: int, color: str, blur: float,
+            solid: "np.ndarray | None" = None) -> Image.Image:
     backdrop = ImageOps.fit(background.convert("RGB"), foreground.size,
                              method=Image.Resampling.LANCZOS)
     backdrop = backdrop.filter(ImageFilter.GaussianBlur(blur)).convert("RGBA")
     if border:
-        channel = foreground.getchannel("A")
-        solid = silhouette(channel, max(border * 1.1, 1.5))
+        if solid is None:
+            solid = silhouette(foreground.getchannel("A"), max(border * 1.1, 1.5))
         outside = ndimage.distance_transform_edt(~solid)
         outline = np.clip(border + 0.5 - outside, 0, 1)
-        # 가닥 간격이 흐림 반경보다 넓으면 선이 가닥마다 따라붙어 찢긴 종이처럼
-        # 보인다. 반경을 더 키우면 틈이 메워져 흰 덩어리가 된다. 그래서 국소
-        # 밀도를 재어 단단한 경계에만 선을 두르고 성긴 머리카락에서는 뺀다.
-        packed = np.asarray(channel).astype(np.float32) / 255.0
-        density = ndimage.gaussian_filter(packed, max(border * 2.5, 4.0))
-        outline *= np.clip((density - .28) / .12, 0, 1)
         outline = np.clip(ndimage.gaussian_filter(outline, .6) * 1.4, 0, 1)
         layer = Image.new("RGBA", foreground.size, ImageColor.getrgb(color) + (255,))
         layer.putalpha(Image.fromarray((outline * 255).astype("uint8")))
@@ -245,6 +240,7 @@ def main() -> None:
     parser.add_argument("--shrink", type=float, default=2, help="Pixels to pull the cutout edge inwards before despill; 0 disables")
     parser.add_argument("--key", default="auto", choices=["auto", "chroma", "model"], help="auto: key a detected chroma screen by colour, else segment")
     parser.add_argument("--smooth", type=float, default=None, help="Alpha smoothing radius in pixels; default 0.2%% of short side, 0 disables")
+    parser.add_argument("--keep-wisps", action="store_true", help="Leave strands that fall outside the smoothed silhouette instead of trimming them")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     output = args.out or args.character.with_name(args.character.stem + "-composite.png")
@@ -301,7 +297,13 @@ def main() -> None:
         spill = args.despill if args.despill is not None else min(foreground.size) * .012
         foreground = despill(foreground, merged, spill)
         foreground.putalpha(merged)
-    result = compose(foreground, background, border, args.border_color, blur)
+    # 실루엣 밖으로 삐져나온 가닥을 남기면 보더가 있는 구간과 없는 구간이 섞여
+    # 외곽선이 어정쩡해진다. 잘라내면 한 줄이 전체를 균일하게 감싼다.
+    solid = silhouette(foreground.getchannel("A"), max(border * 1.1, 1.5))
+    if not args.keep_wisps:
+        trimmed = np.where(solid, np.asarray(foreground.getchannel("A")), 0)
+        foreground.putalpha(Image.fromarray(trimmed.astype("uint8")))
+    result = compose(foreground, background, border, args.border_color, blur, solid)
     output.parent.mkdir(parents=True, exist_ok=True)
     foreground.save(cutout_path)
     if output.suffix.lower() == ".webp":
