@@ -13,6 +13,11 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: 의존성 설치
+        # crack-emu 린트가 pyyaml 을 import 한다. 없으면 validate.sh 의 키워드북 검사가
+        # ModuleNotFoundError 로 죽고 "실패 있음" 으로 끝난다(v0.10.33 부터 CI 가 계속 붉었던 원인).
+        run: pip install pyyaml
+
       - name: 검증 스크립트 문법 확인
         run: python -m compileall -q skills/design-crack-story-chat/scripts tools/images
 
