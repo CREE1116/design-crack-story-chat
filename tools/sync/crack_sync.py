@@ -76,6 +76,8 @@ class ProjectArtifacts:
     play_guide: str = ""
     replies: list[str] = field(default_factory=list)
     variant: str = "safe"
+    # [등록] 탭 설정. story.md Core 의 선언만 담는다 — 선언하지 않은 항목은 건드리지 않는다.
+    register: dict = field(default_factory=dict)
 
 
 # ── 시작 세트 ────────────────────────────────────────────────────
@@ -336,6 +338,64 @@ def parse_keyword_book(kb_text: str) -> tuple[list[KeywordEntry], list[ShortcutE
     return keyword_entries, shortcuts
 
 
+# ── [등록] 탭 설정 ─────────────────────────────────────────────────
+# 선택지는 2026-09-16 크랙 에디터에서 실제로 펼쳐 본 목록이다. 크랙이 목록을
+# 바꾸면 inspect 가 "없는 선택지" 로 알려주므로, 그때 여기와 가이드를 함께 고친다.
+GENRE_OPTIONS = ("로맨스", "로판", "SF/판타지", "일상/현대", "무협", "시대", "BL", "GL", "2차 창작", "유틸리티", "기타")
+TARGET_OPTIONS = ("남성향", "여성향", "전체")
+CHAT_FORM_OPTIONS = ("1:1 롤플레잉", "시뮬레이션")
+MAX_OUTPUT_OPTIONS = ("기본", "1.5x", "3x", "5x")
+HASHTAG_MAX_COUNT = 10
+DESCRIPTION_MAX = 1000  # [등록] 탭 상세 설명 textarea maxlength
+HASHTAG_MAX_LEN = 10  # 입력칸 maxlength=10. 넘으면 칸이 조용히 잘라 먹는다.
+
+REGISTER_FIELDS: tuple[tuple[str, str], ...] = (
+    ("genre", r"Genre|장르"),
+    ("target", r"Target|타겟"),
+    ("chat_form", r"Chat form|Chat format|대화 형태"),
+    ("mode", r"Recommended mode|권장 모드"),
+    ("max_output", r"Max output|권장 최대 출력량"),
+    ("hashtags", r"Hashtags|해시태그"),
+    ("audience", r"Audience|이용자 층"),
+)
+
+
+def parse_register_settings(story_content: str) -> dict:
+    """story.md Core 의 `- Genre:` 같은 선언을 [등록] 탭 설정으로 읽는다."""
+    out: dict = {}
+    for key, names in REGISTER_FIELDS:
+        m = re.search(rf"^-\s*(?:{names}):\s*(.+)$", story_content, re.MULTILINE | re.IGNORECASE)
+        if not m:
+            continue
+        value = m.group(1).strip()
+        if key == "hashtags":
+            parts = re.split(r"[,，]", value) if re.search(r"[,，]", value) else value.split()
+            out[key] = [x.strip().lstrip("#").strip() for x in parts if x.strip().lstrip("#").strip()]
+        else:
+            out[key] = value
+    return out
+
+
+def register_violations(register: dict) -> list[str]:
+    """선언값이 크랙 선택지·한도에 맞는지 센다. 틀린 값을 넣으면 에디터가 조용히 무시한다."""
+    found: list[str] = []
+    for key, options, label in (
+        ("genre", GENRE_OPTIONS, "장르"),
+        ("target", TARGET_OPTIONS, "타겟"),
+        ("chat_form", CHAT_FORM_OPTIONS, "대화 형태"),
+        ("max_output", MAX_OUTPUT_OPTIONS, "권장 최대 출력량"),
+    ):
+        if key in register and register[key] not in options:
+            found.append(f"{label} '{register[key]}' 은 크랙 선택지에 없습니다 ({' · '.join(options)})")
+    tags = register.get("hashtags") or []
+    if len(tags) > HASHTAG_MAX_COUNT:
+        found.append(f"해시태그 {len(tags)}개 (최대 {HASHTAG_MAX_COUNT}개)")
+    for tag in tags:
+        if crack_len(tag) > HASHTAG_MAX_LEN:
+            found.append(f"해시태그 '{tag}' {crack_len(tag)}자 (한 개당 {HASHTAG_MAX_LEN}자)")
+    return found
+
+
 def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectArtifacts:
     build_dir = project_dir / "build"
     if not build_dir.exists():
@@ -369,8 +429,10 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
     # Title and short summary (Logline) extraction
     title = project_dir.name
     short_summary = ""
+    register: dict = {}
     if story_path.exists():
         story_content = story_path.read_text(encoding="utf-8")
+        register = parse_register_settings(story_content)
         title_tag = re.search(r"^-\s*Title:\s*(.+)$", story_content, re.MULTILINE | re.IGNORECASE)
         if title_tag:
             title = title_tag.group(1).strip()
@@ -426,6 +488,7 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
         play_guide=play_guide,
         replies=replies,
         variant=variant,
+        register=register,
     )
 
 
@@ -512,6 +575,19 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
     for i, r in enumerate(artifacts.replies, 1):
         head = r.splitlines()[0][:38]
         print(f"   [{i}] {head}… ({len(r)}자)")
+    reg = artifacts.register
+    if reg:
+        print("10. 🏷️ 등록 탭 설정 (story.md Core 선언)")
+        for key, label in (("genre", "장르"), ("target", "타겟"), ("chat_form", "대화 형태"),
+                           ("mode", "권장 모드"), ("max_output", "권장 최대 출력량")):
+            if key in reg:
+                print(f"   {label:<12}: {reg[key]}")
+        if "hashtags" in reg:
+            print(f"   해시태그     : {' '.join('#' + x for x in reg['hashtags'])} ({len(reg['hashtags'])}개 / {HASHTAG_MAX_COUNT}개)")
+        if "audience" in reg:
+            print(f"   이용자 층    : {reg['audience']} — 한 번 정하면 못 바꿔서 도구가 설정하지 않습니다")
+    else:
+        print("10. 🏷️ 등록 탭 설정                : (선언 없음 — 건드리지 않음)")
     print("=" * 75)
 
     # 한도를 출력만 하고 통과를 선언하면 검사기가 아니라 인쇄기다. 실제로 센다.
@@ -538,6 +614,8 @@ def run_inspect(project_dir: Path, variant: str = "safe") -> int:
         check(f"단축어 '{sc.name}' 프롬프트", sc.prompt, SHORTCUT_MAX)
     if len(artifacts.replies) > REPLY_MAX_COUNT:
         violations.append(f"추천 답변 {len(artifacts.replies)}개 (최대 {REPLY_MAX_COUNT}개)")
+    check("상세 설명", artifacts.story_description, DESCRIPTION_MAX)
+    violations.extend(register_violations(artifacts.register))
     if len(artifacts.departments) > MAX_START_SETS:
         violations.append(
             f"시작 세트 {len(artifacts.departments)}개 (크랙 상한 {MAX_START_SETS}개) — "
@@ -999,9 +1077,11 @@ def ensure_required_basics(page: Any, artifacts: "ProjectArtifacts") -> None:
                 if up.count() > 0:
                     up.click()
                     time.sleep(1.2)
-                    pick = page.locator(
-                        ":text('기기에서 가져오기'), :text('내 기기'), button:visible:has-text('기기')"
-                    ).first
+                    # :text() 는 버튼 안쪽 글자 노드를 잡아 클릭해도 파일창이 안 열린다.
+                    # 모달의 선택지는 제목·설명이 든 button 이므로 button 으로 집는다.
+                    pick = page.locator("button:visible", has_text="기기에서 가져오기").first
+                    if pick.count() == 0:
+                        pick = page.locator("button:visible", has_text="내 기기").first
                     if pick.count() > 0:
                         with page.expect_file_chooser(timeout=6000) as fc:
                             pick.click()
@@ -1077,6 +1157,21 @@ def save_crack_draft(page: Any, artifacts: Any = None) -> bool:
     """
     print("\n💾 [임시저장(Draft Save) 시도]...")
     if artifacts is not None:
+        # 표지 칸은 [프로필] 탭에만 있다. 주입이 끝나면 화면은 보통 [등록] 탭이라
+        # 여기서 검사하면 업로드 버튼이 없어 "대상 아님" 으로 판정하고 표지를
+        # 건너뛴다. 신규 작품이 표지 없이 저장되던 원인이다. 먼저 프로필 탭을 연다.
+        if os.environ.get("CRACK_SYNC_THUMBNAIL", "").strip():
+            prof = (
+                page.locator("button:visible, a:visible, [role='tab']:visible")
+                .filter(has_text=re.compile(r"^\s*프로필\s*\*?\s*$"))
+                .first
+            )
+            if prof.count() > 0:
+                try:
+                    prof.click()
+                    time.sleep(3.0)
+                except Exception:
+                    pass
         ensure_required_basics(page, artifacts)
     draft_selectors = [
         "button:visible:has-text('임시저장')",
@@ -1493,32 +1588,210 @@ def inject_basic_info(page: Any, artifacts: ProjectArtifacts) -> bool:
     return True
 
 
-def inject_publish_info(page: Any, artifacts: ProjectArtifacts) -> bool:
-    """Inject detailed description into publish screen via 엔딩 설정 -> 다음 button only."""
-    print("\n📋 [발행 상세 설명 주입 시작]")
+def open_register_tab(page: Any) -> bool:
+    """탭 줄 맨 끝의 [등록] 탭(step=register)을 연다.
 
-    # 1. 반드시 엔딩 설정 탭 클릭 후 -> 하단 다음 버튼 클릭
-    ending_tab = page.locator("a:visible:has-text('엔딩 설정'), button:visible:has-text('엔딩 설정'), div[role='tab']:visible:has-text('엔딩 설정'), li:visible:has-text('엔딩 설정')").first
-    if ending_tab.count() > 0:
-        ending_tab.click()
-        time.sleep(1.0)
-        next_btn = page.locator("button:text('다음'), button:has-text('다음')").first
-        if next_btn.count() > 0:
-            next_btn.click()
-            time.sleep(1.5)
-            print("   ✅ '엔딩 설정' -> '다음' 버튼 클릭 완료")
-
-    # 2. 상세 설명 textarea (placeholder='스토리의 성격이나 서사, 과거 사건 등 상세한 내용을 작성해 주세요')
-    detail_ta = page.locator("textarea[placeholder*='상세한 내용'], textarea[placeholder*='서사'], textarea:visible").first
-    if detail_ta.count() > 0:
-        # 배너 + 통계표 + 코멘트 마크다운 (story_description 우선, 없으면 summary_comment 폴백)
-        raw_desc = artifacts.story_description if artifacts.story_description else artifacts.summary_comment
-        fill_react_input(page, detail_ta, raw_desc.strip())
-        print(f"   ✅ [상세 설명] 주입 완료 ({len(raw_desc.strip()):,}자)")
+    상단의 [등록하기] 버튼은 발행 흐름이라 절대 누르지 않는다. 좁은 창에서는
+    탭이 가려지므로, 못 찾으면 URL 의 step 만 register 로 바꿔 같은 작품에 머문다.
+    """
+    if page.locator("textarea[placeholder*='상세한 내용']").count() > 0:
+        return True
+    tab = (
+        page.locator("button:visible, a:visible, [role='tab']:visible")
+        .filter(has_text=re.compile(r"^\s*등록\s*\*?\s*$"))
+        .first
+    )
+    if tab.count() > 0:
+        tab.click()
     else:
-        print("   ⚠️ 상세 설명 textarea를 찾지 못했습니다.")
+        url = page.url
+        if "storyId=" not in url:
+            print("   ⛔ storyId 가 없어 [등록] 탭을 열 수 없습니다.")
+            return False
+        target = re.sub(r"([?&]step=)[^&]*", r"\1register", url) if "step=" in url else url + "&step=register"
+        page.goto(target, wait_until="domcontentloaded", timeout=60000)
+    time.sleep(3.0)
+    return page.locator("textarea[placeholder*='상세한 내용']").count() > 0
 
+
+def inject_publish_info(page: Any, artifacts: ProjectArtifacts) -> bool:
+    """[등록] 탭의 상세 설명 textarea 에 story-description 을 넣는다.
+
+    상세 설명은 엔딩 설정 뒤 [다음] 이 아니라 [등록] 탭에 있다. 저장은 이후
+    [임시저장] 으로 반영된다.
+    """
+    print("\n📋 [상세 설명 주입 시작]")
+    raw_desc = (artifacts.story_description or artifacts.summary_comment or "").strip()
+    if not raw_desc:
+        print("   ⚠️ story-description.md 가 비어 있어 건너뜁니다.")
+        return False
+    if crack_len(raw_desc) > DESCRIPTION_MAX:
+        print(f"   ⚠️ 상세 설명이 {DESCRIPTION_MAX:,}자를 넘습니다 ({crack_len(raw_desc):,}자) — 크랙이 잘라냅니다.")
+    if not open_register_tab(page):
+        print("   ⚠️ [등록] 탭에서 상세 설명 textarea를 찾지 못했습니다.")
+        return False
+    detail_ta = page.locator("textarea[placeholder*='상세한 내용'], textarea[placeholder*='스토리의 성격']").first
+    fill_react_input(page, detail_ta, raw_desc)
+    time.sleep(0.5)
+    got = detail_ta.input_value()
+    if got.strip() == raw_desc:
+        print(f"   ✅ [상세 설명] 주입 완료 ({len(raw_desc):,}자) — [등록] 탭")
+    else:
+        print(f"   ⚠️ [상세 설명] 값이 다르게 들어갔습니다 ({len(got):,}자 / 기대 {len(raw_desc):,}자)")
     return True
+
+
+def _mark_register_block(page: Any, heading: str, needle: str) -> str | None:
+    """제목 글자(`장르 설정` 등)에서 위로 올라가 needle 을 품은 가장 가까운 칸을 표시한다.
+
+    이 탭의 칸들은 data-slot 구조가 제각각이라 공통 컨테이너 선택자가 없다.
+    제목에서 출발하면 크랙이 칸 순서를 바꿔도 엉뚱한 콤보박스를 잡지 않는다.
+    """
+    token = "crk-" + re.sub(r"\W", "", heading)
+    found = page.evaluate(
+        r"""([h, needle, tok]) => {
+            const s = [...document.querySelectorAll('p,span,label')]
+              .find(e => e.children.length === 0 && e.innerText.trim() === h);
+            if (!s) return false;
+            let el = s;
+            for (let i = 0; i < 8 && el; i++) {
+              el = el.parentElement;
+              if (!el) break;
+              const hit = needle.startsWith('text:') ? el.innerText.includes(needle.slice(5)) : !!el.querySelector(needle);
+              if (hit) { el.setAttribute('data-crack-sync', tok); return true; }
+            }
+            return false;
+        }""",
+        [heading, needle, token],
+    )
+    return f"[data-crack-sync='{token}']" if found else None
+
+
+_FIRST_LEAF_JS = r"""(el) => {
+    const leaves = [...el.querySelectorAll('*')].filter(x => x.children.length === 0)
+      .map(x => (x.innerText || x.textContent || '').trim()).filter(Boolean);
+    return leaves.length ? leaves[0] : (el.innerText || '').trim();
+}"""
+
+
+def _select_register_combobox(page: Any, heading: str, value: str, label: str) -> bool:
+    """콤보박스를 열어 첫 줄 글자가 value 와 같은 선택지를 고르고, 닫힌 뒤 다시 읽어 확인한다.
+
+    선택지 안에는 설명·가격 줄이 붙어 있어(`하이퍼챗 1.0` + `102개` + 설명) 전체 글자로
+    맞추면 `슈퍼챗 2` 가 `슈퍼챗 2.5` 에 걸린다. 첫 줄만 정확히 비교한다.
+    """
+    blk = _mark_register_block(page, heading, "[role='combobox']")
+    if not blk:
+        print(f"   ⚠️ [{label}] 칸을 찾지 못했습니다.")
+        return False
+    box = page.locator(blk).locator("[role='combobox']").first
+    if box.evaluate(_FIRST_LEAF_JS) == value:
+        print(f"   ✅ [{label}] 이미 '{value}'")
+        return True
+    box.scroll_into_view_if_needed()
+    box.click()
+    time.sleep(1.2)
+    names = page.locator("[role='option']").evaluate_all(
+        "(os) => os.filter(o => o.offsetParent).map(o => { const l=[...o.querySelectorAll('*')].filter(x=>x.children.length===0).map(x=>(x.innerText || x.textContent || '').trim()).filter(Boolean); return l.length ? l[0] : (o.innerText || '').trim(); })"
+    )
+    if value not in names:
+        page.keyboard.press("Escape")
+        print(f"   ⚠️ [{label}] '{value}' 선택지가 없습니다. 현재 선택지: {' · '.join(names)}")
+        return False
+    page.locator("[role='option']:visible").nth(names.index(value)).click()
+    time.sleep(1.0)
+    got = box.evaluate(_FIRST_LEAF_JS)
+    if got == value:
+        print(f"   ✅ [{label}] '{value}' 선택")
+        return True
+    print(f"   ⚠️ [{label}] '{value}' 를 골랐지만 칸에는 '{got}' 로 보입니다.")
+    return False
+
+
+def _set_register_max_output(page: Any, value: str) -> bool:
+    blk = _mark_register_block(page, "권장 최대 출력량", "text:5x")
+    if not blk:
+        print("   ⚠️ [권장 최대 출력량] 칸을 찾지 못했습니다.")
+        return False
+    area = page.locator(blk)
+    bulk = area.get_by_text("일괄 설정", exact=True)
+    if bulk.count() > 0:
+        try:
+            bulk.first.click()
+            time.sleep(0.5)
+        except Exception:
+            pass
+    choice = area.get_by_text(value, exact=True)
+    if choice.count() == 0:
+        print(f"   ⚠️ [권장 최대 출력량] '{value}' 선택지를 찾지 못했습니다.")
+        return False
+    choice.first.click()
+    time.sleep(0.6)
+    print(f"   ✅ [권장 최대 출력량] '{value}' 클릭 (일괄 설정)")
+    return True
+
+
+def _set_register_hashtags(page: Any, tags: list[str]) -> bool:
+    blk = _mark_register_block(page, "해시태그", "input[type='text']")
+    if not blk:
+        print("   ⚠️ [해시태그] 칸을 찾지 못했습니다.")
+        return False
+    area = page.locator(blk)
+    read_chips = lambda: [x.strip().lstrip("#") for x in area.locator("span:has(> button) > span").all_inner_texts()]
+    want = tags[:HASHTAG_MAX_COUNT]
+    if read_chips() == want:
+        print(f"   ✅ [해시태그] 이미 같음 ({len(want)}개)")
+        return True
+    # 기존 칩은 전부 지우고 선언 순서대로 다시 넣는다. 일부만 맞추면 순서가 섞인다.
+    for _ in range(HASHTAG_MAX_COUNT + 2):
+        dels = area.locator("span:has(> button) > button")
+        if dels.count() == 0:
+            break
+        dels.first.click()
+        time.sleep(0.3)
+    inp = area.locator("input[type='text']").first
+    for tag in want:
+        inp.click()
+        inp.fill(tag)
+        inp.press("Enter")
+        time.sleep(0.4)
+    got = read_chips()
+    if got == want:
+        print(f"   ✅ [해시태그] {' '.join('#' + x for x in got)} ({len(got)}개)")
+        return True
+    print(f"   ⚠️ [해시태그] 기대 {want} / 실제 {got}")
+    return False
+
+
+def inject_register_settings(page: Any, artifacts: ProjectArtifacts) -> bool:
+    """story.md 에 선언된 [등록] 탭 설정만 반영한다. 선언이 없으면 아무것도 바꾸지 않는다.
+
+    이용자 층은 크랙이 "한번 설정하면 변경할 수 없어요" 라고 못박은 항목이라
+    잘못 넣으면 되돌릴 수 없다. 도구는 설정하지 않고 알리기만 한다.
+    """
+    reg = artifacts.register
+    print("\n🏷️ [등록 탭 설정 주입 시작]")
+    if not reg:
+        print("   ℹ️ story.md 에 등록 설정 선언이 없어 건너뜁니다 (- Genre: / - Target: / - Chat form: / - Hashtags: …).")
+        return True
+    for problem in register_violations(reg):
+        print(f"   ⚠️ {problem}")
+    if not open_register_tab(page):
+        print("   ⚠️ [등록] 탭을 열지 못했습니다.")
+        return False
+    ok = True
+    for key, heading, label in (("genre", "장르 설정", "장르"), ("target", "타겟 설정", "타겟"),
+                                ("chat_form", "대화 형태 설정", "대화 형태"), ("mode", "권장 모드", "권장 모드")):
+        if key in reg:
+            ok = _select_register_combobox(page, heading, reg[key], label) and ok
+    if "max_output" in reg:
+        ok = _set_register_max_output(page, reg["max_output"]) and ok
+    if "hashtags" in reg:
+        ok = _set_register_hashtags(page, reg["hashtags"]) and ok
+    if "audience" in reg:
+        print(f"   ℹ️ [이용자 층] 선언값 '{reg['audience']}' — 크랙에서 한 번 정하면 바꿀 수 없어 도구가 설정하지 않습니다. 필요하면 브라우저에서 직접 고르세요.")
+    return ok
+
 
 def navigate_to_create_story(page: Any) -> bool:
     """Safely navigate from https://crack.wrtn.ai to '내 작품' -> '작품 만들기'."""
@@ -1657,8 +1930,9 @@ def auto_navigate_and_inject_all(page: Any, artifacts: ProjectArtifacts) -> None
     inject_shortcuts(page, artifacts)
     time.sleep(0.5)
 
-    # 6. 등록 상세 설명 주입
+    # 6. [등록] 탭: 상세 설명 + 장르·타겟·대화 형태·권장 모드·출력량·해시태그
     inject_publish_info(page, artifacts)
+    inject_register_settings(page, artifacts)
     time.sleep(0.5)
 
     # 신규 생성 모드에서 이 주소를 안 찍으면, 다음에 같은 작품을 다시 싱크할
@@ -1796,7 +2070,8 @@ def run_sync(
         print("  [p] 현재 화면에 프롬프트 3종(프롤로그·시작·시스템) 주입")
         print("  [k] 키워드북 일괄 주입")
         print("  [s] 단축어 일괄 주입")
-        print("  [i] 기본 정보(제목·상세소개) 주입")
+        print("  [i] 기본 정보(제목·한 줄 소개) 주입")
+        print("  [g] [등록] 탭 주입 (상세 설명·장르·타겟·대화 형태·권장 모드·출력량·해시태그)")
         print("  [d] 현재 페이지의 버튼/입력창 DOM 목록 분석 (디버깅)")
         print("  [v] SAFE ↔ UNSAFE 프롬프트 버전 전환")
         print("  [r] 로컬 산출물 파일 다시 읽기")
@@ -1845,6 +2120,7 @@ def run_sync(
             elif cmd in ("g", "reg", "publish", "detail"):
                 artifacts = load_project_artifacts(project_dir, variant=current_variant)
                 inject_publish_info(page, artifacts)
+                inject_register_settings(page, artifacts)
             elif cmd in ("d", "dom", "debug", "inspect"):
                 dump_dom_summary(page)
             elif cmd in ("r", "reload"):
@@ -1857,7 +2133,7 @@ def run_sync(
             elif not cmd:
                 continue
             else:
-                print(f"⚠️ 알 수 없는 명령입니다: {cmd} (a, w, p, k, s, i, d, v, r, q 중 선택)")
+                print(f"⚠️ 알 수 없는 명령입니다: {cmd} (a, w, p, k, s, i, g, d, v, r, q 중 선택)")
 
         context.close()
 
