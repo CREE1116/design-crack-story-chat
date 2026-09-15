@@ -150,6 +150,9 @@ def audit(path: str, heading: str, strict: bool) -> bool:
 
 
 def main() -> int:
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print(__doc__)
+        return 0
     args = sys.argv[1:]
     heading = "# 표기"
     strict = False

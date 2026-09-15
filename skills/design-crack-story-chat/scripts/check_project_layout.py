@@ -68,6 +68,9 @@ def validate(root: Path, require_build: bool = True) -> bool:
 
 
 def main() -> int:
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print("usage: check_project_layout.py STORY_CHAT_DIR [--allow-unbuilt]")
+        return 0
     args = sys.argv[1:]
     allow_unbuilt = False
     if "--allow-unbuilt" in args:

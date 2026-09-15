@@ -379,6 +379,13 @@ def load_project_artifacts(project_dir: Path, variant: str = "safe") -> ProjectA
             title_m = re.search(r"^#\s+(.+)$", first_line)
             if title_m and title_m.group(1).strip().lower() != "story":
                 title = title_m.group(1).strip()
+        # 성인 변형은 목록에서 구분돼야 한다. story.md 가 접미사를 선언하면
+        # unsafe 빌드의 제목에만 붙인다. 선언이 없으면 두 변형이 같은 제목으로
+        # 등록돼 어느 쪽이 성인판인지 카드만 보고 알 수 없다.
+        suffix_tag = re.search(r"^-\s*Unsafe title suffix:\s*(.+)$",
+                               story_content, re.MULTILINE | re.IGNORECASE)
+        if variant == "unsafe" and suffix_tag:
+            title = f"{title} {suffix_tag.group(1).strip()}".strip()
 
         # 1. 태그 우선 탐색: - Logline: / - 한줄소개: / - 한줄설명: / - Tagline: / - Premise:
         summary_m = re.search(
@@ -945,11 +952,14 @@ def cover_slot_empty(page: Any) -> bool:
     try:
         if page.locator("button:visible:has-text('업로드')").count() == 0:
             return False  # 업로드 칸 자체가 없는 화면이면 대상이 아니다
-        preview = page.locator(
-            "img[src^='blob:'], img[src^='data:image'], img[src*='wrtn.ai'], "
-            "img[alt*='대표'], img[alt*='커버'], img[alt*='썸네일']"
-        )
-        return preview.count() == 0
+        # 빈 상태 아바타와 카드 예시는 표지가 아니다. 이걸 세면 이미 올린 표지가
+        # 있다고 오판해 업로드를 건너뛰고, 크랙이 저장을 거부한다.
+        shown = page.eval_on_selector_all(
+            "img",
+            "els=>els.filter(e=>e.offsetParent&&e.naturalWidth>200)"
+            ".map(e=>e.currentSrc||e.src)"
+            ".filter(u=>!/graphics\\/empty|card_example|avatar_portrait/.test(u))")
+        return not shown
     except Exception:
         return False
 
@@ -1581,17 +1591,22 @@ def complete_profile_step(page: Any, artifacts: "ProjectArtifacts") -> bool:
     """
     print("\n🧾 [프로필 단계 — storyId 발급]")
     ensure_required_basics(page, artifacts)
-    if "storyId=" in page.url:
-        print(f"   ✅ storyId 이미 발급됨 — {page.url}")
-        return True
     nxt = page.locator("button:visible:has-text('다음')").first
+    # URL 의 storyId 를 발급 완료로 보면 안 된다. 생성 단계에서는 레코드가 생기기
+    # 전에도 임시 storyId 가 붙어 있어서, 그걸 믿고 프로필을 건너뛰면 작품이
+    # 만들어지지 않은 채 주입만 쌓이고 저장할 때 "스토리를 찾을 수 없습니다" 가 난다.
+    # [다음] 이 아직 화면에 있으면 프로필 단계가 끝나지 않은 것이다.
     if nxt.count() == 0:
+        if "storyId=" in page.url:
+            print(f"   ✅ 프로필 단계 완료 — {page.url}")
+            return True
         # 예전에는 여기서 True 를 돌려주고 계속 진행했다. 그러면 탭이 없는
         # 화면에 주입을 시작해 '탭 못 찾음' 경고만 쌓다가 키워드북에서
         # 타임아웃으로 죽었다. 없으면 없다고 말하고 멈춘다.
         print("   ⛔ [다음] 버튼도 없고 storyId 도 없습니다 — 프로필 단계가 끝나지 않았습니다.")
         dump_fields(page, "프로필 미완료")
         return False
+    print("   ℹ️ [다음] 이 남아 있어 프로필 단계를 진행합니다.")
     for attempt in (1, 2):
         try:
             nxt.click()

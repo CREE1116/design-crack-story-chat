@@ -6,3 +6,5 @@ tools/imagegen/out/
 *.skill
 .agents/
 .venv/
+*.egg-info/
+uv.lock

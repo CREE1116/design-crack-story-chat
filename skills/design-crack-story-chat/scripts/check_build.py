@@ -180,6 +180,9 @@ def validate(build: Path) -> bool:
 
 
 def main() -> int:
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print("usage: check_build.py BUILD_DIR")
+        return 0
     if len(sys.argv) != 2:
         print("usage: check_build.py BUILD_DIR", file=sys.stderr)
         return 2

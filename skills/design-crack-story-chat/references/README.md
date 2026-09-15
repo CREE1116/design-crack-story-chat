@@ -28,6 +28,7 @@
 | 외형 지문, 헤어 3요소, 의상 색 결속, NAI 고정 비법 | `character-appearance-guide.md` |
 | 배경·환경 프롬프트, 풍경화형 vs 인물배치형 | `scene-design-guide.md` |
 | NAI 가중치 문법, POV 기하학, S01~S18 / A01~A15 태그 사전 | `novelai-prompt-engineering.md` |
+| 이미지 프롬프트 작성: 외형·의상·감정·행동 분리, 얼굴 위주 감정 구도 | `image-prompt-authoring.md` |
 | **문체·감각 서술, 문체 패치 블록** | `prose-style-guide.md` |
 | 6중 잠금·부정편향·앵커링·나레이터 **문구** | `crack-prompt-rules.md` |
 | 위 항목들의 **원리와 효과** | `production-patterns.md` |

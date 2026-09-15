@@ -1,5 +1,13 @@
 # 변경 내역
 
+## 0.10.33
+
+- 유실되었던 플러그인 메타데이터(`.claude-plugin/plugin.json`)를 정상 복구하고 버전을 동기화했습니다.
+- CLI 검증 스크립트(`check_build.py`, `check_project_layout.py`, `check_symbols.py`)가 `-h`/`--help` 플래그를 정상 지원하도록 개선했습니다.
+- 크랙 동기화 도구(`crack_sync.py`)의 Unsafe 제목 접미사 지원, 표지 업로드 빈 슬롯 감지 정확도 개선, 프로필 단계 판정 로직을 보강했습니다.
+- 문서 및 레퍼런스 정합성을 개선했습니다 (`docs/usage.md` 참조 문서 개수 최신화, `references/README.md` 소유권 표에 `image-prompt-authoring.md` 추가).
+- 파이썬 패키징 부산물(`*.egg-info/`, `uv.lock`)을 `.gitignore`에 등록했습니다.
+
 ## 0.10.25
 
 - 폐기된 이미지 힌트 채널의 문서·예시와 에뮬레이터 주입 블록을 제거했습니다.
