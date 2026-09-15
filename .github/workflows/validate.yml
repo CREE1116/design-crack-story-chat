@@ -35,24 +35,25 @@ jobs:
           echo "음성 대조 통과"
 
       - name: 이미지 배포 검사기 — 오타 슬러그를 잡는지
+        # deploy.py 는 v0.9.5 부터 EXT(.webp) 파일만 센다. 예전 픽스처는 scene 만 .png 로 만들어
+        # 양성 검사부터 "올릴 이미지가 없습니다" 로 실패했다. 기대 경로를 deploy.expected() 에서
+        # 그대로 받아 만들고, 음성 대조는 파일 하나만 오타 이름으로 복사한다.
         run: |
           cd tools/images
           export CRACK_PROMPTS=$PWD/../../examples/hunter/build/assets/prompts.json
           python - <<'EOF'
-          import json, os, pathlib, struct, zlib
+          import json, os, pathlib
+          import deploy
           cfg = json.load(open(os.environ["CRACK_PROMPTS"], encoding="utf-8"))
-          def png():
-              raw = b"".join(b"\x00" + bytes((120,120,120))*8 for _ in range(8))
-              ch = lambda t,d: struct.pack(">I",len(d))+t+d+struct.pack(">I",zlib.crc32(t+d)&0xFFFFFFFF)
-              return (b"\x89PNG\r\n\x1a\n"+ch(b"IHDR",struct.pack(">IIBBBBB",8,8,8,2,0,0,0))
-                      +ch(b"IDAT",zlib.compress(raw,6))+ch(b"IEND",b""))
           root = pathlib.Path("out")
-          for name in cfg["scenes"]:
-              f = root/"scene"/f"{name}.png"; f.parent.mkdir(parents=True, exist_ok=True)
-              f.write_bytes(png())
+          for rel in set().union(*deploy.expected(cfg).values()):
+              f = root / rel
+              f.parent.mkdir(parents=True, exist_ok=True)
+              f.write_bytes(b"RIFF\x00\x00\x00\x00WEBPVP8 ")
           EOF
           python deploy.py --check --root out
-          cp out/scene/*.png out/scene/definitely-not-a-slug.png
+          first=$(ls out/scene/*.webp | head -1)
+          cp "$first" out/scene/definitely-not-a-slug.webp
           if python deploy.py --check --root out; then echo "검사기가 오타 슬러그를 놓쳤다"; exit 1; fi
           echo "배포 검사기 음성 대조 통과"
 
